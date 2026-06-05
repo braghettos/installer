@@ -6,6 +6,21 @@ ociRepo: oci://ghcr.io/braghettos/charts
 # Whether pass A (register component CompositionDefinitions) runs.
 installDefinitions: true
 
+# Bootstrap: bring up the Krateo composition engine (core-provider + its CRDs) as the
+# umbrella's hook-weighted Helm subchart dependency, so a bare-cluster `helm install`
+# self-bootstraps: the engine comes up first (CRDs at hook-weight -10, controller at -5,
+# all with --wait), then core-provider reconciles the umbrella's own Composition and drives
+# the lookup-gated rollout of everything in `components`.
+# Set enabled=false when REGISTERING this umbrella on an already-running Krateo (the engine
+# already exists; the subchart would be redundant).
+bootstrap:
+  coreProvider:
+    enabled: true
+    version: "0.35.2"
+# Subchart value passthroughs (only used when bootstrap.coreProvider.enabled).
+core-provider: {}
+core-provider-crd: {}
+
 # Namespaces the umbrella manages.
 namespaces:
   krateo: krateo-system
@@ -48,13 +63,22 @@ secrets:
 # `repo` overrides ociRepo when a component lives elsewhere; `feature` gates it.
 # ---------------------------------------------------------------------------
 components:
-  # ---- platform ----
-  - { name: authn,           kind: Authn,          version: "0.22.2", deps: [],                tier: platform,      feature: composableportal }
-  - { name: snowplow,        kind: Snowplow,       version: "0.20.5", deps: [],                tier: platform,      feature: composableportal }
-  - { name: frontend,        kind: Frontend,       version: "1.0.5",  deps: [authn, snowplow], tier: platform,      feature: composableportal }
-  - { name: portal,          kind: Portal,         version: "1.2.0",  deps: [frontend],        tier: platform,      feature: composableportalstarter }
-  - { name: core-provider,   kind: CoreProvider,   version: "0.35.2", deps: [],                tier: platform,      feature: composableoperations }
-  - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",  deps: [],                tier: platform,      feature: oasgenprovider }
+  # NOTE: core-provider (the composition engine) is NOT here — it is installed as the
+  # umbrella's bootstrap Helm subchart dependency (see `bootstrap` above / Chart.yaml),
+  # so it comes up before any composition is reconciled. Everything below is a gated
+  # composition driven by that engine.
+  #
+  # ---- platform CRDs (golden rule: dedicated CRD charts, installed before their app) ----
+  - { name: authn-crd,           kind: AuthnCrd,          version: "0.22.2",   deps: [], tier: platform, feature: composableportal }
+  - { name: oasgen-provider-crd, kind: OasgenProviderCrd, version: "0.9.0",    deps: [], tier: platform, feature: oasgenprovider }
+  - { name: frontend-crd,        kind: FrontendCrd,       version: "1.0.10",   deps: [], tier: platform, feature: composableportal }
+  - { name: snowplow-crd,        kind: SnowplowCrd,       version: "0.30.249", deps: [], tier: platform, feature: composableportal }
+  # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
+  - { name: authn,           kind: Authn,          version: "0.22.2",   deps: [authn-crd],                      tier: platform, feature: composableportal }
+  - { name: snowplow,        kind: Snowplow,       version: "0.30.249", deps: [snowplow-crd],                   tier: platform, feature: composableportal }
+  - { name: frontend,        kind: Frontend,       version: "1.0.10",   deps: [frontend-crd, authn, snowplow],  tier: platform, feature: composableportal }
+  - { name: portal,          kind: Portal,         version: "1.2.0",    deps: [frontend],                       tier: platform, feature: composableportalstarter }
+  - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",    deps: [oasgen-provider-crd],            tier: platform, feature: oasgenprovider }
 
   # ---- observability ----
   - { name: clickstack,                kind: Clickstack,        version: "TBD",   deps: [],                                  tier: observability, feature: observability }

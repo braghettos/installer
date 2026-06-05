@@ -15,3 +15,18 @@ appVersion: "2.7.0"
 home: https://krateo.io
 sources:
   - https://github.com/braghettos/installer
+
+# Bootstrap dependency: the Krateo composition engine (core-provider) + its dedicated CRD
+# chart, pulled from the braghettos OCI registry. Conditioned on bootstrap.coreProvider.enabled
+# so it is skipped when registering the umbrella on an already-running Krateo. CRDs first,
+# then the controller; the install is expected to run with --wait so the engine is Ready
+# before core-provider reconciles the umbrella's compositions.
+dependencies:
+  - name: core-provider-crd
+    version: "0.35.2"
+    repository: oci://ghcr.io/braghettos/charts
+    condition: bootstrap.coreProvider.enabled
+  - name: core-provider
+    version: "0.35.2"
+    repository: oci://ghcr.io/braghettos/charts
+    condition: bootstrap.coreProvider.enabled

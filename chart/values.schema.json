@@ -15,6 +15,32 @@
       "title": "Register component CompositionDefinitions",
       "default": true
     },
+    "bootstrap": {
+      "type": "object",
+      "title": "Bootstrap (composition engine)",
+      "description": "Install core-provider as a hook-weighted subchart so a bare-cluster helm install self-bootstraps. Disable when registering on an existing Krateo.",
+      "additionalProperties": false,
+      "properties": {
+        "coreProvider": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "version": { "type": "string", "default": "0.35.2" }
+          }
+        }
+      }
+    },
+    "core-provider": {
+      "type": "object",
+      "title": "core-provider subchart values",
+      "description": "Passthrough to the bootstrap core-provider subchart (only used when bootstrap.coreProvider.enabled)."
+    },
+    "core-provider-crd": {
+      "type": "object",
+      "title": "core-provider-crd subchart values",
+      "description": "Passthrough to the bootstrap core-provider-crd subchart."
+    },
     "namespaces": {
       "type": "object",
       "title": "Namespaces",
