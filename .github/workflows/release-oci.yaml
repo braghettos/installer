@@ -1,0 +1,63 @@
+# Reusable OCI publish workflow for braghettos Krateo blueprint charts.
+# Copy to each fork's .github/workflows/release-oci.yaml. Publishes the chart
+# (and its crd-chart dependency, if present) to oci://ghcr.io/braghettos/charts
+# on a semver tag push.
+name: release-oci
+
+on:
+  push:
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  OCI_REPO: oci://ghcr.io/braghettos/charts
+
+jobs:
+  package-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set versions
+        id: ver
+        run: |
+          CHART_VERSION="${GITHUB_REF_NAME}"
+          echo "chart_version=${CHART_VERSION}" >> "$GITHUB_OUTPUT"
+          # appVersion defaults to chart version unless already pinned in Chart.yaml
+          echo "app_version=${CHART_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Substitute version placeholders
+        run: |
+          for f in chart/Chart.yaml crd-chart/Chart.yaml; do
+            [ -f "$f" ] || continue
+            sed -i "s/CHART_VERSION/${{ steps.ver.outputs.chart_version }}/g" "$f"
+            sed -i "s/APP_VERSION/${{ steps.ver.outputs.app_version }}/g" "$f"
+          done
+
+      - name: Helm setup
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Registry login
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Package & push crd-chart (if present)
+        run: |
+          if [ -f crd-chart/Chart.yaml ]; then
+            helm package crd-chart -d dist/
+            helm push dist/*-crd-*.tgz "${OCI_REPO}" 2>/dev/null || helm push "$(ls dist/*.tgz | head -1)" "${OCI_REPO}"
+            rm -rf dist
+          fi
+
+      - name: Build deps & package chart
+        run: |
+          helm dependency build chart || true
+          helm package chart -d dist/
+
+      - name: Push chart
+        run: helm push dist/*.tgz "${OCI_REPO}"

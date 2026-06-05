@@ -1,0 +1,20 @@
+{{/* Pass A: register a CompositionDefinition per (feature-enabled) component. */}}
+{{- if .Values.installDefinitions }}
+{{- range $c := .Values.components }}
+{{- if eq (include "inst.featureEnabled" (list $ $c.feature)) "true" }}
+---
+apiVersion: core.krateo.io/v1alpha1
+kind: CompositionDefinition
+metadata:
+  name: {{ $c.name }}
+  namespace: {{ $.Values.namespaces.krateo }}
+  labels:
+    app.kubernetes.io/managed-by: krateo-installer
+    krateo.io/tier: {{ $c.tier }}
+spec:
+  chart:
+    url: {{ default $.Values.ociRepo $c.repo }}/{{ $c.name }}
+    version: {{ $c.version | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "title": "Krateo PlatformOps Installer",
+  "description": "Umbrella orchestrator. Create one Installer Composition per Krateo platform installation. It registers and emits the component blueprints (forked into the braghettos org) in dependency order. Pinned to installer 2.7.0.",
+  "additionalProperties": false,
+  "properties": {
+    "ociRepo": {
+      "type": "string",
+      "title": "OCI chart repository",
+      "default": "oci://ghcr.io/braghettos/charts"
+    },
+    "installDefinitions": {
+      "type": "boolean",
+      "title": "Register component CompositionDefinitions",
+      "default": true
+    },
+    "namespaces": {
+      "type": "object",
+      "title": "Namespaces",
+      "additionalProperties": false,
+      "properties": {
+        "krateo": { "type": "string", "default": "krateo-system" },
+        "clickhouse": { "type": "string", "default": "clickhouse-system" }
+      }
+    },
+    "exposure": {
+      "type": "object",
+      "title": "Exposure",
+      "description": "How browser-facing components are reached. NodePort/LoadBalancer are resolved via Helm lookup at reconcile time; Ingress uses the host inputs.",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["NodePort", "LoadBalancer", "Ingress"], "default": "NodePort" },
+        "ingress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "domain": { "type": "string", "default": "" },
+            "authnHost": { "type": "string", "default": "" },
+            "snowplowHost": { "type": "string", "default": "" },
+            "frontendHost": { "type": "string", "default": "" },
+            "hyperdxHost": { "type": "string", "default": "" }
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "title": "Feature flags",
+      "additionalProperties": false,
+      "properties": {
+        "composableportal": { "type": "boolean", "default": true },
+        "composableportalstarter": { "type": "boolean", "default": true },
+        "composableoperations": { "type": "boolean", "default": true },
+        "oasgenprovider": { "type": "boolean", "default": true },
+        "observability": { "type": "boolean", "default": true },
+        "observabilityAgents": { "type": "boolean", "default": true },
+        "githubMcp": { "type": "boolean", "default": false },
+        "podRestartAlert": { "type": "boolean", "default": false }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "title": "Secret references",
+      "description": "Names of pre-existing Secrets. Values are never inlined in the blueprint.",
+      "additionalProperties": false,
+      "properties": {
+        "geminiApiKey": { "type": "string", "default": "gemini-api-key" },
+        "gcloudCredentials": { "type": "string", "default": "gcloud-credentials" },
+        "githubMcpPat": { "type": "string", "default": "github-mcp-pat" }
+      }
+    },
+    "components": {
+      "type": "array",
+      "title": "Component DAG (advanced override)",
+      "description": "Advanced: override the built-in component list/versions/dependencies.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "version": { "type": "string" },
+          "deps": { "type": "array", "items": { "type": "string" } },
+          "tier": { "type": "string", "enum": ["platform", "observability"] },
+          "feature": { "type": "string" },
+          "repo": { "type": "string" }
+        },
+        "required": ["name", "kind", "version", "deps", "tier"]
+      }
+    }
+  }
+}

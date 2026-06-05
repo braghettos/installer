@@ -1,0 +1,11 @@
+# Registers the installer umbrella with Krateo. Apply this, then create one
+# Installer Composition (Kind: Installer) to roll out the whole platform.
+apiVersion: core.krateo.io/v1alpha1
+kind: CompositionDefinition
+metadata:
+  name: installer
+  namespace: krateo-system
+spec:
+  chart:
+    url: oci://ghcr.io/braghettos/charts/installer
+    version: "2.7.0"

@@ -1,0 +1,67 @@
+# ---------------------------------------------------------------------------
+# Krateo PlatformOps installer — umbrella orchestrator values
+# ---------------------------------------------------------------------------
+ociRepo: oci://ghcr.io/braghettos/charts
+
+# Whether pass A (register component CompositionDefinitions) runs.
+installDefinitions: true
+
+# Namespaces the umbrella manages.
+namespaces:
+  krateo: krateo-system
+  clickhouse: clickhouse-system
+
+# Exposure model for browser-facing components (authn, snowplow, frontend, hyperdx,
+# sse-proxy). Replaces the installer's `var` Service-IP/port extraction.
+#   NodePort | LoadBalancer -> resolved via Helm `lookup` at reconcile time
+#   Ingress                 -> built from the host inputs below
+exposure:
+  type: NodePort          # NodePort | LoadBalancer | Ingress
+  ingress:
+    enabled: false
+    domain: ""            # e.g. krateo.example.com -> authn.<domain>, snowplow.<domain>, ...
+    authnHost: ""
+    snowplowHost: ""
+    frontendHost: ""
+    hyperdxHost: ""
+
+# Feature flags (carried over from the installer chart).
+features:
+  composableportal: true          # authn -> snowplow -> frontend -> portal
+  composableportalstarter: true   # portal (composable-portal-starter)
+  composableoperations: true      # core-provider
+  oasgenprovider: true            # oasgen-provider
+  observability: true             # clickstack/otel/agents group
+  observabilityAgents: true       # kagent operator + krateo-autopilot + MCP tools
+  githubMcp: false                # GitHub MCP (hosted RemoteMCPServer)
+  podRestartAlert: false          # pod-restart alert pipeline
+
+# Sensitive inputs are referenced by Secret name; never inline values.
+secrets:
+  geminiApiKey: gemini-api-key          # required when observabilityAgents=true
+  gcloudCredentials: gcloud-credentials # optional Vertex AI
+  githubMcpPat: github-mcp-pat          # only if self-hosting GitHub MCP
+
+# ---------------------------------------------------------------------------
+# Component DAG. `deps` = component names whose Compositions must be Ready=True
+# before this one's Composition is emitted. Versions pinned to installer 2.7.0.
+# `repo` overrides ociRepo when a component lives elsewhere; `feature` gates it.
+# ---------------------------------------------------------------------------
+components:
+  # ---- platform ----
+  - { name: authn,           kind: Authn,          version: "0.22.2", deps: [],                tier: platform,      feature: composableportal }
+  - { name: snowplow,        kind: Snowplow,       version: "0.20.5", deps: [],                tier: platform,      feature: composableportal }
+  - { name: frontend,        kind: Frontend,       version: "1.0.5",  deps: [authn, snowplow], tier: platform,      feature: composableportal }
+  - { name: portal,          kind: Portal,         version: "1.2.0",  deps: [frontend],        tier: platform,      feature: composableportalstarter }
+  - { name: core-provider,   kind: CoreProvider,   version: "0.35.2", deps: [],                tier: platform,      feature: composableoperations }
+  - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",  deps: [],                tier: platform,      feature: oasgenprovider }
+
+  # ---- observability ----
+  - { name: clickstack,                kind: Clickstack,        version: "TBD",   deps: [],                                  tier: observability, feature: observability }
+  - { name: otel-collector-deployment, kind: OtelCollectorDep,  version: "TBD",   deps: [clickstack],                        tier: observability, feature: observability }
+  - { name: otel-collector-daemonset,  kind: OtelCollectorDs,   version: "TBD",   deps: [otel-collector-deployment],         tier: observability, feature: observability }
+  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,    version: "0.1.0", deps: [clickstack],                        tier: observability, feature: observability }
+
+  # ---- agents (kagent / kmcp-managed tools) ----
+  # kagent operator is referenced upstream (pinned >= v0.6.3); see templates/_notes.
+  - { name: krateo-autopilot,    kind: KrateoAutopilot,    version: "0.1.0", deps: [clickstack],            tier: observability, feature: observabilityAgents }

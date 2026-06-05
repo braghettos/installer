@@ -1,0 +1,29 @@
+{{/*
+  Pass B: emit each component's Composition, gated on:
+    - feature flag enabled
+    - the component's generated CRD existing (inst.crdExists)
+    - all deps Ready=True (inst.depsReady)
+  Re-evaluated every reconcile; the next layer unlocks as deps go Ready.
+
+  NOTE (Phase 1 skeleton): specs are emitted empty ({}) = curated chart defaults.
+  Phase 4 wires per-component specs (the installer 2.7.0 `set:` blocks) and the
+  exposure/lookup logic for frontend/authn/snowplow/hyperdx/sse-proxy.
+*/}}
+{{- range $c := .Values.components }}
+{{- if eq (include "inst.featureEnabled" (list $ $c.feature)) "true" }}
+{{- $crd  := include "inst.crdExists" (list $c.kind) }}
+{{- $deps := include "inst.depsReady" (list $ $c.deps $.Values.components) }}
+{{- if and (eq $crd "true") (eq $deps "true") }}
+---
+apiVersion: {{ include "inst.apiVersion" (list $c.version) }}
+kind: {{ $c.kind }}
+metadata:
+  name: {{ $c.name }}
+  namespace: {{ $.Values.namespaces.krateo }}
+  labels:
+    app.kubernetes.io/managed-by: krateo-installer
+    krateo.io/tier: {{ $c.tier }}
+spec: {}
+{{- end }}
+{{- end }}
+{{- end }}
