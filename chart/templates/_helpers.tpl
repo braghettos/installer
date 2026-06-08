@@ -28,15 +28,21 @@
 {{- $found -}}
 {{- end -}}
 
-{{/* Is a peer Composition Ready=True? args: (list $ "Kind" "name" "version") */}}
+{{/* Is a peer Composition Ready=True? args: (list $ "Kind" "name" "version")
+     Guarded: a typed lookup of a Kind whose CRD is not yet registered is a HARD ERROR
+     in chart-inspector (server-side), unlike client-side `helm template` which returns
+     empty. So short-circuit via inst.crdExists (an apiextensions lookup, always valid)
+     before doing the typed Composition lookup. */}}
 {{- define "inst.ready" -}}
 {{- $top := index . 0 -}}{{- $kind := index . 1 -}}{{- $name := index . 2 -}}{{- $ver := index . 3 -}}
+{{- $r := "" -}}
+{{- if eq (include "inst.crdExists" (list $kind)) "true" -}}
 {{- $apiv := include "inst.apiVersion" (list $ver) -}}
 {{- $o := lookup $apiv $kind $top.Values.namespaces.krateo $name -}}
-{{- $r := "" -}}
 {{- if $o -}}
 {{- range ($o.status.conditions | default list) -}}
 {{- if and (eq .type "Ready") (eq (.status | toString) "True") -}}{{- $r = "true" -}}{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- $r -}}
