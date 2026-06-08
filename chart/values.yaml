@@ -24,6 +24,8 @@ bootstrap:
     enabled: true
   mongodbOperator:
     enabled: true
+  kagent:
+    enabled: true
 # Subchart value passthroughs (only used when the matching bootstrap flag is enabled).
 core-provider: {}
 core-provider-crd: {}
@@ -32,6 +34,11 @@ cert-manager:
     enabled: true     # install cert-manager CRDs with the operator
 clickhouse-operator-helm: {}
 community-operator: {}
+kagent-crds: {}
+kagent:
+  # operator only; no LLM provider configured at the operator level (agents bring their own ModelConfig)
+  providers:
+    default: ""
 
 # Namespaces the umbrella manages.
 namespaces:
@@ -93,10 +100,10 @@ components:
   - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",    deps: [oasgen-provider-crd],            tier: platform, feature: oasgenprovider }
 
   # ---- observability ----
-  - { name: clickstack,                kind: Clickstack,        version: "3.0.0", deps: [],                                  tier: observability, feature: observability }
-  - { name: otel-collector-deployment, kind: OtelCollectorDep,  version: "TBD",   deps: [clickstack],                        tier: observability, feature: observability }
-  - { name: otel-collector-daemonset,  kind: OtelCollectorDs,   version: "TBD",   deps: [otel-collector-deployment],         tier: observability, feature: observability }
-  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,    version: "0.1.0", deps: [clickstack],                        tier: observability, feature: observability }
+  - { name: clickstack,                kind: Clickstack,             version: "3.0.0", deps: [],                          tier: observability, feature: observability }
+  - { name: otel-collector-deployment, kind: OtelCollectorDeployment, version: "0.1.0", deps: [clickstack],                tier: observability, feature: observability }
+  - { name: otel-collector-daemonset,  kind: OtelCollectorDaemonset,  version: "0.1.0", deps: [otel-collector-deployment], tier: observability, feature: observability }
+  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,         version: "0.1.0", deps: [clickstack],                 tier: observability, feature: observability }
 
   # ---- agents (kagent / kmcp-managed tools) ----
   # kagent operator is referenced upstream (pinned >= v0.6.3); see templates/_notes.

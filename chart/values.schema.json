@@ -48,6 +48,11 @@
           "type": "object",
           "additionalProperties": false,
           "properties": { "enabled": { "type": "boolean", "default": true } }
+        },
+        "kagent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean", "default": true } }
         }
       }
     },
@@ -56,6 +61,8 @@
     "cert-manager": { "type": "object", "title": "cert-manager subchart values", "description": "Passthrough to the bootstrap cert-manager subchart." },
     "clickhouse-operator-helm": { "type": "object", "title": "clickhouse-operator subchart values", "description": "Passthrough to the bootstrap ClickHouse operator subchart." },
     "community-operator": { "type": "object", "title": "mongodb community-operator subchart values", "description": "Passthrough to the bootstrap MongoDB community-operator subchart." },
+    "kagent-crds": { "type": "object", "title": "kagent-crds subchart values", "description": "Passthrough to the bootstrap kagent-crds subchart." },
+    "kagent": { "type": "object", "title": "kagent subchart values", "description": "Passthrough to the bootstrap kagent operator subchart." },
     "namespaces": {
       "type": "object",
       "title": "Namespaces",
