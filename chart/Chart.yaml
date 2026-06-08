@@ -22,6 +22,7 @@ sources:
 # then the controller; the install is expected to run with --wait so the engine is Ready
 # before core-provider reconciles the umbrella's compositions.
 dependencies:
+  # composition engine
   - name: core-provider-crd
     version: "0.35.2"
     repository: oci://ghcr.io/braghettos/charts
@@ -30,3 +31,17 @@ dependencies:
     version: "0.35.2"
     repository: oci://ghcr.io/braghettos/charts
     condition: bootstrap.coreProvider.enabled
+  # observability operators (ClickStack 3.0.0 prerequisites). cert-manager must be Ready
+  # before the ClickHouse operator (webhook cert) — see bootstrap notes / Phase 5.
+  - name: cert-manager
+    version: "v1.20.2"
+    repository: https://charts.jetstack.io
+    condition: bootstrap.certManager.enabled
+  - name: clickhouse-operator-helm
+    version: "0.0.5"
+    repository: oci://ghcr.io/clickhouse
+    condition: bootstrap.clickhouseOperator.enabled
+  - name: community-operator
+    version: "0.13.0"
+    repository: https://mongodb.github.io/helm-charts
+    condition: bootstrap.mongodbOperator.enabled

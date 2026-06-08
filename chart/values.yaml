@@ -17,9 +17,21 @@ bootstrap:
   coreProvider:
     enabled: true
     version: "0.35.2"
-# Subchart value passthroughs (only used when bootstrap.coreProvider.enabled).
+  # ClickStack 3.0.0 operator prerequisites (disable any already present on the cluster).
+  certManager:
+    enabled: true
+  clickhouseOperator:
+    enabled: true
+  mongodbOperator:
+    enabled: true
+# Subchart value passthroughs (only used when the matching bootstrap flag is enabled).
 core-provider: {}
 core-provider-crd: {}
+cert-manager:
+  crds:
+    enabled: true     # install cert-manager CRDs with the operator
+clickhouse-operator-helm: {}
+community-operator: {}
 
 # Namespaces the umbrella manages.
 namespaces:

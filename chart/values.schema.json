@@ -28,19 +28,29 @@
             "enabled": { "type": "boolean", "default": true },
             "version": { "type": "string", "default": "0.35.2" }
           }
+        },
+        "certManager": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean", "default": true } }
+        },
+        "clickhouseOperator": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean", "default": true } }
+        },
+        "mongodbOperator": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean", "default": true } }
         }
       }
     },
-    "core-provider": {
-      "type": "object",
-      "title": "core-provider subchart values",
-      "description": "Passthrough to the bootstrap core-provider subchart (only used when bootstrap.coreProvider.enabled)."
-    },
-    "core-provider-crd": {
-      "type": "object",
-      "title": "core-provider-crd subchart values",
-      "description": "Passthrough to the bootstrap core-provider-crd subchart."
-    },
+    "core-provider": { "type": "object", "title": "core-provider subchart values", "description": "Passthrough to the bootstrap core-provider subchart." },
+    "core-provider-crd": { "type": "object", "title": "core-provider-crd subchart values", "description": "Passthrough to the bootstrap core-provider-crd subchart." },
+    "cert-manager": { "type": "object", "title": "cert-manager subchart values", "description": "Passthrough to the bootstrap cert-manager subchart." },
+    "clickhouse-operator-helm": { "type": "object", "title": "clickhouse-operator subchart values", "description": "Passthrough to the bootstrap ClickHouse operator subchart." },
+    "community-operator": { "type": "object", "title": "mongodb community-operator subchart values", "description": "Passthrough to the bootstrap MongoDB community-operator subchart." },
     "namespaces": {
       "type": "object",
       "title": "Namespaces",
