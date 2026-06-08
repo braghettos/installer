@@ -90,7 +90,7 @@ components:
   # ---- platform CRDs (golden rule: dedicated CRD charts, installed before their app) ----
   - { name: authn-crd,           kind: AuthnCrd,          version: "0.22.2",   deps: [], tier: platform, feature: composableportal }
   - { name: oasgen-provider-crd, kind: OasgenProviderCrd, version: "0.9.0",    deps: [], tier: platform, feature: oasgenprovider }
-  - { name: frontend-crd,        kind: FrontendCrd,       version: "1.0.10",   deps: [], tier: platform, feature: composableportal, repo: oci://ghcr.io/braghettos }
+  - { name: frontend-crd,        kind: FrontendCrd,       version: "1.0.10",   deps: [], tier: platform, feature: composableportal, repo: oci://ghcr.io/braghettos/krateo }
   - { name: snowplow-crd,        kind: SnowplowCrd,       version: "0.30.249", deps: [], tier: platform, feature: composableportal }
   # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
   - { name: authn,           kind: Authn,          version: "0.22.2",   deps: [authn-crd],                      tier: platform, feature: composableportal }
