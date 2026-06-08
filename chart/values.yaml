@@ -100,7 +100,7 @@ components:
   - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",    deps: [oasgen-provider-crd],            tier: platform, feature: oasgenprovider }
 
   # ---- observability ----
-  - { name: clickstack,                kind: Clickstack,             version: "3.0.0", deps: [],                          tier: observability, feature: observability }
+  - { name: clickstack,                kind: Clickstack,             version: "3.0.1", deps: [],                          tier: observability, feature: observability }
   - { name: otel-collector-deployment, kind: OtelCollectorDeployment, version: "0.1.0", deps: [clickstack],                tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
   - { name: otel-collector-daemonset,  kind: OtelCollectorDaemonset,  version: "0.1.0", deps: [otel-collector-deployment], tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
   - { name: krateo-sse-proxy,          kind: KrateoSseProxy,         version: "0.1.0", deps: [clickstack],                 tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
