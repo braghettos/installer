@@ -15,6 +15,11 @@
       "title": "Register component CompositionDefinitions",
       "default": true
     },
+    "global": {
+      "type": "object",
+      "title": "Global values",
+      "description": "Helm global values (injected by the composition runtime / when used with subcharts)."
+    },
     "bootstrap": {
       "type": "object",
       "title": "Bootstrap (composition engine)",
