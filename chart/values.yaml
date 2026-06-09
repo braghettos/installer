@@ -255,7 +255,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.3"
+    version: "0.1.4"
     deps:
       - clickhouse-mcp-server
     tier: observability
