@@ -24,11 +24,11 @@ sources:
 dependencies:
   # composition engine
   - name: core-provider-crd
-    version: "0.35.2"
+    version: "0.35.4"
     repository: oci://ghcr.io/braghettos/charts
     condition: bootstrap.coreProvider.enabled
   - name: core-provider
-    version: "0.35.2"
+    version: "0.35.4"
     repository: oci://ghcr.io/braghettos/charts
     condition: bootstrap.coreProvider.enabled
   # observability operators (ClickStack 3.0.0 prerequisites). cert-manager must be Ready
@@ -48,7 +48,7 @@ dependencies:
   # kagent (agentic platform): CRDs + operator (bundles kmcp + built-in tool servers).
   - name: kagent-crds
     version: "0.9.6"
-    repository: oci://ghcr.io/kagent-dev/kagent/helm
+    repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.kagent.enabled
   - name: kagent
     version: "0.9.6"

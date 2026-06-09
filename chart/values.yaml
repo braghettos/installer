@@ -32,13 +32,47 @@ core-provider-crd: {}
 cert-manager:
   crds:
     enabled: true     # install cert-manager CRDs with the operator
-clickhouse-operator-helm: {}
+clickhouse-operator-helm:
+  # No admission webhook / cert-manager Certificates — so the umbrella renders no
+  # cert-manager CRs at install (the operator still reconciles ClickHouseCluster).
+  certManager:
+    enable: false
+  webhook:
+    enable: false
 community-operator: {}
 kagent-crds: {}
 kagent:
   # operator only; no LLM provider configured at the operator level (agents bring their own ModelConfig)
   providers:
     default: ""
+  # Disable kagent's bundled sample agents (they collide with the autopilot's k8s-agent/
+  # helm-agent and add pods) and its sample MCP servers. The kagent-tool-server + the
+  # default ModelConfig still render — their CRDs are pre-installed by the kagent-crds
+  # crds/ chart, so the single bootstrap helm install validates.
+  k8s-agent:
+    enabled: false
+  kgateway-agent:
+    enabled: false
+  istio-agent:
+    enabled: false
+  cilium-debug-agent:
+    enabled: false
+  cilium-manager-agent:
+    enabled: false
+  cilium-policy-agent:
+    enabled: false
+  argo-rollouts-agent:
+    enabled: false
+  helm-agent:
+    enabled: false
+  observability-agent:
+    enabled: false
+  promql-agent:
+    enabled: false
+  grafana-mcp:
+    enabled: false
+  querydoc:
+    enabled: false
 
 # Namespaces the umbrella manages. The observability stack (ClickStack, collectors,
 # MCP, agents) now runs entirely in `krateo` — there is no separate clickhouse
