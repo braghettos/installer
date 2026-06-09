@@ -21,7 +21,7 @@
 {{- $isLB := or (eq .Values.exposure.type "LoadBalancer") (eq .Values.exposure.type "NodePort") }}
 {{- range $c := .Values.components }}
 {{- if eq (include "inst.featureEnabled" (list $top $c.feature)) "true" }}
-{{- $crd  := include "inst.crdExists" (list $c.kind) }}
+{{- $crd  := include "inst.crdExists" (list $c.kind $c.version) }}
 {{- $deps := include "inst.depsReady" (list $top $c.deps $top.Values.components) }}
 {{- if and (eq $crd "true") (eq $deps "true") }}
 {{- $spec := dict }}

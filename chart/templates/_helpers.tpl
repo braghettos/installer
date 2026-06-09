@@ -19,11 +19,22 @@
 {{- end -}}
 {{- end -}}
 
-{{/* Does the component's generated CRD exist yet? args: (list "Kind") */}}
+{{/* Does the component's generated CRD exist AND serve this component's version yet?
+     args: (list "Kind" "version")
+     Version-aware: core-provider derives the served apiVersion from the chart version
+     ("0.1.1" -> "v0-1-1"). On a component version bump the Kind already exists but the
+     new served version lags until core-provider regenerates the CRD; a typed lookup of
+     the not-yet-served apiVersion is a HARD ERROR. Checking spec.versions[].served for
+     the exact version makes both Pass B emission and readiness checks tolerate that
+     transient (treat as "not ready yet") instead of failing the whole render. */}}
 {{- define "inst.crdExists" -}}
-{{- $kind := index . 0 -}}{{- $found := "" -}}
+{{- $kind := index . 0 -}}{{- $ver := index . 1 -}}
+{{- $want := printf "v%s" ($ver | toString | replace "." "-") -}}
+{{- $found := "" -}}
 {{- range (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "").items -}}
-{{- if and (eq .spec.group "composition.krateo.io") (eq .spec.names.kind $kind) -}}{{- $found = "true" -}}{{- end -}}
+{{- if and (eq .spec.group "composition.krateo.io") (eq .spec.names.kind $kind) -}}
+{{- range .spec.versions -}}{{- if and (eq .name $want) .served -}}{{- $found = "true" -}}{{- end -}}{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- $found -}}
 {{- end -}}
@@ -36,7 +47,7 @@
 {{- define "inst.ready" -}}
 {{- $top := index . 0 -}}{{- $kind := index . 1 -}}{{- $name := index . 2 -}}{{- $ver := index . 3 -}}
 {{- $r := "" -}}
-{{- if eq (include "inst.crdExists" (list $kind)) "true" -}}
+{{- if eq (include "inst.crdExists" (list $kind $ver)) "true" -}}
 {{- $apiv := include "inst.apiVersion" (list $ver) -}}
 {{- $o := lookup $apiv $kind $top.Values.namespaces.krateo $name -}}
 {{- if $o -}}
