@@ -100,11 +100,11 @@ components:
   - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",    deps: [oasgen-provider-crd],            tier: platform, feature: oasgenprovider }
 
   # ---- observability ----
-  - { name: clickstack,                kind: Clickstack,             version: "3.0.1", deps: [],                          tier: observability, feature: observability }
-  - { name: otel-collector-deployment, kind: OtelCollectorDeployment, version: "0.1.0", deps: [clickstack],                tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
+  # clickstack is helm-installed directly (operator-CRD values are too complex for core-provider CRD-gen)
+  - { name: otel-collector-deployment, kind: OtelCollectorDeployment, version: "0.1.0", deps: [],                tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
   - { name: otel-collector-daemonset,  kind: OtelCollectorDaemonset,  version: "0.1.0", deps: [otel-collector-deployment], tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
-  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,         version: "0.1.0", deps: [clickstack],                 tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
+  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,         version: "0.1.0", deps: [],                 tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
 
   # ---- agents (kagent / kmcp-managed tools) ----
   # kagent operator is referenced upstream (pinned >= v0.6.3); see templates/_notes.
-  - { name: krateo-autopilot,    kind: KrateoAutopilot,    version: "0.1.0", deps: [clickstack],            tier: observability, feature: observabilityAgents, repo: oci://ghcr.io/braghettos/krateo }
+  - { name: krateo-autopilot,    kind: KrateoAutopilot,    version: "0.1.0", deps: [],            tier: observability, feature: observabilityAgents, repo: oci://ghcr.io/braghettos/krateo }
