@@ -116,7 +116,7 @@ components:
     feature: oasgenprovider
   - name: frontend-crd
     kind: FrontendCrd
-    version: "1.0.10"
+    version: "1.0.11"
     deps: []
     tier: platform
     feature: composableportal
@@ -155,7 +155,7 @@ components:
       - SNOWPLOW_API_BASE_URL
   - name: frontend
     kind: Frontend
-    version: "1.0.10"
+    version: "1.0.11"
     deps:
       - frontend-crd
       - authn
@@ -189,7 +189,7 @@ components:
   # Requires features.oasgenprovider=true (for the oasgen-provider dep).
   - name: hyperdx-provider
     kind: HyperdxProvider
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - oasgen-provider
     tier: observability
@@ -204,14 +204,14 @@ components:
   # split), so the collectors read the credentials Secret directly — no replica needed.
   - name: krateo-clickstack
     kind: KrateoClickstack
-    version: "0.1.1"
+    version: "0.1.2"
     deps: []
     tier: observability
     feature: observability
     repo: oci://ghcr.io/braghettos/krateo
   - name: otel-collector-deployment
     kind: OtelCollectorDeployment
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - krateo-clickstack
     tier: observability
@@ -219,7 +219,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: otel-collector-daemonset
     kind: OtelCollectorDaemonset
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - otel-collector-deployment
     tier: observability
@@ -227,7 +227,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-sse-proxy
     kind: KrateoSseProxy
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - krateo-clickstack
     tier: observability
@@ -247,7 +247,7 @@ components:
   # vertexAI spec block from .Values.vertexAI).
   - name: clickhouse-mcp-server
     kind: ClickhouseMcpServer
-    version: "0.1.5"
+    version: "0.1.6"
     deps:
       - krateo-clickstack
     tier: observability
@@ -255,7 +255,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.4"
+    version: "0.1.5"
     deps:
       - clickhouse-mcp-server
     tier: observability
