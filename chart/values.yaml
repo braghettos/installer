@@ -93,9 +93,9 @@ components:
   - { name: frontend-crd,        kind: FrontendCrd,       version: "1.0.10",   deps: [], tier: platform, feature: composableportal, repo: oci://ghcr.io/braghettos/krateo }
   - { name: snowplow-crd,        kind: SnowplowCrd,       version: "0.30.249", deps: [], tier: platform, feature: composableportal }
   # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
-  - { name: authn,           kind: Authn,          version: "0.22.2",   deps: [authn-crd],                      tier: platform, feature: composableportal }
-  - { name: snowplow,        kind: Snowplow,       version: "0.30.249", deps: [snowplow-crd],                   tier: platform, feature: composableportal }
-  - { name: frontend,        kind: Frontend,       version: "1.0.10",   deps: [frontend-crd, authn, snowplow],  tier: platform, feature: composableportal, repo: oci://ghcr.io/braghettos/krateo }
+  - { name: authn,           kind: Authn,          version: "0.22.2",   deps: [authn-crd],                      tier: platform, feature: composableportal, expose: true, exposePort: 8082, svcMatch: authn, configKeys: [AUTHN_API_BASE_URL] }
+  - { name: snowplow,        kind: Snowplow,       version: "0.30.249", deps: [snowplow-crd],                   tier: platform, feature: composableportal, expose: true, exposePort: 8081, svcMatch: snowplow, configKeys: [SNOWPLOW_API_BASE_URL] }
+  - { name: frontend,        kind: Frontend,       version: "1.0.10",   deps: [frontend-crd, authn, snowplow],  tier: platform, feature: composableportal, repo: oci://ghcr.io/braghettos/krateo, expose: true, exposePort: 8080, svcMatch: frontend, consumer: true }
   - { name: portal,          kind: Portal,         version: "1.2.2",    deps: [frontend],                       tier: platform, feature: composableportalstarter, repo: oci://ghcr.io/braghettos }
   - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",    deps: [oasgen-provider-crd],            tier: platform, feature: oasgenprovider }
 
@@ -103,7 +103,7 @@ components:
   # clickstack is helm-installed directly (operator-CRD values are too complex for core-provider CRD-gen)
   - { name: otel-collector-deployment, kind: OtelCollectorDeployment, version: "0.1.0", deps: [],                tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
   - { name: otel-collector-daemonset,  kind: OtelCollectorDaemonset,  version: "0.1.0", deps: [otel-collector-deployment], tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
-  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,         version: "0.1.0", deps: [],                 tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
+  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,         version: "0.1.0", deps: [],                 tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo, expose: true, exposePort: 8080, svcMatch: sse-proxy, configKeys: [EVENTS_API_BASE_URL, EVENTS_PUSH_API_BASE_URL] }
 
   # ---- agents (kagent / kmcp-managed tools) ----
   # kagent operator is referenced upstream (pinned >= v0.6.3); see templates/_notes.

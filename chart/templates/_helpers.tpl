@@ -59,3 +59,18 @@
 {{- end -}}
 {{- $all -}}
 {{- end -}}
+
+{{/* External IP of a browser-facing component's LoadBalancer Service. args: (list $ "svcNameSubstring")
+     The component's underlying Service is named after its Helm release (e.g. authn-<hash>), so we
+     match on a stable substring and return the assigned ingress IP — "" until the cloud LB is ready.
+     This is the reconcile-time resolution the values.yaml exposure model documents: each reconcile
+     re-runs the lookup, so the frontend config fills in as soon as the peer IPs are assigned. */}}
+{{- define "inst.lbip" -}}
+{{- $top := index . 0 -}}{{- $sub := index . 1 -}}{{- $ip := "" -}}
+{{- range (lookup "v1" "Service" $top.Values.namespaces.krateo "").items -}}
+{{- if and (eq (.spec.type | toString) "LoadBalancer") (contains $sub .metadata.name) -}}
+{{- range (.status.loadBalancer.ingress | default list) -}}{{- if .ip -}}{{- $ip = .ip -}}{{- end -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $ip -}}
+{{- end -}}

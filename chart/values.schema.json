@@ -30,46 +30,106 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": { "type": "boolean", "default": true },
-            "version": { "type": "string", "default": "0.35.2" }
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "version": {
+              "type": "string",
+              "default": "0.35.2"
+            }
           }
         },
         "certManager": {
           "type": "object",
           "additionalProperties": false,
-          "properties": { "enabled": { "type": "boolean", "default": true } }
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            }
+          }
         },
         "clickhouseOperator": {
           "type": "object",
           "additionalProperties": false,
-          "properties": { "enabled": { "type": "boolean", "default": true } }
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            }
+          }
         },
         "mongodbOperator": {
           "type": "object",
           "additionalProperties": false,
-          "properties": { "enabled": { "type": "boolean", "default": true } }
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            }
+          }
         },
         "kagent": {
           "type": "object",
           "additionalProperties": false,
-          "properties": { "enabled": { "type": "boolean", "default": true } }
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            }
+          }
         }
       }
     },
-    "core-provider": { "type": "object", "title": "core-provider subchart values", "description": "Passthrough to the bootstrap core-provider subchart." },
-    "core-provider-crd": { "type": "object", "title": "core-provider-crd subchart values", "description": "Passthrough to the bootstrap core-provider-crd subchart." },
-    "cert-manager": { "type": "object", "title": "cert-manager subchart values", "description": "Passthrough to the bootstrap cert-manager subchart." },
-    "clickhouse-operator-helm": { "type": "object", "title": "clickhouse-operator subchart values", "description": "Passthrough to the bootstrap ClickHouse operator subchart." },
-    "community-operator": { "type": "object", "title": "mongodb community-operator subchart values", "description": "Passthrough to the bootstrap MongoDB community-operator subchart." },
-    "kagent-crds": { "type": "object", "title": "kagent-crds subchart values", "description": "Passthrough to the bootstrap kagent-crds subchart." },
-    "kagent": { "type": "object", "title": "kagent subchart values", "description": "Passthrough to the bootstrap kagent operator subchart." },
+    "core-provider": {
+      "type": "object",
+      "title": "core-provider subchart values",
+      "description": "Passthrough to the bootstrap core-provider subchart."
+    },
+    "core-provider-crd": {
+      "type": "object",
+      "title": "core-provider-crd subchart values",
+      "description": "Passthrough to the bootstrap core-provider-crd subchart."
+    },
+    "cert-manager": {
+      "type": "object",
+      "title": "cert-manager subchart values",
+      "description": "Passthrough to the bootstrap cert-manager subchart."
+    },
+    "clickhouse-operator-helm": {
+      "type": "object",
+      "title": "clickhouse-operator subchart values",
+      "description": "Passthrough to the bootstrap ClickHouse operator subchart."
+    },
+    "community-operator": {
+      "type": "object",
+      "title": "mongodb community-operator subchart values",
+      "description": "Passthrough to the bootstrap MongoDB community-operator subchart."
+    },
+    "kagent-crds": {
+      "type": "object",
+      "title": "kagent-crds subchart values",
+      "description": "Passthrough to the bootstrap kagent-crds subchart."
+    },
+    "kagent": {
+      "type": "object",
+      "title": "kagent subchart values",
+      "description": "Passthrough to the bootstrap kagent operator subchart."
+    },
     "namespaces": {
       "type": "object",
       "title": "Namespaces",
       "additionalProperties": false,
       "properties": {
-        "krateo": { "type": "string", "default": "krateo-system" },
-        "clickhouse": { "type": "string", "default": "clickhouse-system" }
+        "krateo": {
+          "type": "string",
+          "default": "krateo-system"
+        },
+        "clickhouse": {
+          "type": "string",
+          "default": "clickhouse-system"
+        }
       }
     },
     "exposure": {
@@ -78,17 +138,43 @@
       "description": "How browser-facing components are reached. NodePort/LoadBalancer are resolved via Helm lookup at reconcile time; Ingress uses the host inputs.",
       "additionalProperties": false,
       "properties": {
-        "type": { "type": "string", "enum": ["NodePort", "LoadBalancer", "Ingress"], "default": "NodePort" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "NodePort",
+            "LoadBalancer",
+            "Ingress"
+          ],
+          "default": "NodePort"
+        },
         "ingress": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": { "type": "boolean", "default": false },
-            "domain": { "type": "string", "default": "" },
-            "authnHost": { "type": "string", "default": "" },
-            "snowplowHost": { "type": "string", "default": "" },
-            "frontendHost": { "type": "string", "default": "" },
-            "hyperdxHost": { "type": "string", "default": "" }
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "domain": {
+              "type": "string",
+              "default": ""
+            },
+            "authnHost": {
+              "type": "string",
+              "default": ""
+            },
+            "snowplowHost": {
+              "type": "string",
+              "default": ""
+            },
+            "frontendHost": {
+              "type": "string",
+              "default": ""
+            },
+            "hyperdxHost": {
+              "type": "string",
+              "default": ""
+            }
           }
         }
       }
@@ -98,14 +184,38 @@
       "title": "Feature flags",
       "additionalProperties": false,
       "properties": {
-        "composableportal": { "type": "boolean", "default": true },
-        "composableportalstarter": { "type": "boolean", "default": true },
-        "composableoperations": { "type": "boolean", "default": true },
-        "oasgenprovider": { "type": "boolean", "default": true },
-        "observability": { "type": "boolean", "default": true },
-        "observabilityAgents": { "type": "boolean", "default": true },
-        "githubMcp": { "type": "boolean", "default": false },
-        "podRestartAlert": { "type": "boolean", "default": false }
+        "composableportal": {
+          "type": "boolean",
+          "default": true
+        },
+        "composableportalstarter": {
+          "type": "boolean",
+          "default": true
+        },
+        "composableoperations": {
+          "type": "boolean",
+          "default": true
+        },
+        "oasgenprovider": {
+          "type": "boolean",
+          "default": true
+        },
+        "observability": {
+          "type": "boolean",
+          "default": true
+        },
+        "observabilityAgents": {
+          "type": "boolean",
+          "default": true
+        },
+        "githubMcp": {
+          "type": "boolean",
+          "default": false
+        },
+        "podRestartAlert": {
+          "type": "boolean",
+          "default": false
+        }
       }
     },
     "secrets": {
@@ -114,9 +224,18 @@
       "description": "Names of pre-existing Secrets. Values are never inlined in the blueprint.",
       "additionalProperties": false,
       "properties": {
-        "geminiApiKey": { "type": "string", "default": "gemini-api-key" },
-        "gcloudCredentials": { "type": "string", "default": "gcloud-credentials" },
-        "githubMcpPat": { "type": "string", "default": "github-mcp-pat" }
+        "geminiApiKey": {
+          "type": "string",
+          "default": "gemini-api-key"
+        },
+        "gcloudCredentials": {
+          "type": "string",
+          "default": "gcloud-credentials"
+        },
+        "githubMcpPat": {
+          "type": "string",
+          "default": "github-mcp-pat"
+        }
       }
     },
     "components": {
@@ -127,15 +246,60 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string" },
-          "kind": { "type": "string" },
-          "version": { "type": "string" },
-          "deps": { "type": "array", "items": { "type": "string" } },
-          "tier": { "type": "string", "enum": ["platform", "observability"] },
-          "feature": { "type": "string" },
-          "repo": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "deps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "platform",
+              "observability"
+            ]
+          },
+          "feature": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "expose": {
+            "type": "boolean"
+          },
+          "exposePort": {
+            "type": "integer"
+          },
+          "svcMatch": {
+            "type": "string"
+          },
+          "consumer": {
+            "type": "boolean"
+          },
+          "configKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         },
-        "required": ["name", "kind", "version", "deps", "tier"]
+        "required": [
+          "name",
+          "kind",
+          "version",
+          "deps",
+          "tier"
+        ]
       }
     }
   }

@@ -5,25 +5,55 @@
     - all deps Ready=True (inst.depsReady)
   Re-evaluated every reconcile; the next layer unlocks as deps go Ready.
 
-  NOTE (Phase 1 skeleton): specs are emitted empty ({}) = curated chart defaults.
-  Phase 4 wires per-component specs (the installer 2.7.0 `set:` blocks) and the
-  exposure/lookup logic for frontend/authn/snowplow/hyperdx/sse-proxy.
+  Exposure / config (the model documented in values.yaml `exposure`) is resolved here at
+  reconcile time — no post-install `kubectl patch` needed:
+    - components marked `expose: true` get spec.service.type = .Values.exposure.type
+      (LoadBalancer | NodePort); for Ingress the Service stays chart-default (ClusterIP).
+    - the `consumer: true` component (frontend) gets spec.config.<KEY> for each peer that
+      declares `configKeys`, with the URL built from that peer's LoadBalancer IP via
+      `inst.lbip`. Until the cloud assigns the IP the key is omitted, so the frontend keeps
+      its chart default; the next reconcile (core-provider re-renders the umbrella) fills it
+      in as soon as the peer's external IP is ready. The frontend serves config.json to the
+      browser as a static file, so the updated ConfigMap is picked up on page reload — no
+      pod restart required.
 */}}
+{{- $top := . }}
+{{- $isLB := or (eq .Values.exposure.type "LoadBalancer") (eq .Values.exposure.type "NodePort") }}
 {{- range $c := .Values.components }}
-{{- if eq (include "inst.featureEnabled" (list $ $c.feature)) "true" }}
+{{- if eq (include "inst.featureEnabled" (list $top $c.feature)) "true" }}
 {{- $crd  := include "inst.crdExists" (list $c.kind) }}
-{{- $deps := include "inst.depsReady" (list $ $c.deps $.Values.components) }}
+{{- $deps := include "inst.depsReady" (list $top $c.deps $top.Values.components) }}
 {{- if and (eq $crd "true") (eq $deps "true") }}
+{{- $spec := dict }}
+{{- if and $c.expose $isLB }}
+{{- $_ := set $spec "service" (dict "type" $top.Values.exposure.type) }}
+{{- end }}
+{{- if $c.consumer }}
+{{- $cfg := dict }}
+{{- range $d := $top.Values.components }}
+{{- if $d.configKeys }}
+{{- $ip := include "inst.lbip" (list $top $d.svcMatch) }}
+{{- if $ip }}
+{{- range $k := $d.configKeys }}
+{{- $_ := set $cfg $k (printf "http://%s:%v" $ip $d.exposePort) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if gt (len $cfg) 0 }}
+{{- $_ := set $spec "config" $cfg }}
+{{- end }}
+{{- end }}
 ---
 apiVersion: {{ include "inst.apiVersion" (list $c.version) }}
 kind: {{ $c.kind }}
 metadata:
   name: {{ $c.name }}
-  namespace: {{ $.Values.namespaces.krateo }}
+  namespace: {{ $top.Values.namespaces.krateo }}
   labels:
     app.kubernetes.io/managed-by: krateo-installer
     krateo.io/tier: {{ $c.tier }}
-spec: {}
+spec: {{- $spec | toYaml | nindent 2 }}
 {{- end }}
 {{- end }}
 {{- end }}
