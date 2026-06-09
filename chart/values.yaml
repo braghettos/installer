@@ -40,10 +40,12 @@ kagent:
   providers:
     default: ""
 
-# Namespaces the umbrella manages.
+# Namespaces the umbrella manages. The observability stack (ClickStack, collectors,
+# MCP, agents) now runs entirely in `krateo` — there is no separate clickhouse
+# namespace anymore (the install.sh-era clickhouse-system split is gone).
 namespaces:
   krateo: krateo-system
-  clickhouse: clickhouse-system
+  clickhouse: krateo-system
 
 # Exposure model for browser-facing components (authn, snowplow, frontend, hyperdx,
 # sse-proxy). Replaces the installer's `var` Service-IP/port extraction.
@@ -72,9 +74,21 @@ features:
 
 # Sensitive inputs are referenced by Secret name; never inline values.
 secrets:
-  geminiApiKey: gemini-api-key          # required when observabilityAgents=true
-  gcloudCredentials: gcloud-credentials # optional Vertex AI
+  geminiApiKey: gemini-api-key          # required when observabilityAgents=true AND vertexAI.enabled=false
   githubMcpPat: github-mcp-pat          # only if self-hosting GitHub MCP
+
+# Gemini Vertex AI for the autopilot agents (functional LLM, no API key).
+# When enabled, the krateo-autopilot ModelConfigs use provider GeminiVertexAI with
+# Application Default Credentials: the kagent agent pods authenticate to Vertex via the
+# GKE node SA token from the metadata server. Requirements on the node pool:
+#   - OAuth scope https://www.googleapis.com/auth/cloud-platform
+#   - the node SA has an IAM role covering aiplatform.* (roles/aiplatform.user or roles/editor)
+# No API key and no downloaded SA-key file are needed. Injected into the autopilot
+# Composition spec by templates/compositions.yaml (components with vertexAI: true).
+vertexAI:
+  enabled: true
+  projectID: neon-481711
+  location: us-central1
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -88,23 +102,150 @@ components:
   # composition driven by that engine.
   #
   # ---- platform CRDs (golden rule: dedicated CRD charts, installed before their app) ----
-  - { name: authn-crd,           kind: AuthnCrd,          version: "0.22.2",   deps: [], tier: platform, feature: composableportal }
-  - { name: oasgen-provider-crd, kind: OasgenProviderCrd, version: "0.9.0",    deps: [], tier: platform, feature: oasgenprovider }
-  - { name: frontend-crd,        kind: FrontendCrd,       version: "1.0.10",   deps: [], tier: platform, feature: composableportal, repo: oci://ghcr.io/braghettos/krateo }
-  - { name: snowplow-crd,        kind: SnowplowCrd,       version: "0.30.249", deps: [], tier: platform, feature: composableportal }
-  # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
-  - { name: authn,           kind: Authn,          version: "0.22.2",   deps: [authn-crd],                      tier: platform, feature: composableportal, expose: true, exposePort: 8082, svcMatch: authn, configKeys: [AUTHN_API_BASE_URL] }
-  - { name: snowplow,        kind: Snowplow,       version: "0.30.254", deps: [snowplow-crd],                   tier: platform, feature: composableportal, expose: true, exposePort: 8081, svcMatch: snowplow, configKeys: [SNOWPLOW_API_BASE_URL] }
-  - { name: frontend,        kind: Frontend,       version: "1.0.10",   deps: [frontend-crd, authn, snowplow],  tier: platform, feature: composableportal, repo: oci://ghcr.io/braghettos/krateo, expose: true, exposePort: 8080, svcMatch: frontend, consumer: true }
-  - { name: portal,          kind: Portal,         version: "1.2.2",    deps: [frontend],                       tier: platform, feature: composableportalstarter, repo: oci://ghcr.io/braghettos }
-  - { name: oasgen-provider, kind: OasgenProvider, version: "0.9.0",    deps: [oasgen-provider-crd],            tier: platform, feature: oasgenprovider }
+  - name: authn-crd
+    kind: AuthnCrd
+    version: "0.22.2"
+    deps: []
+    tier: platform
+    feature: composableportal
+  - name: oasgen-provider-crd
+    kind: OasgenProviderCrd
+    version: "0.9.0"
+    deps: []
+    tier: platform
+    feature: oasgenprovider
+  - name: frontend-crd
+    kind: FrontendCrd
+    version: "1.0.10"
+    deps: []
+    tier: platform
+    feature: composableportal
+    repo: oci://ghcr.io/braghettos/krateo
+  - name: snowplow-crd
+    kind: SnowplowCrd
+    version: "0.30.249"
+    deps: []
+    tier: platform
+    feature: composableportal
 
-  # ---- observability ----
-  # clickstack is helm-installed directly (operator-CRD values are too complex for core-provider CRD-gen)
-  - { name: otel-collector-deployment, kind: OtelCollectorDeployment, version: "0.1.0", deps: [],                tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
-  - { name: otel-collector-daemonset,  kind: OtelCollectorDaemonset,  version: "0.1.0", deps: [otel-collector-deployment], tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo }
-  - { name: krateo-sse-proxy,          kind: KrateoSseProxy,         version: "0.1.0", deps: [],                 tier: observability, feature: observability, repo: oci://ghcr.io/braghettos/krateo, expose: true, exposePort: 8080, svcMatch: sse-proxy, configKeys: [EVENTS_API_BASE_URL, EVENTS_PUSH_API_BASE_URL] }
+  # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
+  - name: authn
+    kind: Authn
+    version: "0.22.2"
+    deps:
+      - authn-crd
+    tier: platform
+    feature: composableportal
+    expose: true
+    exposePort: 8082
+    svcMatch: authn
+    configKeys:
+      - AUTHN_API_BASE_URL
+  - name: snowplow
+    kind: Snowplow
+    version: "0.30.254"
+    deps:
+      - snowplow-crd
+    tier: platform
+    feature: composableportal
+    expose: true
+    exposePort: 8081
+    svcMatch: snowplow
+    configKeys:
+      - SNOWPLOW_API_BASE_URL
+  - name: frontend
+    kind: Frontend
+    version: "1.0.10"
+    deps:
+      - frontend-crd
+      - authn
+      - snowplow
+    tier: platform
+    feature: composableportal
+    repo: oci://ghcr.io/braghettos/krateo
+    expose: true
+    exposePort: 8080
+    svcMatch: frontend
+    consumer: true
+  - name: portal
+    kind: Portal
+    version: "1.2.2"
+    deps:
+      - frontend
+    tier: platform
+    feature: composableportalstarter
+    repo: oci://ghcr.io/braghettos
+  - name: oasgen-provider
+    kind: OasgenProvider
+    version: "0.9.0"
+    deps:
+      - oasgen-provider-crd
+    tier: platform
+    feature: oasgenprovider
+
+  # ---- observability backend ----
+  # ClickStack (ClickHouse + OTel gateway + HyperDX + MongoDB) is now a composition
+  # (krateo-clickstack), replacing obs-stack install.sh. It also emits the ClickHouse
+  # http-handlers ConfigMap, the otel-clickhouse-credentials Secret, and a HyperDX
+  # LoadBalancer Service. Everything runs in namespaces.krateo (no clickhouse-system
+  # split), so the collectors read the credentials Secret directly — no replica needed.
+  - name: krateo-clickstack
+    kind: KrateoClickstack
+    version: "0.1.0"
+    deps: []
+    tier: observability
+    feature: observability
+    repo: oci://ghcr.io/braghettos/krateo
+  - name: otel-collector-deployment
+    kind: OtelCollectorDeployment
+    version: "0.1.0"
+    deps:
+      - krateo-clickstack
+    tier: observability
+    feature: observability
+    repo: oci://ghcr.io/braghettos/krateo
+  - name: otel-collector-daemonset
+    kind: OtelCollectorDaemonset
+    version: "0.1.0"
+    deps:
+      - otel-collector-deployment
+    tier: observability
+    feature: observability
+    repo: oci://ghcr.io/braghettos/krateo
+  - name: krateo-sse-proxy
+    kind: KrateoSseProxy
+    version: "0.1.0"
+    deps:
+      - krateo-clickstack
+    tier: observability
+    feature: observability
+    repo: oci://ghcr.io/braghettos/krateo
+    expose: true
+    exposePort: 8080
+    svcMatch: sse-proxy
+    configKeys:
+      - EVENTS_API_BASE_URL
+      - EVENTS_PUSH_API_BASE_URL
 
   # ---- agents (kagent / kmcp-managed tools) ----
   # kagent operator is referenced upstream (pinned >= v0.6.3); see templates/_notes.
-  - { name: krateo-autopilot,    kind: KrateoAutopilot,    version: "0.1.0", deps: [],            tier: observability, feature: observabilityAgents, repo: oci://ghcr.io/braghettos/krateo }
+  # clickhouse-mcp-server gives the observability agent read access to telemetry; the
+  # autopilot is wired for Vertex AI ADC (vertexAI: true -> compositions.yaml injects the
+  # vertexAI spec block from .Values.vertexAI).
+  - name: clickhouse-mcp-server
+    kind: ClickhouseMcpServer
+    version: "0.1.0"
+    deps:
+      - krateo-clickstack
+    tier: observability
+    feature: observabilityAgents
+    repo: oci://ghcr.io/braghettos/krateo
+  - name: krateo-autopilot
+    kind: KrateoAutopilot
+    version: "0.1.0"
+    deps:
+      - clickhouse-mcp-server
+    tier: observability
+    feature: observabilityAgents
+    repo: oci://ghcr.io/braghettos/krateo
+    vertexAI: true

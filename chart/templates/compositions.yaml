@@ -44,6 +44,12 @@
 {{- $_ := set $spec "config" $cfg }}
 {{- end }}
 {{- end }}
+{{- /* Vertex AI passthrough: components flagged vertexAI:true (krateo-autopilot) get the
+       umbrella's .Values.vertexAI injected into their Composition spec, so the autopilot
+       ModelConfigs use GeminiVertexAI via ADC. */}}
+{{- if and $c.vertexAI $top.Values.vertexAI.enabled }}
+{{- $_ := set $spec "vertexAI" (dict "enabled" true "projectID" $top.Values.vertexAI.projectID "location" $top.Values.vertexAI.location) }}
+{{- end }}
 ---
 apiVersion: {{ include "inst.apiVersion" (list $c.version) }}
 kind: {{ $c.kind }}

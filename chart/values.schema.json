@@ -128,7 +128,7 @@
         },
         "clickhouse": {
           "type": "string",
-          "default": "clickhouse-system"
+          "default": "krateo-system"
         }
       }
     },
@@ -291,6 +291,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "vertexAI": {
+            "type": "boolean",
+            "description": "Inject the umbrella's .vertexAI block into this component's Composition spec (krateo-autopilot)."
           }
         },
         "required": [
@@ -300,6 +304,25 @@
           "deps",
           "tier"
         ]
+      }
+    },
+    "vertexAI": {
+      "type": "object",
+      "title": "Gemini Vertex AI",
+      "description": "Vertex AI for the autopilot agents via Application Default Credentials (no API key). Requires the GKE node SA to have aiplatform access and the cloud-platform OAuth scope.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "projectID": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string",
+          "default": "us-central1"
+        }
       }
     }
   }
