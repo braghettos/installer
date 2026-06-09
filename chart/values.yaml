@@ -234,7 +234,7 @@ components:
   # vertexAI spec block from .Values.vertexAI).
   - name: clickhouse-mcp-server
     kind: ClickhouseMcpServer
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - krateo-clickstack
     tier: observability
@@ -242,7 +242,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - clickhouse-mcp-server
     tier: observability
