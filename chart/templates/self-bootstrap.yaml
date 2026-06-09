@@ -1,0 +1,114 @@
+{{- /*
+  D — self-reconcile. In BOOTSTRAP mode (a bare-cluster `helm install` with
+  bootstrap.coreProvider.enabled=true) the umbrella brings up the engine + operators
+  (subchart deps) and then registers ITSELF as an `Installer` composition:
+    - an Installer CompositionDefinition pointing at this same OCI chart, and
+    - a one-shot post-install hook Job that waits for the generated Installer CRD and
+      applies an Installer CR whose spec is this release's values with bootstrap OFF.
+  core-provider then reconciles that Installer CR on its loop, re-rendering the umbrella in
+  COMPOSITION mode (Pass A + Pass B) so the component layers roll out automatically — no
+  manual `helm upgrade`/up.sh. Pass A/B (definitions.yaml, compositions.yaml, secret.yaml)
+  render ONLY in composition mode, so the bootstrap release doesn't double-own them.
+*/}}
+{{- if .Values.bootstrap.coreProvider.enabled }}
+apiVersion: core.krateo.io/v1alpha1
+kind: CompositionDefinition
+metadata:
+  name: installer
+  namespace: {{ .Values.namespaces.krateo }}
+  labels:
+    app.kubernetes.io/managed-by: krateo-installer
+spec:
+  chart:
+    url: {{ .Values.ociRepo }}/installer
+    version: {{ .Chart.Version | quote }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: installer-self-bootstrap
+  namespace: {{ .Values.namespaces.krateo }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: installer-self-bootstrap
+rules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["composition.krateo.io"]
+    resources: ["installers"]
+    verbs: ["get", "create", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: installer-self-bootstrap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: installer-self-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: installer-self-bootstrap
+    namespace: {{ .Values.namespaces.krateo }}
+---
+{{- /* The Installer CR spec: only the umbrella's own keys (NOT the bootstrap subchart
+       passthroughs like cert-manager/kagent, which carry huge default trees and are unused
+       in composition mode), with all bootstrap flags OFF so the composition render does
+       Pass A + Pass B only (no subcharts, no self-registration). */}}
+{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "components" "vertexAI" "hitlApproval" }}
+{{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "certManager" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: installer-self-cr
+  namespace: {{ .Values.namespaces.krateo }}
+data:
+  installer.yaml: |
+    apiVersion: {{ include "inst.apiVersion" (list .Chart.Version) }}
+    kind: Installer
+    metadata:
+      name: installer
+      namespace: {{ .Values.namespaces.krateo }}
+    spec:
+{{ $spec | toYaml | indent 6 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: installer-self-bootstrap
+  namespace: {{ .Values.namespaces.krateo }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 30
+  template:
+    spec:
+      serviceAccountName: installer-self-bootstrap
+      restartPolicy: OnFailure
+      volumes:
+        - name: cr
+          configMap:
+            name: installer-self-cr
+      containers:
+        - name: apply
+          image: bitnami/kubectl:1.31
+          volumeMounts:
+            - name: cr
+              mountPath: /cr
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              echo "waiting for the generated Installer CRD..."
+              until kubectl get crd installers.composition.krateo.io >/dev/null 2>&1; do sleep 5; done
+              # wait until the CRD actually serves this chart's version
+              until kubectl get installers.composition.krateo.io -n {{ .Values.namespaces.krateo }} >/dev/null 2>&1; do sleep 5; done
+              echo "applying Installer CR (self-reconcile takes over the rollout)"
+              kubectl apply -f /cr/installer.yaml
+              echo "done"
+{{- end }}

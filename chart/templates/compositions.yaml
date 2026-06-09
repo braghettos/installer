@@ -17,6 +17,7 @@
       browser as a static file, so the updated ConfigMap is picked up on page reload — no
       pod restart required.
 */}}
+{{- if not .Values.bootstrap.coreProvider.enabled }}
 {{- $top := . }}
 {{- $isLB := or (eq .Values.exposure.type "LoadBalancer") (eq .Values.exposure.type "NodePort") }}
 {{- range $c := .Values.components }}
@@ -64,6 +65,7 @@ metadata:
     app.kubernetes.io/managed-by: krateo-installer
     krateo.io/tier: {{ $c.tier }}
 spec: {{- $spec | toYaml | nindent 2 }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

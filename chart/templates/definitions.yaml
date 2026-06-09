@@ -1,5 +1,7 @@
-{{/* Pass A: register a CompositionDefinition per (feature-enabled) component. */}}
-{{- if .Values.installDefinitions }}
+{{/* Pass A: register a CompositionDefinition per (feature-enabled) component.
+     Composition mode only — the bootstrap helm install registers the Installer composition
+     (self-bootstrap.yaml); core-provider then re-renders this in composition mode. */}}
+{{- if and .Values.installDefinitions (not .Values.bootstrap.coreProvider.enabled) }}
 {{- range $c := .Values.components }}
 {{- if eq (include "inst.featureEnabled" (list $ $c.feature)) "true" }}
 ---
