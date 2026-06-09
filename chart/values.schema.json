@@ -324,6 +324,11 @@
           "default": "us-central1"
         }
       }
+    },
+    "hitlApproval": {
+      "type": "boolean",
+      "title": "HITL approval",
+      "description": "Autopilot mutating-tool approval gate. true=pause for approval; false=autonomous remediation."
     }
   }
 }

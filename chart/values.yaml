@@ -77,6 +77,10 @@ secrets:
   geminiApiKey: gemini-api-key          # required when observabilityAgents=true AND vertexAI.enabled=false
   githubMcpPat: github-mcp-pat          # only if self-hosting GitHub MCP
 
+# HITL approval gate for the autopilot's mutating Kubernetes tools. true (default)=
+# pause for human approval before any cluster change; false=autonomous remediation.
+hitlApproval: true
+
 # Gemini Vertex AI for the autopilot agents (functional LLM, no API key).
 # When enabled, the krateo-autopilot ModelConfigs use provider GeminiVertexAI with
 # Application Default Credentials: the kagent agent pods authenticate to Vertex via the
@@ -247,7 +251,7 @@ components:
   # vertexAI spec block from .Values.vertexAI).
   - name: clickhouse-mcp-server
     kind: ClickhouseMcpServer
-    version: "0.1.6"
+    version: "0.1.7"
     deps:
       - krateo-clickstack
     tier: observability
@@ -255,7 +259,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.5"
+    version: "0.1.6"
     deps:
       - clickhouse-mcp-server
     tier: observability

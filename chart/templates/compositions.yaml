@@ -50,6 +50,10 @@
 {{- if and $c.vertexAI $top.Values.vertexAI.enabled }}
 {{- $_ := set $spec "vertexAI" (dict "enabled" true "projectID" $top.Values.vertexAI.projectID "location" $top.Values.vertexAI.location) }}
 {{- end }}
+{{- /* HITL approval gate for the autopilot's mutating k8s tools (vertexAI:true == the autopilot). */}}
+{{- if $c.vertexAI }}
+{{- $_ := set $spec "hitlApproval" $top.Values.hitlApproval }}
+{{- end }}
 ---
 apiVersion: {{ include "inst.apiVersion" (list $c.version) }}
 kind: {{ $c.kind }}
