@@ -191,7 +191,7 @@ components:
   # split), so the collectors read the credentials Secret directly — no replica needed.
   - name: krateo-clickstack
     kind: KrateoClickstack
-    version: "0.1.0"
+    version: "0.1.1"
     deps: []
     tier: observability
     feature: observability
