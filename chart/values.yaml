@@ -120,14 +120,14 @@ components:
     feature: oasgenprovider
   - name: frontend-crd
     kind: FrontendCrd
-    version: "1.0.11"
+    version: "1.0.12"
     deps: []
     tier: platform
     feature: composableportal
     repo: oci://ghcr.io/braghettos/krateo
   - name: snowplow-crd
     kind: SnowplowCrd
-    version: "0.30.257"
+    version: "0.30.258"
     deps: []
     tier: platform
     feature: composableportal
@@ -147,7 +147,7 @@ components:
       - AUTHN_API_BASE_URL
   - name: snowplow
     kind: Snowplow
-    version: "0.30.257"
+    version: "0.30.258"
     deps:
       - snowplow-crd
     tier: platform
@@ -159,7 +159,7 @@ components:
       - SNOWPLOW_API_BASE_URL
   - name: frontend
     kind: Frontend
-    version: "1.0.11"
+    version: "1.0.12"
     deps:
       - frontend-crd
       - authn
@@ -259,7 +259,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.6"
+    version: "0.1.7"
     deps:
       - clickhouse-mcp-server
     tier: observability
