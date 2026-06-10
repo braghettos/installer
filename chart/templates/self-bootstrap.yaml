@@ -54,11 +54,50 @@ subjects:
     name: installer-self-bootstrap
     namespace: {{ .Values.namespaces.krateo }}
 ---
+{{- /* RBAC for the Installer cdc's ServiceAccount (`installers-v<ver>`, created by
+       core-provider once the Installer CRD is generated). The compositions.yaml render
+       calls inst.lbip -> `lookup "v1" "Service"` to wire the frontend (consumer) config
+       from peer LoadBalancer IPs, which needs `services` list/get. chart-inspector does not
+       grant it, so the consumer render fails `services is forbidden`. We grant it here in
+       BOOTSTRAP mode (applied by helm with admin creds — the cdc itself can't, that would be
+       privilege escalation) so it's present before the cdc renders the consumer. The
+       RoleBinding may reference the SA before it exists; it binds once core-provider creates
+       it. SA name is derived from THIS chart's version (e.g. 0.2.31 -> installers-v0-2-31). */}}
+{{- $cdcSA := printf "installers-v%s" (.Chart.Version | toString | replace "." "-") }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: installers-lbip-services
+  namespace: {{ .Values.namespaces.krateo }}
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: installers-lbip-services
+  namespace: {{ .Values.namespaces.krateo }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: installers-lbip-services
+subjects:
+  - kind: ServiceAccount
+    name: {{ $cdcSA }}
+    namespace: {{ .Values.namespaces.krateo }}
+---
 {{- /* The Installer CR spec: only the umbrella's own keys (NOT the bootstrap subchart
        passthroughs like cert-manager/kagent, which carry huge default trees and are unused
        in composition mode), with all bootstrap flags OFF so the composition render does
        Pass A + Pass B only (no subcharts, no self-registration). */}}
-{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "components" "vertexAI" "hitlApproval" }}
+{{- /* Do NOT pick "components": the component list (with each component's pinned chart
+       version) is chart-internal structure, not user config. Baking it into the CR froze
+       the versions so a chart upgrade couldn't bump them (the CR override shadowed the new
+       chart values.yaml). Omitting it makes the Installer CR inherit the chart's own
+       values.yaml components, so version bumps propagate through the self-reconcile. */}}
+{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" }}
 {{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "certManager" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
 apiVersion: v1
 kind: ConfigMap
