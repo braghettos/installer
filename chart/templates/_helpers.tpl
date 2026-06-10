@@ -11,12 +11,16 @@
 {{- printf "composition.krateo.io/v%s" ($ver | toString | replace "." "-") -}}
 {{- end -}}
 
-{{/* Is a feature flag enabled? args: (list $ "featureName"); empty featureName => true */}}
+{{/* Is a feature flag enabled? args: (list $ "featureName"); empty featureName => true.
+     Krateo CORE platform modules (the engine + the composable portal: authn/snowplow/
+     frontend/portal) install REGARDLESS of their flag — they are not optional. Only the
+     add-on features (observability, oasgen, githubMcp, podRestartAlert) are gated. */}}
+{{- define "inst.coreFeatures" -}}composableoperations composableportal composableportalstarter{{- end -}}
 {{- define "inst.featureEnabled" -}}
 {{- $top := index . 0 -}}{{- $feat := index . 1 -}}
-{{- if not $feat -}}true{{- else -}}
-{{- if index $top.Values.features $feat -}}true{{- end -}}
-{{- end -}}
+{{- if not $feat -}}true
+{{- else if has $feat (splitList " " (include "inst.coreFeatures" .)) -}}true
+{{- else if index $top.Values.features $feat -}}true{{- end -}}
 {{- end -}}
 
 {{/* Does the component's generated CRD exist AND serve this component's version yet?
