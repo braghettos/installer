@@ -37,9 +37,14 @@ rules:
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
     verbs: ["get", "list", "watch"]
+  # installers: post-install hook applies the Installer CR; pre-delete HOOK 2 deletes it.
   - apiGroups: ["composition.krateo.io"]
     resources: ["installers"]
-    verbs: ["get", "list", "watch", "create", "patch", "update"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+  # compositiondefinitions read: pre-delete HOOK 2 polls these to detect full tree drain.
+  - apiGroups: ["core.krateo.io"]
+    resources: ["compositiondefinitions"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -94,6 +99,34 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: installers-lbip-services
+subjects:
+  - kind: ServiceAccount
+    name: {{ $cdcSA }}
+    namespace: {{ .Values.namespaces.krateo }}
+---
+{{- /* Cluster-scoped CRD read for the cdc SA. The pre-delete ORDERED-TEARDOWN hook (HOOK 1,
+       ordered-teardown.yaml) resolves each component Kind to its live CRD plural by listing
+       CRDs and matching spec.names.kind + group (so irregular plurals like KrateoSseProxy ->
+       krateosseproxies can't drift). customresourcedefinitions is cluster-scoped, so this
+       must be a ClusterRole; chart-inspector doesn't scan hooks, so grant it here (admin
+       side) like the lbip Role above. */}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: installers-teardown-crd-read
+rules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: installers-teardown-crd-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: installers-teardown-crd-read
 subjects:
   - kind: ServiceAccount
     name: {{ $cdcSA }}

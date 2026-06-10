@@ -1,21 +1,30 @@
 {{- /*
-  ORDERED TEARDOWN (pre-delete Job hook). Fixes the reverse-dependency teardown wedge: the
-  app compositions (portal, frontend, …) embed CRs of kinds provided by the *-crd compositions
-  (portal's widget/User/RESTAction CRs <- frontend-crd/authn-crd/snowplow-crd). If the cascade
-  deletes a *-crd composition (-> its CRDs) before the app finishes uninstalling, helm can't
-  delete the orphaned CRs -> "failed to delete release" -> the release wedges and its helm-owned
-  resources (e.g. the portal's demo-system namespace + devs-* cluster-roles) leak.
+  HOOK 1 — intra-tree reverse-dependency teardown (composition-release pre-delete).
 
-  This pre-delete hook (composition mode only; runs on `helm uninstall` of the Installer
-  composition's release) deletes the APP compositions (every composition.krateo.io kind whose
-  CRD does NOT end in `crds` — i.e. the consumers, not the CRD providers) CONCURRENTLY and waits
-  for them to drain, WHILE the *-crd CompositionDefinitions/CRDs + their cdcs are still alive. So
-  each app uninstalls cleanly (its CRs' CRDs present) -> demo-system etc. auto-delete. helm then
-  deletes the CompositionDefinitions and core-provider GCs the *-crd CRDs (the app CRs are gone,
-  no orphans). Concurrent + bounded so it finishes inside the cdc's helm-uninstall timeout.
+  Problem: the app compositions embed CRs of kinds provided by OTHER compositions —
+    - portal's widget/User/RESTAction CRs   <- frontend-crd / authn-crd / snowplow-crd
+    - hyperdx-provider's RestDefinition      <- oasgen-provider (clears its finalizer)
+  If a provider composition (or its controller) is torn down before its consumers finish
+  draining, the orphaned CRs' finalizers can never clear -> the release wedges and its
+  helm-owned resources (the portal's demo-system namespace, devs-* cluster-roles, the
+  hyperdx RestDefinition) leak.
 
-  Runs as the cdc's own SA (installers-v<ver>); self-bootstrap grants it jobs + composition.* .
-  Best-effort (set +e / exit 0) so it never blocks the uninstall.
+  Fix (helm construct + reconciliation loop, NO controller change): helm runs ALL
+  pre-delete hooks to completion BEFORE deleting any normal resource — so every component
+  controller is still alive here. We delete the component Composition CRs in the EXACT
+  REVERSE of the dependency-ordered `.Values.components` list (consumers before the
+  providers they depend on), waiting for each kind to fully drain before the next. Because
+  every controller is alive throughout, each CR's finalizer clears in order: portal drains
+  (demo-system auto-deletes) before frontend-crd/authn-crd/snowplow-crd; hyperdx-provider's
+  RestDefinition drains (oasgen-provider clears its finalizer) before oasgen-provider. helm
+  then deletes the CompositionDefinitions and core-provider GCs the generated CRDs — no
+  orphans, because every consuming CR is already gone.
+
+  Order comes from the chart (reverse of the topologically-sorted components list); the
+  plural (e.g. KrateoSseProxy -> krateosseproxies, NOT ...proxys) is resolved at RUNTIME
+  from the live CRD by matching spec.names.kind + group, so irregular pluralization can't
+  drift. Runs as the cdc SA (installers-v<ver>); self-bootstrap grants it composition.*
+  delete + apiextensions read. Best-effort (set +e / exit 0) so it never blocks uninstall.
 */}}
 {{- if not .Values.bootstrap.coreProvider.enabled }}
 {{- $cdcSA := printf "installers-v%s" (.Chart.Version | toString | replace "." "-") }}
@@ -30,7 +39,7 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: 0
-  activeDeadlineSeconds: 240
+  activeDeadlineSeconds: 600
   template:
     spec:
       serviceAccountName: {{ $cdcSA }}
@@ -43,18 +52,27 @@ spec:
             - |
               set +e
               NS={{ .Values.namespaces.krateo }}
-              # APP composition kinds = composition.krateo.io CRDs that DON'T end in 'crds'
-              # (those are the CRD-provider compositions) and aren't the Installer itself.
-              apps=$(kubectl get crd 2>/dev/null | grep 'composition.krateo.io' | grep -vE 'crds\.composition\.krateo\.io|^installers' | awk '{print $1}')
-              echo "pre-delete: deleting APP compositions (consumers) concurrently, waiting, while the *-crd CRDs + cdcs are still alive"
-              for k in $apps; do kubectl delete "$k" --all -n $NS --wait=false 2>/dev/null; done
-              for i in $(seq 1 36); do
-                left=0
-                for k in $apps; do left=$((left + $(kubectl get "$k" -n $NS --no-headers 2>/dev/null | wc -l | tr -d ' '))); done
-                [ "$left" = "0" ] && { echo "all app compositions uninstalled cleanly"; break; }
-                echo "  ...$left app compositions still uninstalling"
-                sleep 5
+              # Component Kinds in REVERSE dependency order (consumers first). Rendered from
+              # the chart's dependency-sorted components list, so the order can never drift
+              # from the install order. Disabled/absent kinds resolve to nothing and skip.
+              KINDS="{{- range $c := reverse .Values.components }}{{ $c.kind }} {{ end }}"
+              echo "pre-delete: draining component compositions in reverse-dependency order, controllers still alive"
+              for kind in $KINDS; do
+                # resolve Kind -> live CRD plural (composition.krateo.io group only)
+                res=$(kubectl get crd --no-headers \
+                      -o custom-columns=N:.metadata.name,K:.spec.names.kind,G:.spec.group 2>/dev/null \
+                      | awk -v k="$kind" '$2==k && $3=="composition.krateo.io"{print $1}')
+                [ -z "$res" ] && continue
+                n=$(kubectl get "$res" -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+                [ "$n" = "0" ] && continue
+                echo "  deleting $res ($n) and waiting for drain"
+                kubectl delete "$res" --all -n "$NS" --wait=false 2>/dev/null
+                for i in $(seq 1 24); do
+                  left=$(kubectl get "$res" -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+                  [ "$left" = "0" ] && { echo "    $res drained"; break; }
+                  sleep 5
+                done
               done
-              echo "pre-delete done — helm now deletes the CompositionDefinitions; core-provider GCs the *-crd CRDs (app CRs already gone, no orphans)"
+              echo "pre-delete done — helm deletes the CompositionDefinitions; core-provider GCs the generated CRDs (no orphans)"
               exit 0
 {{- end }}
