@@ -34,12 +34,19 @@ kind: ClusterRole
 metadata:
   name: installer-self-bootstrap
 rules:
+  # delete/patch added for the pre-delete self-teardown hook (clears CRDs + stuck finalizers)
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list", "watch", "delete", "patch"]
   - apiGroups: ["composition.krateo.io"]
-    resources: ["installers"]
-    verbs: ["get", "list", "watch", "create", "patch", "update"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+  - apiGroups: ["core.krateo.io"]
+    resources: ["compositiondefinitions"]
+    verbs: ["get", "list", "delete", "patch"]
+  - apiGroups: ["ogen.krateo.io"]
+    resources: ["restdefinitions"]
+    verbs: ["get", "list", "delete", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -153,4 +160,72 @@ spec:
               # every reconcile (NewCachedClients -> Invalidate) and inst.crdExists lists CRD
               # objects live, so Pass B picks up the component CRDs on the cdc's next reconcile.
               echo "done — Pass A + Pass B advance on the cdc reconcile loop"
+---
+{{- /* SELF-TEARDOWN — symmetric to the post-install self-bootstrap hook above. A single
+       `helm uninstall installer` now tears everything down: this pre-delete hook runs WHILE
+       core-provider is still alive and dismantles the composition tree first (which `helm
+       uninstall` alone can't — the Installer + component compositions are owned by
+       core-provider, not by this helm release). Order matters (learned the hard way):
+         1. delete the Installer composition -> core-provider cascades to the component
+            compositions -> each cdc helm-uninstalls its release -> the helm-templates-owned
+            APP CRDs (authn.krateo.io and the templates.krateo.io widgets + restactions) deleted;
+         2. clear oasgen finalizers on RestDefinitions early (they hang once oasgen-provider
+            goes) so the namespace can finalize;
+         3. force-clear stuck composition finalizers (wedged helm uninstalls) after a grace
+            period so nothing hangs;
+         4. delete CompositionDefinitions, then sweep the OPERATOR-GENERATED CRDs
+            (composition/hyperdx/ogen) — these are never auto-GC'd, so they're the one thing
+            that genuinely needs an explicit delete.
+       Best-effort: `set +e` + `exit 0` so a partial failure never blocks the uninstall.
+       (helm leaves the namespace itself — standard behavior; delete it separately if wanted.) */}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: installer-self-teardown
+  namespace: {{ .Values.namespaces.krateo }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      serviceAccountName: installer-self-bootstrap
+      restartPolicy: Never
+      containers:
+        - name: teardown
+          image: alpine/k8s:1.31.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set +e
+              NS={{ .Values.namespaces.krateo }}
+              echo "self-teardown: delete the Installer composition (cascade -> compositions -> cdc helm-uninstall -> app CRDs)"
+              kubectl delete installers.composition.krateo.io --all -n $NS --wait=false
+              echo "clear oasgen RestDefinition finalizers (they hang once oasgen-provider is gone)"
+              for r in $(kubectl get restdefinitions.ogen.krateo.io -n $NS -o name 2>/dev/null); do kubectl patch "$r" -n $NS --type=merge -p '{"metadata":{"finalizers":null}}'; done
+              kubectl delete restdefinitions.ogen.krateo.io --all -n $NS --wait=false 2>/dev/null
+              echo "wait for the cascade to drain component compositions; force-clear stragglers after a grace period"
+              for i in $(seq 1 24); do
+                left=0
+                for k in $(kubectl get crd 2>/dev/null | grep 'composition.krateo.io' | grep -v '^installers' | awk '{print $1}'); do
+                  n=$(kubectl get "$k" -n $NS --no-headers 2>/dev/null | wc -l); left=$((left+n))
+                  if [ "$i" -gt 6 ] && [ "$n" -gt 0 ]; then
+                    for c in $(kubectl get "$k" -n $NS -o name 2>/dev/null); do kubectl patch "$c" -n $NS --type=merge -p '{"metadata":{"finalizers":null}}'; done
+                  fi
+                done
+                [ "$left" -le 0 ] && break
+                echo "  ...$left component compositions still finalizing"
+                sleep 5
+              done
+              echo "delete CompositionDefinitions + clear finalizers (core-provider GCs generated CRDs)"
+              for c in $(kubectl get installers.composition.krateo.io -n $NS -o name 2>/dev/null); do kubectl patch "$c" -n $NS --type=merge -p '{"metadata":{"finalizers":null}}'; done
+              kubectl delete compositiondefinitions.core.krateo.io --all -n $NS --wait=false
+              for c in $(kubectl get compositiondefinitions.core.krateo.io -n $NS -o name 2>/dev/null); do kubectl patch "$c" -n $NS --type=merge -p '{"metadata":{"finalizers":null}}'; done
+              echo "sweep operator-generated CRDs the cascade can't remove (composition/hyperdx/ogen + app groups)"
+              kubectl get crd 2>/dev/null | grep -iE 'composition.krateo.io|hyperdx.krateo.io|ogen.krateo.io|templates.krateo.io|authn.krateo.io' | awk '{print $1}' | xargs -r kubectl delete crd --wait=false
+              echo "self-teardown done — helm now removes the bootstrap subcharts (core-provider, etc.)"
+              exit 0
 {{- end }}
