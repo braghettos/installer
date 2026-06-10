@@ -74,6 +74,16 @@ rules:
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get", "list", "watch"]
+  # jobs + composition.krateo.io/*: for the pre-delete ORDERED-TEARDOWN hook Job
+  # (ordered-teardown.yaml), which runs as this cdc SA and deletes the APP compositions before
+  # helm removes the *-crd CompositionDefinitions. chart-inspector doesn't scan hooks, so grant
+  # the Job-management + composition-delete verbs here (admin side).
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["composition.krateo.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
