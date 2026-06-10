@@ -161,7 +161,7 @@ components:
     repo: oci://ghcr.io/braghettos/krateo
   - name: snowplow-crd
     kind: SnowplowCrd
-    version: "0.30.258"
+    version: "0.30.259"
     deps: []
     tier: platform
     feature: composableportal
@@ -181,7 +181,7 @@ components:
       - AUTHN_API_BASE_URL
   - name: snowplow
     kind: Snowplow
-    version: "0.30.258"
+    version: "0.30.259"
     deps:
       - snowplow-crd
     tier: platform
