@@ -41,9 +41,15 @@ rules:
   - apiGroups: ["composition.krateo.io"]
     resources: ["installers"]
     verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
-  # compositiondefinitions read: pre-delete HOOK 2 polls these to detect full tree drain.
+  # compositiondefinitions: pre-delete HOOK 2 deletes the top-level `installer` one (core-provider
+  # cascades the rest) and polls these to detect full drain.
   - apiGroups: ["core.krateo.io"]
     resources: ["compositiondefinitions"]
+    verbs: ["get", "list", "watch", "delete"]
+  # restdefinitions read: pre-delete HOOK 2 polls these so it doesn't return (and let helm kill
+  # core-provider) while an ogen RestDefinition is still terminating.
+  - apiGroups: ["ogen.krateo.io"]
+    resources: ["restdefinitions"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -89,6 +95,11 @@ rules:
   - apiGroups: ["composition.krateo.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch", "delete"]
+  # restdefinitions read: HOOK 1's per-kind drain waits for ogen RestDefinitions to clear before
+  # deleting oasgen-provider (so oasgen-provider outlives the RestDefinitions it finalizes).
+  - apiGroups: ["ogen.krateo.io"]
+    resources: ["restdefinitions"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
