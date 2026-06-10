@@ -45,12 +45,7 @@ dependencies:
     version: "0.13.0"
     repository: https://mongodb.github.io/helm-charts
     condition: bootstrap.mongodbOperator.enabled
-  # kagent (agentic platform): CRDs + operator (bundles kmcp + built-in tool servers).
-  - name: kagent-crds
-    version: "0.9.6"
-    repository: oci://ghcr.io/braghettos/krateo
-    condition: bootstrap.kagent.enabled
-  - name: kagent
-    version: "0.9.6"
-    repository: oci://ghcr.io/kagent-dev/kagent/helm
-    condition: bootstrap.kagent.enabled
+  # kagent (agentic platform) is NO LONGER a bootstrap subchart — it is installed as two
+  # compositions (kagent-crds -> kagent, see values.yaml components), wrapping the unforked
+  # upstream charts. CRD establishment is handled by composition dependency ordering instead
+  # of a crds/ pre-install, which also makes teardown clean (helm-templates/-owned CRDs).
