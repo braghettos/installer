@@ -58,6 +58,21 @@ spec:
               KINDS="{{- range $c := reverse .Values.components }}{{ $c.kind }} {{ end }}"
               echo "pre-delete: draining component compositions in reverse-dependency order, controllers still alive"
               for kind in $KINDS; do
+                # OasgenProvider holds the finalizer on ogen RestDefinitions (spawned by the
+                # hyperdx-provider composition, already deleted earlier in this reverse order).
+                # A composition CR reports gone while its RestDefinitions are still terminating,
+                # so gate ONLY oasgen-provider's deletion on RestDefinitions reaching zero — it
+                # must outlive them or their finalizer orphans. (Coupling this into every kind's
+                # drain instead would stall every kind before hyperdx-provider, since
+                # RestDefinitions exist until hyperdx-provider drains.)
+                if [ "$kind" = "OasgenProvider" ]; then
+                  echo "  gating: waiting for ogen RestDefinitions to clear before deleting oasgen-provider"
+                  for i in $(seq 1 24); do
+                    rd=$(kubectl get restdefinitions.ogen.krateo.io -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+                    [ "${rd:-0}" = "0" ] && { echo "    RestDefinitions cleared"; break; }
+                    sleep 5
+                  done
+                fi
                 # resolve Kind -> live CRD plural (composition.krateo.io group only)
                 res=$(kubectl get crd --no-headers \
                       -o custom-columns=N:.metadata.name,K:.spec.names.kind,G:.spec.group 2>/dev/null \
@@ -67,16 +82,9 @@ spec:
                 [ "$n" = "0" ] && continue
                 echo "  deleting $res ($n) and waiting for drain"
                 kubectl delete "$res" --all -n "$NS" --wait=false 2>/dev/null
-                # Wait for the kind to drain AND for ogen RestDefinitions to clear. RestDefinitions
-                # are secondary resources a composition (hyperdx-provider) spawns, whose finalizer is
-                # held by oasgen-provider (the NEXT kind in reverse order). The composition CR can
-                # report gone while its RestDefinitions are still terminating, so we must not move on
-                # to oasgen-provider until they clear, or their finalizer orphans. Cheap no-op for any
-                # kind that produces no RestDefinitions (count already 0).
                 for i in $(seq 1 24); do
                   left=$(kubectl get "$res" -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-                  rest=$(kubectl get restdefinitions.ogen.krateo.io -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-                  [ "$left" = "0" ] && [ "${rest:-0}" = "0" ] && { echo "    $res drained"; break; }
+                  [ "$left" = "0" ] && { echo "    $res drained"; break; }
                   sleep 5
                 done
               done
