@@ -70,9 +70,19 @@ metadata:
   name: installers-lbip-services
   namespace: {{ .Values.namespaces.krateo }}
 rules:
+  # services: for compositions.yaml inst.lbip (lookup "v1" "Service") wiring the frontend config.
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get", "list", "watch"]
+  # compositiondefinitions create/delete/patch: the Pass A CompositionDefinitions are helm
+  # pre-install/pre-delete HOOKS (ordered teardown, definitions.yaml). chart-inspector only
+  # scans the normal manifest, NOT hooks, so it never grants the cdc SA these verbs and the
+  # hook fails ("cannot delete resource compositiondefinitions" on before-hook-creation). Grant
+  # them here (admin side) so the cdc can create them on install and delete them in weight order
+  # on uninstall.
+  - apiGroups: ["core.krateo.io"]
+    resources: ["compositiondefinitions"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
