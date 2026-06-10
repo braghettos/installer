@@ -40,9 +40,6 @@ rules:
   - apiGroups: ["composition.krateo.io"]
     resources: ["installers"]
     verbs: ["get", "list", "watch", "create", "patch", "update"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "list", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -111,21 +108,10 @@ spec:
               until kubectl get crd installers.composition.krateo.io >/dev/null 2>&1; do sleep 5; done
               # wait until the CRD actually serves this chart's version
               until kubectl get installers.composition.krateo.io -n {{ .Values.namespaces.krateo }} >/dev/null 2>&1; do sleep 5; done
-              echo "applying Installer CR (self-reconcile takes over the rollout)"
+              echo "applying Installer CR — core-provider's cdc self-reconciles the rollout"
               kubectl apply -f /cr/installer.yaml
-              # The Installer cdc renders Pass A (registers component definitions ->
-              # core-provider generates their CRDs). The cdc caches API discovery at
-              # startup, so it won't see those new CRDs for Pass B. Wait for Pass A to
-              # generate at least one component CRD, then restart the Installer cdc once
-              # to refresh its discovery cache so Pass B emits the component compositions.
-              echo "waiting for Pass A to generate component CRDs..."
-              n={{ .Values.namespaces.krateo }}
-              for i in $(seq 1 60); do
-                kubectl get crd 2>/dev/null | grep -qE '(krateoclickstacks|otelcollectordeployments|krateosseproxies)\.composition\.krateo\.io' && break
-                sleep 5
-              done
-              cdc=$(kubectl get deploy -n "$n" -o name 2>/dev/null | grep -E 'installers-v.*-controller' | head -1)
-              echo "refreshing Installer cdc discovery cache: $cdc"
-              [ -n "$cdc" ] && kubectl rollout restart "$cdc" -n "$n" || true
-              echo "done — self-reconcile now advances Pass B automatically"
+              # No cdc restart needed: composition-dynamic-controller rebuilds its discovery
+              # every reconcile (NewCachedClients -> Invalidate) and inst.crdExists lists CRD
+              # objects live, so Pass B picks up the component CRDs on the cdc's next reconcile.
+              echo "done — Pass A + Pass B advance on the cdc reconcile loop"
 {{- end }}
