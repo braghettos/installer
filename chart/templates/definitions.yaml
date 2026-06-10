@@ -1,8 +1,23 @@
 {{/* Pass A: register a CompositionDefinition per (feature-enabled) component.
      Composition mode only — the bootstrap helm install registers the Installer composition
-     (self-bootstrap.yaml); core-provider then re-renders this in composition mode. */}}
+     (self-bootstrap.yaml); core-provider then re-renders this in composition mode.
+
+     ORDERED TEARDOWN via helm hook-weights (no Job): each CompositionDefinition is a
+     `pre-install,pre-delete` hook with `hook-delete-policy: before-hook-creation`, so it is
+     created on install, PERSISTS, survives reconciles (helm upgrades) untouched (it is NOT a
+     pre-upgrade hook -> no churn), and on `helm uninstall` of the Installer composition's
+     release helm DELETES the hooks in ascending hook-weight order. The component list is in
+     dependency order (deps before dependents), so weight = -index gives REVERSE-dependency
+     deletion: consumers (portal) deleted before the things whose CRDs they use (frontend-crd/
+     authn-crd/snowplow-crd). core-provider's CompositionDefinition Delete deletes that
+     component's composition AND waits before removing its CRD, so each component's CRs are
+     gone before the next (CRD-providing) CompositionDefinition is deleted — no orphaned-CR
+     "failed to delete release" wedge (e.g. the portal's widget/User/RESTAction CRs).
+     Trade-off: as a non-pre-upgrade hook, a component VERSION bump pushed via chart values
+     won't propagate to an existing CompositionDefinition through a reconcile/upgrade — a
+     deliberate version change requires recreating it. */}}
 {{- if and .Values.installDefinitions (not .Values.bootstrap.coreProvider.enabled) }}
-{{- range $c := .Values.components }}
+{{- range $i, $c := .Values.components }}
 {{- if eq (include "inst.featureEnabled" (list $ $c.feature)) "true" }}
 ---
 apiVersion: core.krateo.io/v1alpha1
@@ -13,6 +28,12 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: krateo-installer
     krateo.io/tier: {{ $c.tier }}
+  annotations:
+    # weight = -index: components later in the (dependency-ordered) list get lower weights and
+    # are deleted FIRST on uninstall -> reverse-dependency teardown order.
+    "helm.sh/hook": pre-install,pre-delete
+    "helm.sh/hook-weight": "{{ sub 0 $i }}"
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   chart:
     url: {{ default $.Values.ociRepo $c.repo }}/{{ $c.name }}
