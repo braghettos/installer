@@ -50,14 +50,29 @@ default). Disable any operator already present on the cluster with `--set bootst
 
 ### kind (local)
 
+kind has no cloud load balancer, so the browser-facing components are exposed as **NodePort** and
+reached directly through kind `extraPortMappings` — no `port-forward`. Create the cluster with the
+host ports the portal expects: the frontend's `config.json` defaults point the browser at
+`localhost:8081` / `localhost:8082` for snowplow / authn, so map those plus `8080` for the portal:
+
 ```bash
-kind create cluster --name krateo-installer
+cat > kind-krateo.yaml <<'EOF'
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080   # frontend nodePort -> portal UI
+        hostPort: 8080
+      - containerPort: 30081   # snowplow nodePort
+        hostPort: 8081
+      - containerPort: 30082   # authn nodePort
+        hostPort: 8082
+EOF
+kind create cluster --name krateo-installer --config kind-krateo.yaml
 ```
 
-kind has no cloud load balancer, so browser-facing components use **NodePort** Services
-(`exposure.type=NodePort`, the chart default) and you reach the portal via `kubectl port-forward`.
-Install in step 1 with `--set exposure.type=NodePort` (see the kind variant there), then jump to
-[Access the portal](#2-access-the-portal).
+Then install (step 1) with the kind variant, which pins those three Services to the mapped nodePorts.
 
 > The full observability backends (ClickHouse + HyperDX + MongoDB + kagent) are heavy. On a
 > resource-constrained kind, install with `observability`/`observabilityAgents` off (the portal,
@@ -92,10 +107,13 @@ helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.5
 ```
 
 ```bash
-# kind / local — NodePort Services (reach the portal via port-forward, step 2):
+# kind / local — NodePort Services pinned to the host-mapped nodePorts (step 0):
 helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
+  --set componentValues.frontend.service.nodePort=30080 \
+  --set componentValues.snowplow.service.nodePort=30081 \
+  --set componentValues.authn.service.nodePort=30082 \
   --wait
 ```
 
@@ -107,12 +125,15 @@ That's it. The install:
    core-provider to generate the `Installer` CRD, then applies the `Installer` CR;
 3. core-provider reconciles that CR and rolls out every component by dependency order.
 
-**Light install (portal + events only — good for constrained kind, NodePort):**
+**Light install (portal + login only — good for constrained kind, NodePort):**
 
 ```bash
 helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
+  --set componentValues.frontend.service.nodePort=30080 \
+  --set componentValues.snowplow.service.nodePort=30081 \
+  --set componentValues.authn.service.nodePort=30082 \
   --set features.observability=false \
   --set features.observabilityAgents=false \
   --set bootstrap.clickhouseOperator.enabled=false \
@@ -152,12 +173,15 @@ kubectl -n krateo-system get secret admin-password -o jsonpath='{.data.password}
 # user: admin
 ```
 
-**kind / NodePort — reach the portal via port-forward:**
+**kind / NodePort — open the portal directly (ports mapped at cluster creation):**
 
-```bash
-FE=$(kubectl -n krateo-system get svc -o name | grep -i '/frontend-' | head -1)
-kubectl -n krateo-system port-forward "$FE" 18080:8080   # then open http://localhost:18080
-```
+Open **http://localhost:8080** and log in as `admin`. The browser reaches snowplow/authn at the
+mapped `localhost:8081` / `localhost:8082` that the frontend's `config.json` already points to —
+no `port-forward`.
+
+> The events bell's `sse-proxy` has no pinnable nodePort, so on a **full** install the bell is
+> reachable only on a LoadBalancer/cloud install — or port-forward it on demand:
+> `kubectl -n krateo-system port-forward svc/$(kubectl -n krateo-system get svc -o name | grep -i sse-proxy | head -1 | cut -d/ -f2) 8083:8080`.
 
 **GKE / LoadBalancer — the frontend's external IP:**
 
