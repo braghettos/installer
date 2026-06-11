@@ -12,7 +12,7 @@ itself as an `Installer` composition, and then self-reconciles: it registers eac
 - **Kind:** `Installer` (`composition.krateo.io`).
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.52 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
   -n krateo-system --create-namespace --set exposure.type=LoadBalancer --wait
 # tear the whole platform down (ordered, finalizer-safe, no manual cleanup):
 helm uninstall installer -n krateo-system
@@ -172,3 +172,16 @@ compositiondefinition.yaml        install the umbrella itself as a CompositionDe
 Pushing a semver tag triggers `.github/workflows/release-oci.yaml`, which packages and pushes
 `chart/` to `oci://ghcr.io/braghettos/charts/installer:<tag>` (`CHART_VERSION` is substituted
 from the tag). Component charts live in their own `braghettos/*` repos and publish the same way.
+
+**When you change a component's pinned version** (in `chart/values.yaml`), regenerate the typed
+`componentValues` schema before tagging:
+
+```bash
+python3 hack/gen-componentvalues-schema.py chart   # pulls each pinned component chart's
+                                                   # values.schema.json into componentValues.<name>
+```
+
+The installer version is the unit that manages component **GVRs**: a component's version sets its
+Composition's served apiVersion + schema, and `values.schema.json` types `componentValues` against
+those exact schemas — so a new component GVR ships as a new installer version with a regenerated
+schema, never an in-place edit of a running install.

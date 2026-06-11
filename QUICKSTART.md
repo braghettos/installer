@@ -14,7 +14,7 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 
 | chart | version |
 |---|---|
-| **installer (umbrella)** | **`0.2.52`** |
+| **installer (umbrella)** | **`0.2.53`** |
 | core-provider / -crd (bootstrap subchart) | `0.35.4` |
 | cert-manager / clickhouse-operator / mongodb community-operator (bootstrap subcharts) | `v1.20.2` / `0.0.5` / `0.13.0` |
 | authn / -crd | `0.22.2` |
@@ -100,7 +100,7 @@ Pick `exposure.type` for your cluster: `LoadBalancer` on a cloud cluster (GKE, e
 
 ```bash
 # GKE / cloud — external LoadBalancer IPs:
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.52 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
   -n krateo-system --create-namespace \
   --set exposure.type=LoadBalancer \
   --wait
@@ -108,7 +108,7 @@ helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.5
 
 ```bash
 # kind / local — NodePort Services pinned to the host-mapped nodePorts (step 0):
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.52 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -128,7 +128,7 @@ That's it. The install:
 **Light install (portal + login only — good for constrained kind, NodePort):**
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.52 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -215,33 +215,27 @@ umbrella self-applies. Schema: `chart/values.schema.json`.
 
 ## Changing component versions
 
-The live `Installer` composition **ships with the full `components` list in its spec** (each
-component's pinned `version`, `repo`, and `deps`). It is the **source of truth** for the component
-set and versions, so you change a version by editing **one entry in place**:
+**The installer version is the unit that manages component versions.** A component's version
+determines its Composition's **served apiVersion** (its GVR — e.g. portal `1.2.2` →
+`composition.krateo.io/v1-2-2`) and its **schema**. Because the installer's `values.schema.json`
+is regenerated per release to **type `componentValues` against those exact schemas**, a component
+version change is a **GVR + schema change that ships as a new installer version** — not an in-place
+edit of a running one.
 
-```bash
-kubectl edit installers.composition.krateo.io installer -n krateo-system
-# find the portal entry under spec.components and bump its version:
-#   - name: portal
-#     version: "1.2.3"     # was 1.2.2
-```
+To bump a component (e.g. portal):
 
-On save, core-provider re-renders: Pass A updates the `portal` CompositionDefinition's
-`chart.version`, regenerates the CRD if needed, and the portal cdc rolls the new chart. No other
-component is touched.
+1. edit `components[].version` for `portal` in `chart/values.yaml`,
+2. re-run `python3 hack/gen-componentvalues-schema.py chart` to regenerate the typed schema for the
+   new component GVRs,
+3. release a new installer chart version (push a semver tag),
+4. `helm upgrade installer oci://ghcr.io/braghettos/charts/installer --version <new> -n krateo-system`.
 
-> **Why edit the whole-list-in-the-CR and not a one-line override?** Helm **replaces list
-> overrides wholesale** (it deep-merges maps but never merges arrays element-by-element), so a
-> partial `components:` would prune every component you didn't include. Shipping the complete list
-> in the CR is what makes a single in-place edit safe.
-
-**Caveat — the CR shadows the chart.** Because the component list lives in the CR, a
-`helm upgrade installer --version <new>` **does not** auto-change component versions or add/remove
-components (the baked list shadows the new chart's `values.yaml`). To adopt a newer chart's
-component set, re-apply the self-bootstrap CR from that chart version (or reinstall). And do
-**not** patch a single component's `CompositionDefinition` `spec.chart.version` directly — that
-leaves a stale render and a controller with the wrong bootstrap RBAC; edit the `Installer`
-composition instead.
+> **Do not edit `components[].version` in the live `Installer` CR.** It would move the Composition
+> to a GVR/schema the installer's `values.schema.json` doesn't type (your `componentValues` would
+> be validated against the old schema), and the stored Composition CR would have to convert across
+> GVRs. Version changes belong to a new installer version. (Likewise, don't patch a single
+> `CompositionDefinition.spec.chart.version` directly — that leaves a stale render and the wrong
+> bootstrap RBAC.)
 
 ## Customizing a component's spec
 
@@ -272,6 +266,16 @@ installer's `service.type`, set `resources`/`replicaCount`, etc., without breaki
 portal's URL wiring. (Same merge semantics as `--set`: you cannot override the four wired fields,
 only extend around them.)
 
+`componentValues` is **strictly typed**: `values.schema.json` embeds each pinned component's own
+chart schema under `componentValues.<name>`, so `helm` validates your overrides against the
+component's **real** Composition schema and rejects typos and unknown components
+(`componentValues.snowplow.replicaCont` → `additional property not allowed`). That typing is
+**version-bound** — it's regenerated per installer release by
+[`hack/gen-componentvalues-schema.py`](./hack/gen-componentvalues-schema.py), which pulls each
+pinned component chart's `values.schema.json` and embeds it. This is why a component's **GVR/schema
+change ships as a new installer version** (with a regenerated schema), not as an in-place edit of a
+running one — see [Changing component versions](#changing-component-versions).
+
 ## Private (authenticated) registries
 
 If the component charts live in a **private** OCI registry, core-provider needs credentials to pull
@@ -289,7 +293,7 @@ kubectl -n krateo-system create secret generic ghcr-pat --from-literal=token=<TO
 helm registry login ghcr.io -u <USER> -p <TOKEN>
 
 # 3. Install, pointing registryAuth at that Secret (namespace omitted -> defaults to krateo-system):
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.52 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
   -n krateo-system \
   --set exposure.type=LoadBalancer \
   --set registryAuth.enabled=true \
