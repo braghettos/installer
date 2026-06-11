@@ -27,8 +27,7 @@ bootstrap:
   kagent:
     enabled: true
 # Subchart value passthroughs (only used when the matching bootstrap flag is enabled).
-core-provider: {}
-core-provider-crd: {}
+# core-provider / core-provider-crd take no overrides by default (omit = chart defaults).
 cert-manager:
   crds:
     enabled: true     # install cert-manager CRDs with the operator
@@ -39,8 +38,7 @@ clickhouse-operator-helm:
     enable: false
   webhook:
     enable: false
-community-operator: {}
-kagent-crds: {}
+# community-operator / kagent-crds take no overrides by default (omit = chart defaults).
 # NOTE: kagent is no longer configured here as a bootstrap subchart. It is installed as two
 # compositions — `kagent-crds` then `kagent` (see the components list). The sample-agent
 # disabling now lives in the kagent wrapper chart's own default values (braghettos/kagent).
@@ -106,10 +104,12 @@ vertexAI:
 # wins on any leaf conflict — so you can safely add anything else here (e.g.
 # resources, replicaCount, service.annotations) and edit it in place on the live
 # Installer composition; a direct kubectl edit of the component CR reverts.
+# Default: unset (treated as empty). Example:
 #   componentValues:
-#     snowplow: { replicaCount: 2 }
-#     portal:   { someChartValue: foo }
-componentValues: {}
+#     snowplow:
+#       replicaCount: 2
+#     portal:
+#       someChartValue: foo
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -128,27 +128,23 @@ components:
   - name: authn-crd
     kind: AuthnCrd
     version: "0.22.2"
-    deps: []
     tier: platform
     feature: composableportal
     repo: oci://ghcr.io/braghettos/krateo
   - name: oasgen-provider-crd
     kind: OasgenProviderCrd
     version: "0.9.0"
-    deps: []
     tier: platform
     feature: oasgenprovider
   - name: frontend-crd
     kind: FrontendCrd
     version: "1.0.25"
-    deps: []
     tier: platform
     feature: composableportal
     repo: oci://ghcr.io/braghettos/krateo
   - name: snowplow-crd
     kind: SnowplowCrd
     version: "0.20.6"
-    deps: []
     tier: platform
     feature: composableportal
     repo: oci://ghcr.io/braghettos/krateo
@@ -230,7 +226,6 @@ components:
   - name: krateo-clickstack
     kind: KrateoClickstack
     version: "0.1.2"
-    deps: []
     tier: observability
     feature: observability
     repo: oci://ghcr.io/braghettos/krateo
@@ -284,7 +279,6 @@ components:
   - name: kagent-crds
     kind: KagentCrds
     version: "0.9.9"
-    deps: []
     tier: observability
     feature: observabilityAgents
     repo: oci://ghcr.io/braghettos/krateo

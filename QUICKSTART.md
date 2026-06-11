@@ -61,13 +61,21 @@ BASE=$(echo "$SUBNET" | cut -d. -f1-2)
 kubectl apply -f - <<EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
-metadata: { name: krateo-pool, namespace: metallb-system }
-spec: { addresses: ["${BASE}.255.200-${BASE}.255.250"] }
+metadata:
+  name: krateo-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - "${BASE}.255.200-${BASE}.255.250"
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
-metadata: { name: krateo-l2, namespace: metallb-system }
-spec: { ipAddressPools: [krateo-pool] }
+metadata:
+  name: krateo-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - krateo-pool
 EOF
 ```
 
@@ -180,7 +188,7 @@ umbrella self-applies. Schema: `chart/values.schema.json`.
 | `vertexAI.enabled` / `projectID` / `location` | `true` / — | autopilot LLM via Vertex AI ADC |
 | `secrets.geminiApiKey` | `gemini-api-key` | secret name used when `vertexAI.enabled=false` |
 | `hitlApproval` | `true` | human-in-the-loop approval for the autopilot |
-| `componentValues.<name>` | `{}` | per-component spec overrides, deep-merged (see [Customizing a component's spec](#customizing-a-components-spec)) |
+| `componentValues.<name>` | unset | per-component spec overrides, deep-merged (see [Customizing a component's spec](#customizing-a-components-spec)) |
 | `namespaces.krateo` / `.clickhouse` | `krateo-system` | everything runs in one namespace |
 | `bootstrap.<engine\|certManager\|clickhouseOperator\|mongodbOperator\|kagent>.enabled` | `true` | install that prerequisite as a subchart; set `false` if already present |
 

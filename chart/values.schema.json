@@ -301,7 +301,6 @@
           "name",
           "kind",
           "version",
-          "deps",
           "tier"
         ]
       }
