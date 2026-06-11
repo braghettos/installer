@@ -1,0 +1,26 @@
+# GeminiVertexAI ModelConfig for the krateo-installer-expert agent.
+#
+# Uses Application Default Credentials (ADC) — no API key — matching how the Krateo
+# installer's own autopilot authenticates (vertexAI.enabled=true). On GKE that is
+# Workload Identity: the kagent controller pod's ServiceAccount must map to a GCP SA
+# with roles/aiplatform.user, and the Vertex AI API must be enabled on the project.
+# spec.model + geminiVertexAI.{projectID,location} are the only required fields.
+#
+# Not on Workload Identity? Add an apiKeySecret + apiKeySecretKey pointing at a Secret
+# holding a service-account JSON key (see README) — that's what the kagent reference
+# blueprint does. Set projectID/location to match your installer's vertexAI values.
+---
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: vertex-gemini
+  namespace: krateo-system
+  labels:
+    app.kubernetes.io/name: vertex-gemini
+    app.kubernetes.io/part-of: krateo-installer
+spec:
+  provider: GeminiVertexAI
+  model: gemini-2.5-pro
+  geminiVertexAI:
+    projectID: neon-481711
+    location: us-central1

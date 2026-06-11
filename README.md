@@ -10,6 +10,7 @@ itself as an `Installer` composition, and then self-reconciles: it registers eac
 - **Chart:** `oci://ghcr.io/braghettos/charts/installer`
 - **Install guide:** see **[QUICKSTART.md](./QUICKSTART.md)** — kind (local) and managed GKE.
 - **Kind:** `Installer` (`composition.krateo.io`).
+- **Expert agent:** a kagent `Agent` that knows this blueprint — see **[kagent/](./kagent)**.
 
 ```bash
 helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
