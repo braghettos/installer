@@ -8,7 +8,7 @@ itself as an `Installer` composition, and then self-reconciles: it registers eac
 (peer LoadBalancer IPs) by reconciliation — no prerequisite scripts, no post-install patching.
 
 - **Chart:** `oci://ghcr.io/braghettos/charts/installer`
-- **Install guide:** see **[QUICKSTART.md](./QUICKSTART.md)** — kind (with MetalLB) and managed GKE.
+- **Install guide:** see **[QUICKSTART.md](./QUICKSTART.md)** — kind (local) and managed GKE.
 - **Kind:** `Installer` (`composition.krateo.io`).
 
 ```bash

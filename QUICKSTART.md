@@ -48,36 +48,15 @@ default). Disable any operator already present on the cluster with `--set bootst
 
 ## 0. Pick your cluster
 
-### kind (local — gets real LoadBalancer IPs via MetalLB)
+### kind (local)
 
 ```bash
 kind create cluster --name krateo-installer
-# MetalLB so LoadBalancer Services get an external IP from the docker network:
-helm repo add metallb https://metallb.github.io/metallb && helm repo update
-helm install metallb metallb/metallb -n metallb-system --create-namespace --wait
-# Pick a small pool INSIDE the kind docker subnet (adjust the .255.x range to your subnet):
-SUBNET=$(docker network inspect kind -f '{{(index .IPAM.Config 0).Subnet}}')   # e.g. 172.19.0.0/16
-BASE=$(echo "$SUBNET" | cut -d. -f1-2)
-kubectl apply -f - <<EOF
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: krateo-pool
-  namespace: metallb-system
-spec:
-  addresses:
-    - "${BASE}.255.200-${BASE}.255.250"
----
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: krateo-l2
-  namespace: metallb-system
-spec:
-  ipAddressPools:
-    - krateo-pool
-EOF
 ```
+
+> kind has no cloud load balancer, so `LoadBalancer` Services stay `<pending>`. Install with the
+> default `exposure.type=NodePort` (omit the `--set exposure.type=LoadBalancer` flag) and reach the
+> portal via `kubectl port-forward` — see [Access the portal](#2-access-the-portal).
 
 > The full observability backends (ClickHouse + HyperDX + MongoDB + kagent) are heavy. On a
 > resource-constrained kind, install with `observability`/`observabilityAgents` off (the portal,
