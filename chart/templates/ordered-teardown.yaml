@@ -68,8 +68,11 @@ spec:
                 if [ "$kind" = "OasgenProvider" ]; then
                   echo "  gating: waiting for ogen RestDefinitions to clear before deleting oasgen-provider"
                   for i in $(seq 1 24); do
-                    rd=$(kubectl get restdefinitions.ogen.krateo.io -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-                    [ "${rd:-0}" = "0" ] && { echo "    RestDefinitions cleared"; break; }
+                    out=$(kubectl get restdefinitions.ogen.krateo.io -n "$NS" --no-headers 2>/dev/null); rc=$?
+                    # only trust a zero when the read succeeded (a failed get must not count as cleared)
+                    if [ $rc -eq 0 ] && [ "$(printf '%s\n' "$out" | grep -c .)" -eq 0 ]; then
+                      echo "    RestDefinitions cleared"; break
+                    fi
                     sleep 5
                   done
                 fi
@@ -83,8 +86,12 @@ spec:
                 echo "  deleting $res ($n) and waiting for drain"
                 kubectl delete "$res" --all -n "$NS" --wait=false 2>/dev/null
                 for i in $(seq 1 24); do
-                  left=$(kubectl get "$res" -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-                  [ "$left" = "0" ] && { echo "    $res drained"; break; }
+                  out=$(kubectl get "$res" -n "$NS" --no-headers 2>/dev/null); rc=$?
+                  # a failed read must NOT be mistaken for drained (which would move to the next
+                  # kind early and break the reverse-dependency ordering) — only trust rc=0 + zero.
+                  if [ $rc -eq 0 ] && [ "$(printf '%s\n' "$out" | grep -c .)" -eq 0 ]; then
+                    echo "    $res drained"; break
+                  fi
                   sleep 5
                 done
               done

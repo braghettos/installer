@@ -58,15 +58,33 @@ spec:
               echo "pre-delete: deleting the installer CompositionDefinition — core-provider (alive) cascades the whole ordered teardown"
               kubectl delete compositiondefinitions.core.krateo.io installer -n "$NS" --wait=false 2>/dev/null
               echo "waiting for the ENTIRE krateo footprint to drain while controllers are alive..."
-              for i in $(seq 1 170); do
-                defs=$(kubectl get compositiondefinitions.core.krateo.io -A --no-headers 2>/dev/null | wc -l | tr -d ' ')
-                crds=$(kubectl get crd -o name 2>/dev/null | grep -c 'composition\.krateo\.io')
-                rest=$(kubectl get restdefinitions.ogen.krateo.io -A --no-headers 2>/dev/null | wc -l | tr -d ' ')
-                if [ "$defs" = "0" ] && [ "$crds" = "0" ] && [ "${rest:-0}" = "0" ]; then
-                  echo "krateo footprint fully drained — core-provider GC'd the installers CRD + cdc and cleared every finalizer"
-                  break
+              # Robust drain wait. Two guards against a premature exit that leaves a straggler
+              # (e.g. a portal CompositionDefinition stuck on its managedresource finalizer):
+              #   1. Only TRUST a zero count when the API read SUCCEEDED. A transient kubectl
+              #      failure yields empty stdout, which a naive `| wc -l` reads as 0 == "drained".
+              #      We capture $? and treat any list failure as "not drained, retry".
+              #   2. Require the all-zero state to hold for STABLE consecutive polls, so a single
+              #      blip can't end the wait while core-provider is mid-finalize.
+              STABLE_NEEDED=3
+              stable=0
+              for i in $(seq 1 120); do
+                cds=$(kubectl get compositiondefinitions.core.krateo.io -A --no-headers 2>/dev/null); rc1=$?
+                crd=$(kubectl get crd -o name 2>/dev/null); rc2=$?
+                rds=$(kubectl get restdefinitions.ogen.krateo.io -A --no-headers 2>/dev/null); rc3=$?
+                if [ $rc1 -ne 0 ] || [ $rc2 -ne 0 ]; then
+                  echo "  ...api read failed (rc1=$rc1 rc2=$rc2), retrying"; stable=0; sleep 5; continue
                 fi
-                echo "  ...$defs CompositionDefinitions, $crds composition CRDs, ${rest:-0} RestDefinitions still draining"
+                ndef=$(printf '%s\n' "$cds" | grep -c .)
+                ncrd=$(printf '%s\n' "$crd" | grep -c 'composition\.krateo\.io')
+                # restdefinitions CRD may be absent (oasgen not installed) -> rc3!=0 -> treat as 0
+                if [ $rc3 -eq 0 ]; then nrd=$(printf '%s\n' "$rds" | grep -c .); else nrd=0; fi
+                if [ "$ndef" -eq 0 ] && [ "$ncrd" -eq 0 ] && [ "$nrd" -eq 0 ]; then
+                  stable=$((stable + 1))
+                  [ "$stable" -ge "$STABLE_NEEDED" ] && { echo "krateo footprint fully drained (stable x$STABLE_NEEDED) — core-provider GC'd the installers CRD + cdc and cleared every finalizer"; break; }
+                else
+                  stable=0
+                  echo "  ...$ndef CompositionDefinitions, $ncrd composition CRDs, $nrd RestDefinitions still draining"
+                fi
                 sleep 5
               done
               echo "pre-delete done — helm now removes core-provider + bootstrap scaffolding cleanly (nothing left to finalize)"
