@@ -12,7 +12,7 @@ itself as an `Installer` composition, and then self-reconciles: it registers eac
 - **Kind:** `Installer` (`composition.krateo.io`).
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.47 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
   -n krateo-system --create-namespace --set exposure.type=LoadBalancer --wait
 # tear the whole platform down (ordered, finalizer-safe, no manual cleanup):
 helm uninstall installer -n krateo-system

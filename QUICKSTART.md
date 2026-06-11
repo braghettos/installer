@@ -14,7 +14,7 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 
 | chart | version |
 |---|---|
-| **installer (umbrella)** | **`0.2.47`** |
+| **installer (umbrella)** | **`0.2.50`** |
 | core-provider / -crd (bootstrap subchart) | `0.35.4` |
 | cert-manager / clickhouse-operator / mongodb community-operator (bootstrap subcharts) | `v1.20.2` / `0.0.5` / `0.13.0` |
 | authn / -crd | `0.22.2` |
@@ -54,9 +54,10 @@ default). Disable any operator already present on the cluster with `--set bootst
 kind create cluster --name krateo-installer
 ```
 
-> kind has no cloud load balancer, so `LoadBalancer` Services stay `<pending>`. Install with the
-> default `exposure.type=NodePort` (omit the `--set exposure.type=LoadBalancer` flag) and reach the
-> portal via `kubectl port-forward` — see [Access the portal](#2-access-the-portal).
+kind has no cloud load balancer, so browser-facing components use **NodePort** Services
+(`exposure.type=NodePort`, the chart default) and you reach the portal via `kubectl port-forward`.
+Install in step 1 with `--set exposure.type=NodePort` (see the kind variant there), then jump to
+[Access the portal](#2-access-the-portal).
 
 > The full observability backends (ClickHouse + HyperDX + MongoDB + kagent) are heavy. On a
 > resource-constrained kind, install with `observability`/`observabilityAgents` off (the portal,
@@ -79,10 +80,22 @@ gcloud container clusters get-credentials krateo --zone us-central1-a
 
 ## 1. Install — one command
 
+Pick `exposure.type` for your cluster: `LoadBalancer` on a cloud cluster (GKE, external IPs), or
+`NodePort` on kind / any cluster without a cloud load balancer.
+
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.47 \
+# GKE / cloud — external LoadBalancer IPs:
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
   -n krateo-system --create-namespace \
   --set exposure.type=LoadBalancer \
+  --wait
+```
+
+```bash
+# kind / local — NodePort Services (reach the portal via port-forward, step 2):
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
+  -n krateo-system --create-namespace \
+  --set exposure.type=NodePort \
   --wait
 ```
 
@@ -94,12 +107,12 @@ That's it. The install:
    core-provider to generate the `Installer` CRD, then applies the `Installer` CR;
 3. core-provider reconciles that CR and rolls out every component by dependency order.
 
-**Light install (portal + events only — good for constrained kind):**
+**Light install (portal + events only — good for constrained kind, NodePort):**
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.47 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
   -n krateo-system --create-namespace \
-  --set exposure.type=LoadBalancer \
+  --set exposure.type=NodePort \
   --set features.observability=false \
   --set features.observabilityAgents=false \
   --set bootstrap.clickhouseOperator.enabled=false \
@@ -122,8 +135,8 @@ kubectl -n krateo-system create secret generic gemini-api-key --from-literal=api
 
 ```bash
 watch kubectl -n krateo-system get compositiondefinition
-# all browser-facing services LoadBalancer + IPs:
-kubectl -n krateo-system get svc | grep LoadBalancer
+# browser-facing Services — type LoadBalancer + external IP on GKE, or NodePort on kind:
+kubectl -n krateo-system get svc
 ```
 
 `helm install --wait` returns once the bootstrap layer is up; the component layer then rolls out
@@ -132,21 +145,25 @@ on core-provider's reconcile loop (a few minutes). All 19 CompositionDefinitions
 
 ## 2. Access the portal
 
-```bash
-# Portal external IP (frontend Service):
-kubectl -n krateo-system get svc -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.type}{" "}{.status.loadBalancer.ingress[0].ip}{"\n"}{end}' | grep -i 'frontend ' | grep LoadBalancer
-# -> open  http://<FRONTEND_IP>:8080
+Admin password (NOTE: rotates on every reconcile by design — read it immediately before login):
 
-# Admin password (NOTE: rotates on every reconcile by design — read it immediately before login):
+```bash
 kubectl -n krateo-system get secret admin-password -o jsonpath='{.data.password}' | base64 -d; echo
 # user: admin
 ```
 
-If a LoadBalancer IP is unavailable (e.g. GKE IP quota), reach the portal via port-forward:
+**kind / NodePort — reach the portal via port-forward:**
 
 ```bash
 FE=$(kubectl -n krateo-system get svc -o name | grep -i '/frontend-' | head -1)
-kubectl -n krateo-system port-forward "$FE" 18080:8080   # then http://localhost:18080
+kubectl -n krateo-system port-forward "$FE" 18080:8080   # then open http://localhost:18080
+```
+
+**GKE / LoadBalancer — the frontend's external IP:**
+
+```bash
+kubectl -n krateo-system get svc -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.type}{" "}{.status.loadBalancer.ingress[0].ip}{"\n"}{end}' | grep -i 'frontend ' | grep LoadBalancer
+# -> open  http://<FRONTEND_IP>:8080
 ```
 
 ## 3. Configuration reference
