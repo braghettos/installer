@@ -3,6 +3,21 @@
 # ---------------------------------------------------------------------------
 ociRepo: oci://ghcr.io/braghettos/charts
 
+# Registry credentials for pulling component charts from a PRIVATE/authenticated OCI
+# registry. core-provider pulls each component chart IN-CLUSTER (and the umbrella's
+# self-reconcile pulls this installer chart), so private repos need a passwordRef to a
+# Secret living in namespaces.krateo. (The bootstrap `helm install` itself authenticates
+# with your local `helm registry login`; this is only for the in-cluster pulls.)
+# When enabled, every component CompositionDefinition + the installer one get
+# spec.chart.credentials. One ghcr.io credential covers all braghettos/* component repos.
+registryAuth:
+  enabled: false
+  username: ""
+  passwordRef:
+    name: ""
+    namespace: ""   # empty defaults to namespaces.krateo
+    key: ""
+
 # Whether pass A (register component CompositionDefinitions) runs.
 installDefinitions: true
 

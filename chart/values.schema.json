@@ -337,6 +337,36 @@
         "type": "object",
         "additionalProperties": true
       }
+    },
+    "registryAuth": {
+      "type": "object",
+      "title": "Private registry credentials",
+      "description": "When enabled, every component CompositionDefinition (and the installer's own) gets spec.chart.credentials so core-provider can pull charts from a private/authenticated OCI registry in-cluster.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "username": {
+          "type": "string"
+        },
+        "passwordRef": {
+          "type": "object",
+          "description": "Reference to a Secret holding the registry password/token.",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   }
 }

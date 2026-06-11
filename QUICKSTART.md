@@ -14,7 +14,7 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 
 | chart | version |
 |---|---|
-| **installer (umbrella)** | **`0.2.50`** |
+| **installer (umbrella)** | **`0.2.51`** |
 | core-provider / -crd (bootstrap subchart) | `0.35.4` |
 | cert-manager / clickhouse-operator / mongodb community-operator (bootstrap subcharts) | `v1.20.2` / `0.0.5` / `0.13.0` |
 | authn / -crd | `0.22.2` |
@@ -100,7 +100,7 @@ Pick `exposure.type` for your cluster: `LoadBalancer` on a cloud cluster (GKE, e
 
 ```bash
 # GKE / cloud — external LoadBalancer IPs:
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.51 \
   -n krateo-system --create-namespace \
   --set exposure.type=LoadBalancer \
   --wait
@@ -108,7 +108,7 @@ helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.5
 
 ```bash
 # kind / local — NodePort Services pinned to the host-mapped nodePorts (step 0):
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.51 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -128,7 +128,7 @@ That's it. The install:
 **Light install (portal + login only — good for constrained kind, NodePort):**
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.50 \
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.51 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -209,6 +209,7 @@ umbrella self-applies. Schema: `chart/values.schema.json`.
 | `secrets.geminiApiKey` | `gemini-api-key` | secret name used when `vertexAI.enabled=false` |
 | `hitlApproval` | `true` | human-in-the-loop approval for the autopilot |
 | `componentValues.<name>` | unset | per-component spec overrides, deep-merged (see [Customizing a component's spec](#customizing-a-components-spec)) |
+| `registryAuth.enabled` / `.username` / `.passwordRef` | `false` | pull component charts from a private OCI registry (see [Private registries](#private-authenticated-registries)) |
 | `namespaces.krateo` / `.clickhouse` | `krateo-system` | everything runs in one namespace |
 | `bootstrap.<engine\|certManager\|clickhouseOperator\|mongodbOperator\|kagent>.enabled` | `true` | install that prerequisite as a subchart; set `false` if already present |
 
@@ -270,6 +271,36 @@ Each entry is **deep-merged** into that component's rendered spec. The installer
 installer's `service.type`, set `resources`/`replicaCount`, etc., without breaking exposure or the
 portal's URL wiring. (Same merge semantics as `--set`: you cannot override the four wired fields,
 only extend around them.)
+
+## Private (authenticated) registries
+
+If the component charts live in a **private** OCI registry, core-provider needs credentials to pull
+them **in-cluster** (it pulls each component chart, and the self-reconcile pulls this installer
+chart). Wire that with `registryAuth` → `CompositionDefinition.spec.chart.credentials`. The
+bootstrap `helm install` itself authenticates with your **local** `helm registry login`; one
+`ghcr.io` token covers all `braghettos/*` repos.
+
+```bash
+# 1. Namespace + a Secret holding the registry token (e.g. a ghcr.io PAT with read:packages):
+kubectl create namespace krateo-system
+kubectl -n krateo-system create secret generic ghcr-pat --from-literal=token=<TOKEN>
+
+# 2. Local login so the bootstrap install can pull the umbrella + subcharts:
+helm registry login ghcr.io -u <USER> -p <TOKEN>
+
+# 3. Install, pointing registryAuth at that Secret (namespace omitted -> defaults to krateo-system):
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.51 \
+  -n krateo-system \
+  --set exposure.type=LoadBalancer \
+  --set registryAuth.enabled=true \
+  --set registryAuth.username=<USER> \
+  --set registryAuth.passwordRef.name=ghcr-pat \
+  --set registryAuth.passwordRef.key=token \
+  --wait
+```
+
+Every component CompositionDefinition (and the installer's own) is then emitted with
+`spec.chart.credentials` referencing that Secret, so core-provider authenticates each pull.
 
 ## Teardown
 

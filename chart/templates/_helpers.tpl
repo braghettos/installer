@@ -11,6 +11,22 @@
 {{- printf "composition.krateo.io/v%s" ($ver | toString | replace "." "-") -}}
 {{- end -}}
 
+{{/* spec.chart.credentials for pulling charts from a private OCI registry. arg: (list $).
+     Renders the credentials block ONLY when registryAuth.enabled; empty otherwise so the
+     chart spec stays minimal on public registries. passwordRef.namespace defaults to the
+     krateo namespace. Used by Pass A (definitions.yaml) and the self-bootstrap installer CD. */}}
+{{- define "inst.chartCredentials" -}}
+{{- $top := index . 0 -}}
+{{- if $top.Values.registryAuth.enabled -}}
+credentials:
+  username: {{ $top.Values.registryAuth.username | quote }}
+  passwordRef:
+    name: {{ $top.Values.registryAuth.passwordRef.name | quote }}
+    namespace: {{ $top.Values.registryAuth.passwordRef.namespace | default $top.Values.namespaces.krateo | quote }}
+    key: {{ $top.Values.registryAuth.passwordRef.key | quote }}
+{{- end -}}
+{{- end -}}
+
 {{/* Is a feature flag enabled? args: (list $ "featureName"); empty featureName => true.
      Krateo CORE platform modules (the engine + the composable portal: authn/snowplow/
      frontend/portal) install REGARDLESS of their flag — they are not optional. Only the
