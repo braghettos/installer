@@ -29,9 +29,9 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 | kagent-crds / kagent (now compositions) | `0.9.9` |
 | krateo-autopilot | `0.1.7` |
 
-> Each installer version ships a pinned, tested version set; after install the full list lives in
-> the `Installer` composition spec and a component version can be changed in place. See
-> **[Changing component versions](#changing-component-versions)**.
+> Each installer version pins a tested set of component versions (GVRs) and types `componentValues`
+> against their schemas. Changing a component version means a **new installer version**, not an
+> in-place edit. See **[Changing component versions](#changing-component-versions)**.
 
 ## Prerequisites
 
