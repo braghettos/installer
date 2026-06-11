@@ -29,8 +29,9 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 | kagent-crds / kagent (now compositions) | `0.9.9` |
 | krateo-autopilot | `0.1.7` |
 
-> The component versions are pinned in the installer chart's `values.yaml`; you select a version
-> set by choosing an **installer chart version**. See **[Changing component versions](#changing-component-versions)**.
+> Each installer version ships a pinned, tested version set; after install the full list lives in
+> the `Installer` composition spec and a component version can be changed in place. See
+> **[Changing component versions](#changing-component-versions)**.
 
 ## Prerequisites
 
@@ -184,29 +185,33 @@ umbrella self-applies. Schema: `chart/values.schema.json`.
 
 ## Changing component versions
 
-The version of each component (portal, frontend, snowplow, …) is **pinned in the installer
-chart's `values.yaml`** under `components[].version`; it is intentionally **not** exposed
-per-component in the self-applied `Installer` CR (baking versions into the CR would freeze them
-and shadow chart upgrades). So you pick a coherent, tested version *set* by choosing an installer
-chart version.
+The live `Installer` composition **ships with the full `components` list in its spec** (each
+component's pinned `version`, `repo`, and `deps`). It is the **source of truth** for the component
+set and versions, so you change a version by editing **one entry in place**:
 
-**Supported — bump the portal (or any component) version:**
+```bash
+kubectl edit installers.composition.krateo.io installer -n krateo-system
+# find the portal entry under spec.components and bump its version:
+#   - name: portal
+#     version: "1.2.3"     # was 1.2.2
+```
 
-1. edit `components[].version` for `portal` in `chart/values.yaml`,
-2. release a new installer chart version (push a semver tag),
-3. `helm upgrade installer oci://ghcr.io/braghettos/charts/installer --version <new> -n krateo-system`.
+On save, core-provider re-renders: Pass A updates the `portal` CompositionDefinition's
+`chart.version`, regenerates the CRD if needed, and the portal cdc rolls the new chart. No other
+component is touched.
 
-The `installer` CompositionDefinition tracks `.Chart.Version`, so the upgrade makes core-provider
-re-pull the new installer chart and the new component versions propagate through the reconcile.
+> **Why edit the whole-list-in-the-CR and not a one-line override?** Helm **replaces list
+> overrides wholesale** (it deep-merges maps but never merges arrays element-by-element), so a
+> partial `components:` would prune every component you didn't include. Shipping the complete list
+> in the CR is what makes a single in-place edit safe.
 
-**Escape hatch (discouraged) — override `components` directly:** `components` *is* a valid
-top-level spec field (`values.schema.json`), so you can override the whole list via
-`-f my-components.yaml` at install time or by editing the live `Installer` CR. Caveats: Helm
-**replaces lists wholesale** (you must supply the *entire* `components` array, not just the
-portal entry), and an override **freezes versions** — a later installer-chart upgrade won't move
-them because the CR override shadows the chart's `values.yaml`. Do **not** instead patch a single
-component's `CompositionDefinition` `spec.chart.version` directly: that leaves a stale render and
-a controller with the wrong bootstrap RBAC.
+**Caveat — the CR shadows the chart.** Because the component list lives in the CR, a
+`helm upgrade installer --version <new>` **does not** auto-change component versions or add/remove
+components (the baked list shadows the new chart's `values.yaml`). To adopt a newer chart's
+component set, re-apply the self-bootstrap CR from that chart version (or reinstall). And do
+**not** patch a single component's `CompositionDefinition` `spec.chart.version` directly — that
+leaves a stale render and a controller with the wrong bootstrap RBAC; edit the `Installer`
+composition instead.
 
 ## Teardown
 

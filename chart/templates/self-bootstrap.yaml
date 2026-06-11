@@ -147,12 +147,16 @@ subjects:
        passthroughs like cert-manager/kagent, which carry huge default trees and are unused
        in composition mode), with all bootstrap flags OFF so the composition render does
        Pass A + Pass B only (no subcharts, no self-registration). */}}
-{{- /* Do NOT pick "components": the component list (with each component's pinned chart
-       version) is chart-internal structure, not user config. Baking it into the CR froze
-       the versions so a chart upgrade couldn't bump them (the CR override shadowed the new
-       chart values.yaml). Omitting it makes the Installer CR inherit the chart's own
-       values.yaml components, so version bumps propagate through the self-reconcile. */}}
-{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" }}
+{{- /* INCLUDE "components": the Installer CR ships with the FULL component list (each
+       component's pinned chart version/repo/deps) so a version can be changed by editing
+       ONE entry of the live Installer composition — Helm replaces list overrides wholesale,
+       so a partial `components` would prune the omitted components; shipping the whole list
+       makes in-place single-version edits safe.
+       TRADE-OFF (intentional, reverses 0.2.31): the CR is now the SOURCE OF TRUTH for the
+       component set + versions. A `helm upgrade` to a newer installer chart no longer
+       auto-propagates component version/set changes (the baked list shadows the chart's
+       values.yaml) — re-apply the CR (or edit it) to pick up chart-side component changes. */}}
+{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" "components" }}
 {{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "certManager" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
 apiVersion: v1
 kind: ConfigMap
