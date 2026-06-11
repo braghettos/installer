@@ -17,7 +17,10 @@ spec:
   chart:
     url: {{ default $.Values.ociRepo $c.repo }}/{{ $c.name }}
     version: {{ $c.version | quote }}
-    {{- include "inst.chartCredentials" (list $) | nindent 4 }}
+    {{- if $c.chartRepo }}
+    repo: {{ $c.chartRepo | quote }}
+    {{- end }}
+    {{- include "inst.chartExtras" (list $) | nindent 4 }}
 {{- end }}
 {{- end }}
 {{- end }}

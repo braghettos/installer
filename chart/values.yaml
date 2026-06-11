@@ -17,6 +17,9 @@ registryAuth:
     name: ""
     namespace: ""   # empty defaults to namespaces.krateo
     key: ""
+  # Skip TLS verification on the in-cluster chart pull (e.g. a self-signed registry).
+  # Maps to CompositionDefinition spec.chart.insecureSkipVerifyTLS; independent of auth.
+  insecureSkipVerifyTLS: false
 
 # Whether pass A (register component CompositionDefinitions) runs.
 installDefinitions: true

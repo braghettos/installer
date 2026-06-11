@@ -272,7 +272,12 @@
             "type": "string"
           },
           "repo": {
-            "type": "string"
+            "type": "string",
+            "description": "OCI registry base overriding ociRepo for this component's chart URL."
+          },
+          "chartRepo": {
+            "type": "string",
+            "description": "CompositionDefinition spec.chart.repo — classic helm repo NAME (only for non-OCI helm-repo charts; OCI components don't need it)."
           },
           "expose": {
             "type": "boolean"
@@ -365,6 +370,10 @@
               "type": "string"
             }
           }
+        },
+        "insecureSkipVerifyTLS": {
+          "type": "boolean",
+          "description": "Skip TLS verification on the in-cluster chart pull (maps to CompositionDefinition spec.chart.insecureSkipVerifyTLS)."
         }
       }
     }

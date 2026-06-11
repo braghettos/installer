@@ -22,7 +22,7 @@ spec:
   chart:
     url: {{ .Values.ociRepo }}/installer
     version: {{ .Chart.Version | quote }}
-    {{- include "inst.chartCredentials" (list .) | nindent 4 }}
+    {{- include "inst.chartExtras" (list .) | nindent 4 }}
 ---
 apiVersion: v1
 kind: ServiceAccount
