@@ -230,12 +230,16 @@ To bump a component (e.g. portal):
 3. release a new installer chart version (push a semver tag),
 4. `helm upgrade installer oci://ghcr.io/braghettos/charts/installer --version <new> -n krateo-system`.
 
-> **Do not edit `components[].version` in the live `Installer` CR.** It would move the Composition
-> to a GVR/schema the installer's `values.schema.json` doesn't type (your `componentValues` would
-> be validated against the old schema), and the stored Composition CR would have to convert across
-> GVRs. Version changes belong to a new installer version. (Likewise, don't patch a single
-> `CompositionDefinition.spec.chart.version` directly — that leaves a stale render and the wrong
-> bootstrap RBAC.)
+> **You *can* edit `components[].version` in the live `Installer` CR — it works** (core-provider
+> adds the new served CRD version, migrates the stored object via a neutral `vacuum` storage
+> version, recreates the Composition cleanly, and rolls the component; verified, no stranding). But
+> two downsides make the **new-installer-version path preferred**: (1) `componentValues` for that
+> component stays typed against the *installer-pinned* schema, not the version you bumped to — so
+> the typing guarantee is misaligned; (2) each distinct version you bump to stays a **served** CRD
+> version, so repeated in-place churn accumulates versions (the root of the `invalid group/version`
+> corruption seen after many churn cycles). A new installer version regenerates the schema (typing
+> stays accurate) and ships one coherent GVR set (no accumulation). Either way, don't patch a
+> `CompositionDefinition.spec.chart.version` directly — that leaves a stale render + wrong RBAC.
 
 ## Customizing a component's spec
 
