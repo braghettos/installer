@@ -55,6 +55,15 @@
 {{- if $c.vertexAI }}
 {{- $_ := set $spec "hitlApproval" $top.Values.hitlApproval }}
 {{- end }}
+{{- /* componentValues: per-component spec overrides, deep-merged into the rendered spec. The
+       installer-computed wiring above (service/config/vertexAI/hitlApproval) stays AUTHORITATIVE
+       — `merge` gives the dest ($spec) precedence, so it wins on any leaf conflict — letting a
+       customer add/override anything else (including nested keys like service.annotations or
+       resources) on the LIVE Installer composition without breaking exposure or portal config.
+       These component CRs are installer-managed (Pass B re-renders every reconcile), so this is
+       the ONLY durable way to customize a component's spec; a direct kubectl edit reverts. */}}
+{{- $custom := default dict (index ($top.Values.componentValues | default dict) $c.name) }}
+{{- $spec = merge $spec (deepCopy $custom) }}
 ---
 apiVersion: {{ include "inst.apiVersion" (list $c.version) }}
 kind: {{ $c.kind }}

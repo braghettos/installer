@@ -329,6 +329,15 @@
       "type": "boolean",
       "title": "HITL approval",
       "description": "Autopilot mutating-tool approval gate. true=pause for approval; false=autonomous remediation."
+    },
+    "componentValues": {
+      "type": "object",
+      "title": "Per-component spec overrides",
+      "description": "Map of component name -> object deep-merged into that component's rendered Composition spec (Pass B). The installer-computed wiring (service/config/vertexAI/hitlApproval) stays authoritative and wins on any leaf conflict. Edit in place on the live Installer composition to durably customize a component's spec.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true
+      }
     }
   }
 }

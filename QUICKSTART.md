@@ -180,6 +180,7 @@ umbrella self-applies. Schema: `chart/values.schema.json`.
 | `vertexAI.enabled` / `projectID` / `location` | `true` / — | autopilot LLM via Vertex AI ADC |
 | `secrets.geminiApiKey` | `gemini-api-key` | secret name used when `vertexAI.enabled=false` |
 | `hitlApproval` | `true` | human-in-the-loop approval for the autopilot |
+| `componentValues.<name>` | `{}` | per-component spec overrides, deep-merged (see [Customizing a component's spec](#customizing-a-components-spec)) |
 | `namespaces.krateo` / `.clickhouse` | `krateo-system` | everything runs in one namespace |
 | `bootstrap.<engine\|certManager\|clickhouseOperator\|mongodbOperator\|kagent>.enabled` | `true` | install that prerequisite as a subchart; set `false` if already present |
 
@@ -212,6 +213,35 @@ component set, re-apply the self-bootstrap CR from that chart version (or reinst
 **not** patch a single component's `CompositionDefinition` `spec.chart.version` directly — that
 leaves a stale render and a controller with the wrong bootstrap RBAC; edit the `Installer`
 composition instead.
+
+## Customizing a component's spec
+
+The component Composition CRs (`portals…/portal`, `authn`, `snowplow`, …) are **managed by the
+Installer composition** — Pass B re-renders them every reconcile, so a direct
+`kubectl edit portals… portal` is **reverted** on the next reconcile. To durably customize a
+component's spec, use the **`componentValues`** map on the Installer composition (a sibling of
+`components`, also editable in place):
+
+```bash
+kubectl edit installers.composition.krateo.io installer -n krateo-system
+```
+```yaml
+spec:
+  componentValues:
+    snowplow:
+      replicaCount: 2
+    frontend:
+      service:
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: portal.example.com
+```
+
+Each entry is **deep-merged** into that component's rendered spec. The installer-computed wiring
+(`service.type` from `exposure`, the frontend `config` URLs, `vertexAI`, `hitlApproval`) stays
+**authoritative** — it wins on any leaf conflict — so you can add `service.annotations` next to the
+installer's `service.type`, set `resources`/`replicaCount`, etc., without breaking exposure or the
+portal's URL wiring. (Same merge semantics as `--set`: you cannot override the four wired fields,
+only extend around them.)
 
 ## Teardown
 

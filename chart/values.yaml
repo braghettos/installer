@@ -100,6 +100,18 @@ vertexAI:
   location: us-central1
 
 # ---------------------------------------------------------------------------
+# Per-component spec overrides, keyed by component name. Each entry is deep-merged
+# into that component's rendered Composition spec (Pass B). The installer-computed
+# wiring (service.type / config / vertexAI / hitlApproval) stays authoritative — it
+# wins on any leaf conflict — so you can safely add anything else here (e.g.
+# resources, replicaCount, service.annotations) and edit it in place on the live
+# Installer composition; a direct kubectl edit of the component CR reverts.
+#   componentValues:
+#     snowplow: { replicaCount: 2 }
+#     portal:   { someChartValue: foo }
+componentValues: {}
+
+# ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
 # before this one's Composition is emitted. Versions pinned to installer 2.7.0.
 # `repo` overrides ociRepo when a component lives elsewhere; `feature` gates it.

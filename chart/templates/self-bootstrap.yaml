@@ -156,7 +156,7 @@ subjects:
        component set + versions. A `helm upgrade` to a newer installer chart no longer
        auto-propagates component version/set changes (the baked list shadows the chart's
        values.yaml) — re-apply the CR (or edit it) to pick up chart-side component changes. */}}
-{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" "components" }}
+{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" "components" "componentValues" }}
 {{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "certManager" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
 apiVersion: v1
 kind: ConfigMap
