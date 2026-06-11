@@ -1,34 +1,47 @@
 # Krateo PlatformOps Installer — Quickstart
 
-Install the full Krateo PlatformOps platform as a **compose-of-compositions blueprint**:
-one `Installer` Composition drives a readiness-gated rollout of every component
-(authn, snowplow, frontend, portal, oasgen-provider, observability) and wires their
-exposure + the portal config **by reconciliation** — no post-install patching.
+Install the full Krateo PlatformOps platform from **one `helm install`**. The umbrella chart
+self-bootstraps the composition engine, registers itself as an `Installer` composition, and then
+drives a readiness-gated rollout of every component (authn, snowplow, frontend, portal,
+oasgen-provider, observability, agents) — wiring exposure + the portal config **by
+reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-install patching**.
+
+> New here? Read **[README.md](./README.md)** for the architecture (the two render modes, the
+> self-reconcile loop, the teardown hooks, and a state-machine diagram).
 
 - **Umbrella source:** https://github.com/braghettos/installer (published to `oci://ghcr.io/braghettos/charts/installer`)
-- **Component forks (org `braghettos`):** `authn-chart`, `snowplow-chart`, `core-provider-chart`,
-  `oasgen-provider-chart`, `clickstack-chart`, and `krateo-installer-charts`
-  (frontend, frontend-crd, krateo-sse-proxy, krateo-autopilot, otel-collector-{deployment,daemonset}).
-- **Charts (OCI):** `oci://ghcr.io/braghettos/charts/*`, `oci://ghcr.io/braghettos/krateo/*`,
-  `oci://ghcr.io/braghettos/portal`.
+- **Charts (OCI):** `oci://ghcr.io/braghettos/charts/*`, `oci://ghcr.io/braghettos/krateo/*`, `oci://ghcr.io/braghettos/portal`.
 
 | chart | version |
 |---|---|
-| installer (umbrella) | `0.2.2` |
-| core-provider / -crd | `0.35.3` |
+| **installer (umbrella)** | **`0.2.47`** |
+| core-provider / -crd (bootstrap subchart) | `0.35.4` |
+| cert-manager / clickhouse-operator / mongodb community-operator (bootstrap subcharts) | `v1.20.2` / `0.0.5` / `0.13.0` |
 | authn / -crd | `0.22.2` |
-| snowplow / -crd | `0.30.249` |
-| oasgen-provider / -crd | `0.9.1` |
-| frontend / -crd | `1.0.10` |
+| snowplow / -crd | `0.30.259` / `0.20.6` |
+| frontend / -crd | `1.0.12` / `1.0.25` |
 | portal | `1.2.2` |
-| krateo-sse-proxy, krateo-autopilot, otel-collector-{deployment,daemonset} | `0.1.0` |
-| clickstack (helm-installed) | `3.0.3` |
+| oasgen-provider / -crd | `0.9.0` |
+| hyperdx-provider | `0.1.1` |
+| krateo-clickstack (now a composition, app ClickStack `3.0.0`) | `0.1.2` |
+| krateo-sse-proxy / otel-collector-{deployment,daemonset} | `0.1.1` |
+| clickhouse-mcp-server | `0.1.7` |
+| kagent-crds / kagent (now compositions) | `0.9.9` |
+| krateo-autopilot | `0.1.7` |
+
+> The component versions are pinned in the installer chart's `values.yaml`; you select a version
+> set by choosing an **installer chart version**. See **[Changing component versions](#changing-component-versions)**.
 
 ## Prerequisites
 
 - `kubectl` and `helm` ≥ 3.16
 - A cluster: a `kind` cluster, or a managed GKE cluster (any managed K8s works; GKE shown).
 - Outbound access to `ghcr.io`.
+
+Everything else — the composition engine (core-provider) and the observability operators
+(cert-manager, ClickHouse operator, MongoDB community-operator) — is installed **for you** as
+Helm subchart dependencies during the one `helm install` (the `bootstrap.*` flags, all on by
+default). Disable any operator already present on the cluster with `--set bootstrap.<op>.enabled=false`.
 
 ---
 
@@ -58,9 +71,9 @@ EOF
 ```
 
 > The full observability backends (ClickHouse + HyperDX + MongoDB + kagent) are heavy. On a
-> resource-constrained kind, deploy with `observability`/`observabilityAgents` set to `false`
-> (the portal, login, and events bell still work — the bell's sse-proxy serves Kubernetes
-> events directly). Enable them only if the node has the headroom.
+> resource-constrained kind, install with `observability`/`observabilityAgents` off (the portal,
+> login, and events bell still work — the bell's sse-proxy serves Kubernetes events directly).
+> See the light-install command below.
 
 ### GKE (managed)
 
@@ -76,120 +89,48 @@ gcloud container clusters get-credentials krateo --zone us-central1-a
 
 ---
 
-## 1. Bootstrap prerequisites (both clusters)
-
-The engine (core-provider) can't bootstrap itself, and the observability operators are cluster
-infra — install them once up front.
+## 1. Install — one command
 
 ```bash
-kubectl create ns krateo-system
-kubectl create ns clickhouse-system
-
-# Operators (skip cert-manager/clickhouse/mongodb/kagent if deploying without observability)
-helm repo add jetstack https://charts.jetstack.io
-helm repo add mongodb https://mongodb.github.io/helm-charts
-helm repo update
-helm install cert-manager jetstack/cert-manager --version v1.20.2 \
-  -n cert-manager --create-namespace --set crds.enabled=true --wait
-helm install clickhouse-operator oci://ghcr.io/clickhouse/clickhouse-operator-helm --version 0.0.5 \
-  -n clickhouse-operator-system --create-namespace --wait
-helm install mongodb-operator mongodb/community-operator --version 0.13.0 \
-  -n mongodb --create-namespace --set operator.watchNamespace='*' --wait
-helm install kagent-crds oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds --version 0.9.6 \
-  -n kagent --create-namespace --wait
-helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent --version 0.9.6 -n kagent --wait
-
-# Composition engine
-helm install core-provider-crd oci://ghcr.io/braghettos/charts/core-provider-crd --version 0.35.3 -n krateo-system --wait
-helm install core-provider     oci://ghcr.io/braghettos/charts/core-provider     --version 0.35.3 -n krateo-system --wait
-
-# Placeholder secret for the autopilot agent (replace with a real Gemini key to use it)
-kubectl -n krateo-system create secret generic gemini-api-key --from-literal=apiKey=PLACEHOLDER
-
-# RBAC: the umbrella resolves browser-facing LoadBalancer IPs via `lookup "Service"` at
-# reconcile time. The installer cdc ServiceAccount needs read access to Services (it cannot
-# self-grant — Kubernetes escalation prevention). SA name follows the umbrella version.
-INSTALLER_VER=0.2.2
-SA="installers-v$(echo "$INSTALLER_VER" | tr '.' '-')"      # -> installers-v0-2-2
-kubectl apply -f - <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata: { name: installer-cdc-service-reader, namespace: krateo-system }
-rules: [{ apiGroups: [""], resources: ["services"], verbs: ["get","list","watch"] }]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata: { name: installer-cdc-service-reader, namespace: krateo-system }
-roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: installer-cdc-service-reader }
-subjects: [{ kind: ServiceAccount, name: ${SA}, namespace: krateo-system }]
-EOF
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.47 \
+  -n krateo-system --create-namespace \
+  --set exposure.type=LoadBalancer \
+  --wait
 ```
 
-## 2. ClickStack + snowplow prerequisites (only when observability is enabled)
+That's it. The install:
 
-ClickStack is helm-installed directly (its operator-CRD values are too complex for
-core-provider CRD generation). Snowplow expects an external cache-warmup ConfigMap.
+1. pre-installs the engine CRDs, installs the engine + operator subcharts (core-provider,
+   cert-manager, ClickHouse operator, MongoDB community-operator);
+2. registers the `installer` CompositionDefinition; a **post-install hook** waits for
+   core-provider to generate the `Installer` CRD, then applies the `Installer` CR;
+3. core-provider reconciles that CR and rolls out every component by dependency order.
+
+**Light install (portal + events only — good for constrained kind):**
 
 ```bash
-helm upgrade --install krateo-clickstack oci://ghcr.io/braghettos/charts/clickstack --version 3.0.3 \
-  -n clickhouse-system --create-namespace \
-  --set namespaces.clickhouse=clickhouse-system --set namespaces.krateo=krateo-system
-
-# Snowplow mounts this; absent -> pod stuck ContainerCreating (FailedMount). Empty is fine.
-kubectl -n krateo-system create configmap snowplow-cache-warmup --from-literal=cache-warmup.yaml='{}'
+helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.47 \
+  -n krateo-system --create-namespace \
+  --set exposure.type=LoadBalancer \
+  --set features.observability=false \
+  --set features.observabilityAgents=false \
+  --set bootstrap.clickhouseOperator.enabled=false \
+  --set bootstrap.mongodbOperator.enabled=false \
+  --set bootstrap.kagent.enabled=false \
+  --wait
 ```
 
-## 3. Deploy the installer
+**Agents (`observabilityAgents=true`)** need either Vertex AI ADC or a Gemini key:
 
 ```bash
-# Register the umbrella CompositionDefinition (generates the Installer CRD)
-kubectl apply -f - <<EOF
-apiVersion: core.krateo.io/v1alpha1
-kind: CompositionDefinition
-metadata: { name: installer, namespace: krateo-system }
-spec:
-  chart: { url: oci://ghcr.io/braghettos/charts/installer, version: "0.2.2" }
-EOF
-kubectl -n krateo-system wait --for=condition=Ready compositiondefinition/installer --timeout=180s
-
-# Create the Installer Composition. exposure.type=LoadBalancer; flip observability flags off
-# for a light (portal+events) install.
-kubectl apply -f - <<EOF
-apiVersion: composition.krateo.io/v0-2-2
-kind: Installer
-metadata:
-  name: krateo
-  namespace: krateo-system
-  labels: { app.kubernetes.io/name: installer }   # required: admission policy reads labels
-spec:
-  installDefinitions: true
-  ociRepo: oci://ghcr.io/braghettos/charts
-  namespaces: { krateo: krateo-system, clickhouse: clickhouse-system }
-  bootstrap:                                       # operators installed in step 1 -> all false
-    coreProvider: { enabled: false }
-    certManager: { enabled: false }
-    clickhouseOperator: { enabled: false }
-    mongodbOperator: { enabled: false }
-    kagent: { enabled: false }
-  exposure: { type: LoadBalancer }                 # NodePort | LoadBalancer | Ingress
-  features:
-    composableportal: true
-    composableportalstarter: true
-    composableoperations: true
-    oasgenprovider: true
-    observability: true                            # set false on constrained kind
-    observabilityAgents: true                      # set false on constrained kind
-    githubMcp: false
-    podRestartAlert: false
-EOF
+# Vertex AI (default): point it at your project, the autopilot uses workload-identity ADC
+--set vertexAI.enabled=true --set vertexAI.projectID=<YOUR_GCP_PROJECT> --set vertexAI.location=us-central1
+# …or a Gemini API key instead of Vertex:
+--set vertexAI.enabled=false
+kubectl -n krateo-system create secret generic gemini-api-key --from-literal=apiKey=<KEY>
 ```
 
-The platform now rolls out by reconciliation: CompositionDefinitions register, then each
-Composition emits once its dependencies report `Ready=True` and its CRD exists. As the cloud
-assigns LoadBalancer IPs, the umbrella's `lookup` fills the frontend `config.json`
-(`AUTHN`/`SNOWPLOW`/`EVENTS`/`EVENTS_PUSH` URLs) automatically.
-
-Watch it converge:
+### Watch it converge
 
 ```bash
 watch kubectl -n krateo-system get compositiondefinition
@@ -197,7 +138,11 @@ watch kubectl -n krateo-system get compositiondefinition
 kubectl -n krateo-system get svc | grep LoadBalancer
 ```
 
-## 4. Access the portal
+`helm install --wait` returns once the bootstrap layer is up; the component layer then rolls out
+on core-provider's reconcile loop (a few minutes). All 19 CompositionDefinitions reaching
+`READY=True` and a `demo-system` namespace appearing means the platform is up.
+
+## 2. Access the portal
 
 ```bash
 # Portal external IP (frontend Service):
@@ -216,6 +161,76 @@ FE=$(kubectl -n krateo-system get svc -o name | grep -i '/frontend-' | head -1)
 kubectl -n krateo-system port-forward "$FE" 18080:8080   # then http://localhost:18080
 ```
 
+## 3. Configuration reference
+
+All knobs are Helm values (set with `--set`/`-f`); they become the `Installer` CR spec the
+umbrella self-applies. Schema: `chart/values.schema.json`.
+
+| key | default | meaning |
+|---|---|---|
+| `exposure.type` | `NodePort` | `NodePort` \| `LoadBalancer` \| `Ingress` (browser-facing Services) |
+| `exposure.ingress.domain` | `""` | with `type: Ingress`, host base — `authn.<domain>`, `frontend.<domain>`, … |
+| `features.composableportal*` / `composableoperations` | `true` | **core** — install regardless (not gated) |
+| `features.oasgenprovider` | `true` | oasgen-provider (OpenAPI → CRD generator) |
+| `features.observability` | `true` | ClickStack + OTel collectors + sse-proxy |
+| `features.observabilityAgents` | `true` | kagent operator + krateo-autopilot + MCP tools |
+| `features.podRestartAlert` | `false` | hyperdx-provider pod-restart alert pipeline |
+| `features.githubMcp` | `false` | hosted GitHub MCP RemoteMCPServer |
+| `vertexAI.enabled` / `projectID` / `location` | `true` / — | autopilot LLM via Vertex AI ADC |
+| `secrets.geminiApiKey` | `gemini-api-key` | secret name used when `vertexAI.enabled=false` |
+| `hitlApproval` | `true` | human-in-the-loop approval for the autopilot |
+| `namespaces.krateo` / `.clickhouse` | `krateo-system` | everything runs in one namespace |
+| `bootstrap.<engine\|certManager\|clickhouseOperator\|mongodbOperator\|kagent>.enabled` | `true` | install that prerequisite as a subchart; set `false` if already present |
+
+## Changing component versions
+
+The version of each component (portal, frontend, snowplow, …) is **pinned in the installer
+chart's `values.yaml`** under `components[].version`; it is intentionally **not** exposed
+per-component in the self-applied `Installer` CR (baking versions into the CR would freeze them
+and shadow chart upgrades). So you pick a coherent, tested version *set* by choosing an installer
+chart version.
+
+**Supported — bump the portal (or any component) version:**
+
+1. edit `components[].version` for `portal` in `chart/values.yaml`,
+2. release a new installer chart version (push a semver tag),
+3. `helm upgrade installer oci://ghcr.io/braghettos/charts/installer --version <new> -n krateo-system`.
+
+The `installer` CompositionDefinition tracks `.Chart.Version`, so the upgrade makes core-provider
+re-pull the new installer chart and the new component versions propagate through the reconcile.
+
+**Escape hatch (discouraged) — override `components` directly:** `components` *is* a valid
+top-level spec field (`values.schema.json`), so you can override the whole list via
+`-f my-components.yaml` at install time or by editing the live `Installer` CR. Caveats: Helm
+**replaces lists wholesale** (you must supply the *entire* `components` array, not just the
+portal entry), and an override **freezes versions** — a later installer-chart upgrade won't move
+them because the CR override shadows the chart's `values.yaml`. Do **not** instead patch a single
+component's `CompositionDefinition` `spec.chart.version` directly: that leaves a stale render and
+a controller with the wrong bootstrap RBAC.
+
+## Teardown
+
+One command. It is ordered and finalizer-safe — three Helm hooks tear the whole composition tree
+down in reverse-dependency order while the controllers are still alive, then sweep the runtime
+leftovers (see [README — teardown hooks](./README.md#why-the-teardown-is-split-across-three-hooks)).
+No manual finalizer-clearing or webhook deletion needed.
+
+```bash
+helm uninstall installer -n krateo-system
+# kind:  kind delete cluster --name krateo-installer
+# GKE:   gcloud container clusters delete krateo --zone us-central1-a --quiet
+```
+
+After uninstall the only residue is **inherent Helm behavior** (not Krateo defects): the
+`krateo-system` namespace (`--create-namespace` namespaces are never deleted on uninstall),
+StatefulSet PVCs (ClickHouse/MongoDB data), and `crds/`-directory CRDs (the engine + operator
+CRDs that must pre-install for the bootstrap). Delete those with a one-liner if you want bare:
+
+```bash
+kubectl delete ns krateo-system
+kubectl get crd | grep -E 'krateo.io|kagent.dev' | awk '{print $1}' | xargs -r kubectl delete crd
+```
+
 ## Known caveats
 
 - **admin-password rotates** every reconcile (owned by the portal release, by design). Read it
@@ -226,12 +241,3 @@ kubectl -n krateo-system port-forward "$FE" 18080:8080   # then http://localhost
 - **snowplow is the BFF for all portal content** (navmenus/routes/pages). If the portal shows
   `404 / widget does not exist` after login, check that snowplow is `Running` and its URL in
   `config.json` resolves.
-
-## Teardown
-
-```bash
-kubectl -n krateo-system delete installers.composition.krateo.io krateo --wait
-kubectl -n krateo-system delete compositiondefinition installer
-# kind:  kind delete cluster --name krateo-installer
-# GKE:   gcloud container clusters delete krateo --zone us-central1-a --quiet
-```
