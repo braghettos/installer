@@ -288,12 +288,12 @@ components:
   #   kagent (the operator) depends on it, so the CRDs are established before its CRs render.
   - name: kagent-crds
     kind: KagentCrds
-    version: "0.9.9"
+    version: "0.1.0"
     tier: observability
     feature: observabilityAgents
   - name: kagent
     kind: Kagent
-    version: "0.9.9"
+    version: "0.1.0"
     deps:
       - kagent-crds
     tier: observability

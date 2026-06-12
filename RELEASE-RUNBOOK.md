@@ -35,7 +35,7 @@ their repo tag is just a release marker.
 | `krateo-portal-chart` | #6 | `1.2.2` | portal:1.2.2 |
 | `krateo-clickstack-chart` | #1 | `0.1.2` † | krateo-clickstack:0.1.2, otel-collector-deployment:0.1.1, otel-collector-daemonset:0.1.1, krateo-sse-proxy:0.1.1 |
 | `krateo-autopilot` | #1 | `0.1.7` | krateo-autopilot:0.1.7 |
-| `krateo-installer-charts` | #1 | `0.x` † | hyperdx-provider:0.1.1, kagent:0.9.9, kagent-crds:0.9.9, clickhouse-mcp-server:0.1.7 |
+| `krateo-installer-charts` | #1 | `0.x` † | hyperdx-provider:0.1.1, kagent:0.1.0 (appVersion kagent 0.9.7), kagent-crds:0.1.0, clickhouse-mcp-server:0.1.7 |
 
 ## Tier 2 — the umbrella (LAST)
 
