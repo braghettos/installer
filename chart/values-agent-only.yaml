@@ -8,6 +8,16 @@
 # Then talk to krateo-autopilot ("install Krateo") -> it routes to krateo-installer-agent, which
 # patches the Installer CR (e.g. features.composableportal=true, specialistAgents=true, ...) and
 # core-provider provisions the full platform in dependency order.
+# Skip the observability operator prerequisites (cert-manager / ClickHouse / MongoDB) — they're only
+# needed once `observability` is turned on. The composition engine (core-provider) stays.
+bootstrap:
+  certManager:
+    enabled: false
+  clickhouseOperator:
+    enabled: false
+  mongodbOperator:
+    enabled: false
+
 features:
   composableportal: false
   composableportalstarter: false
