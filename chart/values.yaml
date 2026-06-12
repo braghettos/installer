@@ -34,7 +34,7 @@ installDefinitions: true
 bootstrap:
   coreProvider:
     enabled: true
-    version: "0.35.4"
+    version: "0.35.5"
   # ClickStack 3.0.0 operator prerequisites (disable any already present on the cluster).
   certManager:
     enabled: true
