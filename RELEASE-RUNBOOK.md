@@ -43,7 +43,7 @@ Only after **all** Tier-1 artifacts are confirmed at `/krateo`:
 
 | Repo | PR | Tag |
 |------|----|-----|
-| `krateo-installer` | #1 | the installer release version → publishes `/krateo/installer` |
+| `krateo-installer` | #1 | the installer release version → publishes `/krateo/installer` **and** `/krateo/krateo-installer-agent:0.1.0` (the federated agent, in the same CI run) |
 
 ## Why this is low-risk even if the order slips
 
