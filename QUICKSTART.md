@@ -343,6 +343,7 @@ kubectl get crd | grep -E 'krateo.io|kagent.dev' | awk '{print $1}' | xargs -r k
 - **Events bell** consumes events from sse-proxy (`/events`, `/notifications`). The bell icon
   populating is the working state; the bell's *click-through events page* is not seeded by the
   portal-starter (no EventList page widget) and currently errors — tracked separately.
-- **snowplow is the BFF for all portal content** (navmenus/routes/pages). If the portal shows
+- **snowplow serves all portal content** (the SPA fetches navmenus/routes/pages/widgets from
+  `SNOWPLOW_API_BASE_URL` `/call?resource=…`). If the portal shows
   `404 / widget does not exist` after login, check that snowplow is `Running` and its URL in
   `config.json` resolves.

@@ -11,7 +11,7 @@ hook, the Pass A / Pass B self-reconcile gated on `crdExists` + `depsReady`, the
 teardown hooks (`ordered-teardown` → `bootstrap-teardown` → `post-delete-cleanup`) and why
 finalizer-based cleanup needs live controllers, the strictly-typed `componentValues` /
 `registryAuth` knobs, the installer-version GVR model + the `vacuum` migration, and the
-operational gotchas (demo-system, rotating admin-password, snowplow-as-BFF, kind NodePort).
+operational gotchas (demo-system, rotating admin-password, snowplow serving portal content, kind NodePort).
 
 The agent wires in the built-in `kagent-tool-server` (`k8s_*` + `helm_*` tools), so it can
 inspect CompositionDefinitions, Compositions, the Installer CR, controller logs, and Helm

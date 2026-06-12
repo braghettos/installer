@@ -261,18 +261,22 @@ they remain in the **`autopilot`** repo (the `krateo-autopilot` chart):
 | `krateo-auth-agent` | authn | **authn-chart** |
 | `krateo-blueprint-agent` | CompositionDefinitions / Compositions (the engine) | **core-provider-chart** |
 | `krateo-portal-agent` | portal | **portal-chart** |
-| `krateo-restaction-agent` | RESTActions / BFF (`templates.krateo.io`) | **snowplow-chart** |
+| `krateo-restaction-agent` | RESTActions (`templates.krateo.io`) | **snowplow-chart** |
 | `krateo-observability-agent` | telemetry / ClickStack | **clickstack-chart** |
-| `krateo-code-analysis-agent` | source tracing for operator gen | **oasgen-provider-chart** |
-| `krateo-ansible-to-operator-agent` | IaC → Krateo operator (KOG) | **oasgen-provider-chart** |
-| `krateo-tf-provider-to-operator-agent` | IaC → Krateo operator (KOG) | **oasgen-provider-chart** |
-| `krateo-tf-to-helm-agent` | IaC → Helm chart | **oasgen-provider-chart** |
 | `krateo-installer-agent` **(new)** | this installer + provisioning via the `Installer` CR | **installer** |
 
-Notes: the four IaC/codegen agents are capability agents (no *deployed* component) — homing them in
-**oasgen-provider-chart** (the Krateo Operator Generator / OASGen domain) keeps "ship with the
-related component" while acknowledging they're the generator's toolkit; they could alternatively
-stay central. A future per-UI agent would live in **frontend-chart**.
+**Dedicated repo** — the IaC/codegen agents are *capability* agents (no deployed component); they
+get their **own dedicated repo** (name TBD — e.g. a `krateo-codegen-agents` repo), versioned
+independently of any platform component:
+
+| Agent | Domain |
+|---|---|
+| `krateo-code-analysis-agent` | source tracing for operator generation |
+| `krateo-ansible-to-operator-agent` | Ansible → Krateo operator (KOG) |
+| `krateo-tf-provider-to-operator-agent` | Terraform provider → Krateo operator (KOG) |
+| `krateo-tf-to-helm-agent` | Terraform → Helm chart |
+
+A future per-UI agent would live in **frontend-chart**.
 
 ## 9. Roadmap
 
