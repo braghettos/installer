@@ -135,6 +135,10 @@ componentValues:
       - name: krateo-frontend-agent
       - name: krateo-clickstack-agent
       - name: krateo-core-provider-agent
+      - name: krateo-code-analysis-agent
+      - name: krateo-ansible-to-operator-agent
+      - name: krateo-tf-provider-to-operator-agent
+      - name: krateo-tf-to-helm-agent
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -359,9 +363,42 @@ components:
     tier: observability
     feature: observabilityAgents
     vertexAI: true
+  # Cross-cutting codegen agents (not component-tied) — shipped from braghettos/krateo-codegen-agents.
+  - name: krateo-code-analysis-agent
+    kind: KrateoCodeAnalysisAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
+  - name: krateo-ansible-to-operator-agent
+    kind: KrateoAnsibleToOperatorAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
+  - name: krateo-tf-provider-to-operator-agent
+    kind: KrateoTfProviderToOperatorAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
+  - name: krateo-tf-to-helm-agent
+    kind: KrateoTfToHelmAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.9"
+    version: "0.1.10"
     deps:
       - clickhouse-mcp-server
       - kagent
@@ -371,6 +408,10 @@ components:
       - krateo-frontend-agent
       - krateo-clickstack-agent
       - krateo-core-provider-agent
+      - krateo-code-analysis-agent
+      - krateo-ansible-to-operator-agent
+      - krateo-tf-provider-to-operator-agent
+      - krateo-tf-to-helm-agent
     tier: observability
     feature: observabilityAgents
     vertexAI: true
