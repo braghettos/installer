@@ -64,6 +64,23 @@
        the ONLY durable way to customize a component's spec; a direct kubectl edit reverts. */}}
 {{- $custom := default dict (index ($top.Values.componentValues | default dict) $c.name) }}
 {{- $spec = merge $spec (deepCopy $custom) }}
+{{- /* Gate the orchestrator's extraAgents (a2a sub-agents) to agents that are actually
+       deployed: a reference to an Agent whose component is feature-disabled (e.g. the 9
+       specialists in the agent-only profile) makes kagent fail to compile the orchestrator
+       ("Agent <name> not found"). Filter extraAgents to components whose feature is enabled. */}}
+{{- if hasKey $spec "extraAgents" }}
+{{- $enabled := dict }}
+{{- range $comp := $top.Values.components }}
+{{- if eq (include "inst.featureEnabled" (list $top $comp.feature)) "true" }}
+{{- $_ := set $enabled $comp.name true }}
+{{- end }}
+{{- end }}
+{{- $keep := list }}
+{{- range $ea := $spec.extraAgents }}
+{{- if hasKey $enabled $ea.name }}{{- $keep = append $keep $ea }}{{- end }}
+{{- end }}
+{{- $_ := set $spec "extraAgents" $keep }}
+{{- end }}
 ---
 apiVersion: {{ include "inst.apiVersion" (list $c.version) }}
 kind: {{ $c.kind }}

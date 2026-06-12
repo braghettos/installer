@@ -128,6 +128,14 @@ vertexAI:
 #     snowplow:
 #       replicaCount: 2
 componentValues:
+  # Pin the kagent composition's resource names to a fixed "kagent" prefix (instead of the
+  # core-provider-generated release name like kagent-<hash>). The kagent tool server is named
+  # "{{ kagent.fullname }}-tool-server"; the autopilot/installer-agent/k8s-agent/helm-agent all
+  # reference the RemoteMCPServer "kagent-tool-server" by the kagent default-install convention,
+  # so without a fixed name kagent fails to compile them ("RemoteMCPServer kagent-tool-server not found").
+  kagent:
+    kagentapp:
+      fullnameOverride: kagent
   krateo-autopilot:
     extraAgents:
       - name: krateo-installer-agent
