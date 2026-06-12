@@ -209,8 +209,29 @@ spec:
               until kubectl get installers.composition.krateo.io -n {{ .Values.namespaces.krateo }} >/dev/null 2>&1; do sleep 5; done
               echo "applying Installer CR — core-provider's cdc self-reconciles the rollout"
               kubectl apply -f /cr/installer.yaml
-              # No cdc restart needed: composition-dynamic-controller rebuilds its discovery
-              # every reconcile (NewCachedClients -> Invalidate) and inst.crdExists lists CRD
-              # objects live, so Pass B picks up the component CRDs on the cdc's next reconcile.
+              # Auto-heal the Installer CR's FIRST reconcile: the cdc occasionally loses the
+              # race between setting the crossplane `external-create-pending` annotation and
+              # confirming the create (it reports `external-create-failed` then refuses to
+              # retry — "cannot determine creation result"). That is a hard stop that does NOT
+              # self-clear, so we remove the stale annotations until the CR goes Synced. Once
+              # Synced, Pass A + Pass B advance entirely on the cdc resync loop (its RESTMapper
+              # re-discovers new component CRDs on a cache miss) — no manual nudges needed.
+              echo "auto-heal: clearing any stuck external-create-pending on the Installer CR"
+              for i in $(seq 1 30); do
+                synced=$(kubectl get installers.composition.krateo.io installer \
+                  -n {{ .Values.namespaces.krateo }} \
+                  -o jsonpath='{.status.conditions[?(@.type=="Synced")].status}' 2>/dev/null || true)
+                if [ "$synced" = "True" ]; then echo "Installer CR Synced — self-bootstrap proceeding"; break; fi
+                if kubectl get installers.composition.krateo.io installer \
+                     -n {{ .Values.namespaces.krateo }} \
+                     -o jsonpath='{.metadata.annotations}' 2>/dev/null | grep -q 'external-create-pending'; then
+                  echo "  clearing stale external-create-{pending,failed} annotations"
+                  kubectl annotate installers.composition.krateo.io installer \
+                    -n {{ .Values.namespaces.krateo }} \
+                    krateo.io/external-create-pending- krateo.io/external-create-failed- \
+                    --overwrite 2>/dev/null || true
+                fi
+                sleep 10
+              done
               echo "done — Pass A + Pass B advance on the cdc reconcile loop"
 {{- end }}
