@@ -17,6 +17,10 @@ The agent wires in the built-in `kagent-tool-server` (`k8s_*` + `helm_*` tools),
 inspect CompositionDefinitions, Compositions, the Installer CR, controller logs, and Helm
 releases on the live cluster and reason about what it finds.
 
+> **Beyond Q&A:** the agent can also **provision and evolve the platform** by editing the
+> `Installer` CR (no cluster-admin needed) — see
+> **[AGENT-DRIVEN-PROVISIONING.md](./AGENT-DRIVEN-PROVISIONING.md)**.
+
 ## Prerequisites
 
 ### 1. kagent on the cluster
