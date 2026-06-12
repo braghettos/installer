@@ -122,12 +122,14 @@ vertexAI:
 # wins on any leaf conflict — so you can safely add anything else here (e.g.
 # resources, replicaCount, service.annotations) and edit it in place on the live
 # Installer composition; a direct kubectl edit of the component CR reverts.
-# Default: unset (treated as empty). Example:
-#   componentValues:
+# Default below registers the installer's federated agent on the autopilot orchestrator (the
+# single entry point). Add per-component overrides here too, e.g.:
 #     snowplow:
 #       replicaCount: 2
-#     portal:
-#       someChartValue: foo
+componentValues:
+  krateo-autopilot:
+    extraAgents:
+      - name: krateo-installer-agent
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -298,12 +300,25 @@ components:
       - kagent-crds
     tier: observability
     feature: observabilityAgents
+  # The installer's federated specialist agent (shipped from this repo's kagent/chart/), published
+  # to /krateo/krateo-installer-agent and registered on the autopilot orchestrator via
+  # componentValues.krateo-autopilot.extraAgents (below). It provisions/evolves the platform by
+  # editing the Installer CR — narrow RBAC, see kagent/AGENT-DRIVEN-PROVISIONING.md.
+  - name: krateo-installer-agent
+    kind: KrateoInstallerAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
     version: "0.1.7"
     deps:
       - clickhouse-mcp-server
       - kagent
+      - krateo-installer-agent
     tier: observability
     feature: observabilityAgents
     vertexAI: true

@@ -3908,6 +3908,28 @@
               "type": "object",
               "additionalProperties": true,
               "description": "Helm global values (injected by the composition runtime)."
+            },
+            "extraAgents": {
+              "type": "array",
+              "description": "Extra A2A sub-agents to register on the orchestrator (component/blueprint specialists, e.g. krateo-installer-agent). Reachable only via the orchestrator's routing.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "apiGroup": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           },
           "description": "Overrides for the krateo-autopilot Composition (chart 0.1.7), deep-merged into its spec."

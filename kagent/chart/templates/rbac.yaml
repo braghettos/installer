@@ -1,0 +1,37 @@
+{{- if .Values.rbac.create }}
+# Narrow authority: the agent provisions/evolves the platform ONLY by editing the Installer CR.
+# Bound to the ServiceAccount the kagent tool-server runs as (it executes k8s_patch_resource).
+# Not cluster-admin — every change is an ordinary, apiserver-validated `kubectl patch`.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: installer-driver
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: krateo-installer-agent
+    app.kubernetes.io/part-of: krateo-installer
+rules:
+  - apiGroups: [composition.krateo.io]
+    resources: [installers]
+    verbs: [get, list, watch, patch]
+  - apiGroups: [core.krateo.io]
+    resources: [compositiondefinitions]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: installer-driver
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: krateo-installer-agent
+    app.kubernetes.io/part-of: krateo-installer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: installer-driver
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.rbac.serviceAccountName }}
+    namespace: {{ .Values.namespace }}
+{{- end }}

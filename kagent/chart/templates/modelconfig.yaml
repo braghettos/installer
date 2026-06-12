@@ -1,0 +1,20 @@
+{{- if .Values.modelConfig.create }}
+# GeminiVertexAI ModelConfig via Application Default Credentials (no API key) — matches how the
+# installer's autopilot authenticates. Created here for the standalone "spawn only the agent"
+# case; set modelConfig.create=false to instead reference an existing (e.g. the autopilot's)
+# ModelConfig by modelConfig.name.
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: {{ .Values.modelConfig.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.modelConfig.name }}
+    app.kubernetes.io/part-of: krateo-installer-agent
+spec:
+  provider: GeminiVertexAI
+  model: {{ .Values.modelConfig.model }}
+  geminiVertexAI:
+    projectID: {{ .Values.modelConfig.vertexAI.projectID | quote }}
+    location: {{ .Values.modelConfig.vertexAI.location | quote }}
+{{- end }}

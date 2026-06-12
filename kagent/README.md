@@ -1,93 +1,52 @@
-# kagent Agent: `krateo-installer-expert`
+# `krateo-installer-agent` — the installer's federated specialist agent
 
-A [kagent](https://kagent.dev) Agent CRD that turns an LLM into a subject-matter expert on
-**this installer** — the compose-of-compositions umbrella that self-bootstraps and
-self-reconciles the whole Krateo PlatformOps platform from one `helm install`, and tears it
-down cleanly via three ordered Helm hooks.
+A [kagent](https://kagent.dev) Agent that **installs, configures and evolves** the Krateo
+PlatformOps platform by editing the `Installer` CR, and answers questions about the
+compose-of-compositions umbrella (bootstrap/reconcile/teardown). It is a **federated specialist**:
+the `krateo-autopilot` orchestrator routes to it over A2A (it is **not** a standalone entry point).
 
-The system prompt embeds the non-obvious architecture: the two render modes
-(`bootstrap.coreProvider.enabled`), the runtime-generated `installers` CRD + post-install
-hook, the Pass A / Pass B self-reconcile gated on `crdExists` + `depsReady`, the three
-teardown hooks (`ordered-teardown` → `bootstrap-teardown` → `post-delete-cleanup`) and why
-finalizer-based cleanup needs live controllers, the strictly-typed `componentValues` /
-`registryAuth` knobs, the installer-version GVR model + the `vacuum` migration, and the
-operational gotchas (demo-system, rotating admin-password, snowplow serving portal content, kind NodePort).
+Packaged as a dedicated agent **chart** under `chart/`, per the
+[`AGENTS-VERSIONING.md` `/kagent` standard](https://github.com/braghettos/krateo-autopilot/blob/main/AGENTS-VERSIONING.md)
+— published to `oci://ghcr.io/braghettos/krateo/krateo-installer-agent`.
 
-The agent wires in the built-in `kagent-tool-server` (`k8s_*` + `helm_*` tools), so it can
-inspect CompositionDefinitions, Compositions, the Installer CR, controller logs, and Helm
-releases on the live cluster and reason about what it finds.
+## How it ships
 
-> **Beyond Q&A:** the agent can also **provision and evolve the platform** by editing the
-> `Installer` CR (no cluster-admin needed) — see
-> **[AGENT-DRIVEN-PROVISIONING.md](./AGENT-DRIVEN-PROVISIONING.md)**.
+It is an **installer component** (gated on `features.observabilityAgents`): the umbrella emits its
+CompositionDefinition + Composition like any other component, and registers it on the orchestrator
+via `componentValues.krateo-autopilot.extraAgents: [{ name: krateo-installer-agent }]`. The
+autopilot then routes install/evolve/diagnose requests to it. No manual `kubectl apply` needed.
 
-## Prerequisites
+## What the chart contains (`chart/`)
 
-### 1. kagent on the cluster
+| Template | Purpose |
+|----------|---------|
+| `agent.yaml` | the `Agent` (`krateo-installer-agent`) — k8s/helm tools, HITL approval on the mutating ones, the installer system prompt + A2A skills |
+| `modelconfig.yaml` | optional GeminiVertexAI (ADC) `ModelConfig` (`modelConfig.create`); set `create=false` to reference the autopilot's by name |
+| `rbac.yaml` | narrow `Role`/`RoleBinding` — `patch` on `installers.composition.krateo.io` (+ read `compositiondefinitions`), bound to the kagent tool-server ServiceAccount |
 
-If you installed the platform with this umbrella and `features.observabilityAgents=true`,
-**kagent is already running** in `namespaces.krateo` (default `krateo-system`) — skip ahead.
+Key values: `modelConfig.{name,create,model,vertexAI}`, `hitlApproval`, `rbac.{create,serviceAccountName}`.
 
-Otherwise install kagent standalone (verified on v0.9.9; no `helm repo add` needed):
+## Provisioning model
 
-```bash
-kubectl create ns krateo-system --dry-run=client -o yaml | kubectl apply -f -
+The agent provisions/evolves the platform by **patching the `Installer` CR** — not cluster-admin.
+core-provider diffs the declared spec and provisions the difference in dependency order; the
+apiserver validates every patch against the generated schema. See
+**[AGENT-DRIVEN-PROVISIONING.md](./AGENT-DRIVEN-PROVISIONING.md)** for the full walkthrough.
 
-helm upgrade --install kagent-crds \
-  oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds \
-  --version 0.9.9 --namespace krateo-system --wait --timeout 5m
+## Standalone (agent-only) use
 
-helm upgrade --install kagent \
-  oci://ghcr.io/kagent-dev/kagent/helm/kagent \
-  --version 0.9.9 --namespace krateo-system --timeout 10m
-```
-
-> The Agent and ModelConfig are namespaced; they must live in the **same namespace** as the
-> kagent controller + its `kagent-tool-server` `RemoteMCPServer`. These manifests use
-> `krateo-system` (where the installer runs kagent) — `sed` the namespace if yours differs.
-
-### 2. ModelConfig: Gemini on Vertex AI (ADC)
-
-[`modelconfig-vertex-gemini.yaml`](./modelconfig-vertex-gemini.yaml) is a `GeminiVertexAI`
-`ModelConfig` named **`vertex-gemini`** using **Application Default Credentials** — the same
-auth the installer's own autopilot uses (`vertexAI.enabled=true`). On GKE that means Workload
-Identity: the kagent controller pod's ServiceAccount must map to a GCP SA with
-`roles/aiplatform.user`, with the Vertex AI API enabled. Only `model` +
-`geminiVertexAI.{projectID,location}` are required — set them to match your installer's
-`vertexAI` values.
-
-**Not on Workload Identity?** Add a key Secret and reference it (the kagent reference
-blueprint does exactly this):
+To run just the agent (the "spawn only the agent" demo) on a cluster with kagent installed:
 
 ```bash
-kubectl -n krateo-system create secret generic kagent-vertex \
-  --from-file=key.json=$HOME/Downloads/<your-sa-key>.json
-```
-```yaml
-# then add to the ModelConfig spec:
-  apiKeySecret: kagent-vertex
-  apiKeySecretKey: key.json
+helm install krateo-installer-agent oci://ghcr.io/braghettos/krateo/krateo-installer-agent \
+  --version 0.1.0 -n krateo-system \
+  --set modelConfig.vertexAI.projectID=<your-gcp-project>
 ```
 
-Swap to Anthropic/OpenAI/etc. by changing `provider`/`model` (and the auth field) — the agent
-only references the ModelConfig by name (`vertex-gemini`).
+Then register it on your autopilot via `extraAgents` (or talk to it directly for the demo).
 
-## Apply
+## Related
 
-```bash
-kubectl apply -f kagent/modelconfig-vertex-gemini.yaml
-kubectl apply -f kagent/agent-installer-expert.yaml
-```
-
-Then open the kagent dashboard (or its A2A endpoint) and chat with **`krateo-installer-expert`**.
-
-## What to ask it
-
-- *"How does one `helm install` bring up the whole platform, and why a post-install hook?"*
-- *"Why is teardown split across three hooks, and which one fixes the portal/demo-system wedge?"*
-- *"How do I override snowplow's replica count without breaking exposure?"* (componentValues)
-- *"A reinstall crashloops core-provider with a GVK→GVR error — what's the fix?"*
-- *"The stack is stuck with only some CompositionDefinitions Ready — which gate is unmet?"*
-
-It will use the `k8s_*` / `helm_*` tools to inspect the live resources and explain precisely,
-and will ask for confirmation before anything destructive.
+- [AGENT-DRIVEN-PROVISIONING.md](./AGENT-DRIVEN-PROVISIONING.md) — provisioning via the Installer CR
+- [AUTOPILOT-DESIGN.md](./AUTOPILOT-DESIGN.md) — the orchestrator + fleet design
+- The `krateo-autopilot` repo's `AGENTS-VERSIONING.md` — the agents packaging/versioning/`/kagent` standard

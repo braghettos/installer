@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "krateo-installer-agent values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "namespace": {
+      "type": "string",
+      "description": "Namespace where the agent + its RBAC/ModelConfig are installed."
+    },
+    "modelConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The kagent ModelConfig the agent uses (referenced by name; optionally created here).",
+      "properties": {
+        "name": { "type": "string" },
+        "create": { "type": "boolean" },
+        "model": { "type": "string" },
+        "vertexAI": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "projectID": { "type": "string" },
+            "location": { "type": "string" }
+          }
+        }
+      }
+    },
+    "hitlApproval": {
+      "type": "boolean",
+      "description": "HITL approval gate on the mutating k8s tools the agent uses to edit the Installer CR."
+    },
+    "rbac": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Narrow Role/RoleBinding granting patch on installers.composition.krateo.io.",
+      "properties": {
+        "create": { "type": "boolean" },
+        "serviceAccountName": { "type": "string" }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Agent pod resource requests/limits."
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Helm global values (injected by the composition runtime)."
+    }
+  }
+}

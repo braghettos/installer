@@ -1,0 +1,13 @@
+apiVersion: v2
+name: krateo-installer-agent
+description: >-
+  Federated specialist agent for the Krateo PlatformOps installer. A kagent Agent that
+  installs, configures and evolves the platform by editing the Installer CR, registered on
+  the krateo-autopilot orchestrator via the extraAgents hook (the single entry point). Packaged
+  as a Krateo composition; published to oci://ghcr.io/braghettos/krateo/krateo-installer-agent.
+type: application
+# Pinned literally (NOT CHART_VERSION): this agent chart shares the installer repo, whose git
+# tag is the umbrella's version — so the agent versions independently. The installer references
+# krateo-installer-agent at this version; bump it here when the agent changes.
+version: 0.1.0
+appVersion: 0.1.0
