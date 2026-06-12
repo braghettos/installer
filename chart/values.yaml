@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Krateo PlatformOps installer — umbrella orchestrator values
 # ---------------------------------------------------------------------------
-ociRepo: oci://ghcr.io/braghettos/charts
+ociRepo: oci://ghcr.io/braghettos/krateo
 
 # Registry credentials for pulling component charts from a PRIVATE/authenticated OCI
 # registry. core-provider pulls each component chart IN-CLUSTER (and the umbrella's
@@ -148,7 +148,6 @@ components:
     version: "0.22.2"
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
   - name: oasgen-provider-crd
     kind: OasgenProviderCrd
     version: "0.9.0"
@@ -159,13 +158,11 @@ components:
     version: "1.0.25"
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
   - name: snowplow-crd
     kind: SnowplowCrd
     version: "0.20.6"
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
 
   # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
   - name: authn
@@ -201,7 +198,6 @@ components:
       - snowplow
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
     expose: true
     exposePort: 8080
     svcMatch: frontend
@@ -213,7 +209,6 @@ components:
       - frontend
     tier: platform
     feature: composableportalstarter
-    repo: oci://ghcr.io/braghettos
   - name: oasgen-provider
     kind: OasgenProvider
     version: "0.9.0"
@@ -233,7 +228,6 @@ components:
       - oasgen-provider
     tier: observability
     feature: podRestartAlert
-    repo: oci://ghcr.io/braghettos/krateo
 
   # ---- observability backend ----
   # ClickStack (ClickHouse + OTel gateway + HyperDX + MongoDB) is now a composition
@@ -246,7 +240,9 @@ components:
     version: "0.1.2"
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
+  # otel-collector-* and krateo-sse-proxy live in the krateo-clickstack-chart repo
+  # (grouped with the clickstack chart) and publish to the consolidated registry
+  # ociRepo = oci://ghcr.io/braghettos/krateo, like every other component.
   - name: otel-collector-deployment
     kind: OtelCollectorDeployment
     version: "0.1.1"
@@ -254,7 +250,6 @@ components:
       - krateo-clickstack
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
   - name: otel-collector-daemonset
     kind: OtelCollectorDaemonset
     version: "0.1.1"
@@ -262,7 +257,6 @@ components:
       - otel-collector-deployment
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-sse-proxy
     kind: KrateoSseProxy
     version: "0.1.1"
@@ -270,7 +264,6 @@ components:
       - krateo-clickstack
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
     expose: true
     exposePort: 8080
     svcMatch: sse-proxy
@@ -290,7 +283,6 @@ components:
       - krateo-clickstack
     tier: observability
     feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
   # kagent agentic platform as two compositions (wrapping unforked upstream charts):
   #   kagent-crds installs the kagent.dev/kmcp CRDs (helm-templates/-owned -> clean teardown);
   #   kagent (the operator) depends on it, so the CRDs are established before its CRs render.
@@ -299,7 +291,6 @@ components:
     version: "0.9.9"
     tier: observability
     feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
   - name: kagent
     kind: Kagent
     version: "0.9.9"
@@ -307,7 +298,6 @@ components:
       - kagent-crds
     tier: observability
     feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-autopilot
     kind: KrateoAutopilot
     version: "0.1.7"
@@ -316,5 +306,4 @@ components:
       - kagent
     tier: observability
     feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
     vertexAI: true
