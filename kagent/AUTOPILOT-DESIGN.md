@@ -148,13 +148,24 @@ expressed as an `Installer` CR edit (Section 6), not an ad-hoc patch.
 
 ## 6. The autopilot as platform operator (provision via the Installer CR)
 
-The orchestrator's *"installs Krateo"* role is realized through
-[agent-driven provisioning](./AGENT-DRIVEN-PROVISIONING.md): instead of privileged installs, the
-autopilot **edits the `Installer` CR** (`spec.features` / `componentValues` / `registryAuth`) and
-core-provider reconciles it (Pass A/B, dependency-ordered — demonstrated: an `oasgenprovider`
-toggle provisioned the components in ~3 min). RBAC stays narrow (`patch` on
+**Two different installers — do not conflate.** The autopilot's existing `install_krateo` skill +
+install prompts target the **upstream krateoplatformops** flow (`helm install …/github-provider`,
+`git-provider`, `argocd`, core-provider) — the *old* installer. **This** installer
+(`braghettos/installer`) is a completely different mechanism: a self-bootstrapping
+compose-of-compositions OCI umbrella whose control surface is the `Installer` CR. Provisioning it is
+a **new capability the autopilot does not have today**.
+
+That new capability is [agent-driven provisioning](./AGENT-DRIVEN-PROVISIONING.md): instead of
+privileged installs, the autopilot **edits the `Installer` CR** (`spec.features` / `componentValues`
+/ `registryAuth`) and core-provider reconciles it (Pass A/B, dependency-ordered — demonstrated: an
+`oasgenprovider` toggle provisioned the components in ~3 min). RBAC stays narrow (`patch` on
 `installers.composition.krateo.io`), the apiserver's strict schema validates every edit, and
 structural changes become declarative + audited rather than imperative `kubectl` mutations.
+
+> **OPEN DECISION:** whether the braghettos umbrella **replaces** the autopilot's old `install_krateo`
+> (repoint it to `helm install` the umbrella → drive the `Installer` CR; the installer's own agent
+> owns this domain) or **coexists** with it. This determines whether the new installer-agent
+> supersedes `install_krateo` or sits beside it.
 
 ## 7. Open issues to resolve (carried from build notes)
 
@@ -200,6 +211,36 @@ A new specialist is a uniform change:
 4. a prompt section in `files/prompts-*.yaml`.
 5. if it needs new tools, a `RemoteMCPServer` in `mcpServers` + the `toolNames` on the agent.
 
+## 8a. Target architecture — federated agents (agents ship with their components)
+
+**Direction:** specialist agents should live **with the code they're expert in**. Each component
+chart ships its own agent — e.g. `frontend-chart` contains the frontend agent, `authn-chart` the
+authn agent, `snowplow-chart` the snowplow agent — so deploying a component deploys its specialist,
+and the central `krateo-autopilot` orchestrator routes to it (the §3.1 invariant still holds: one
+mandatory entry point over a now-**decentralized, component-owned** fleet).
+
+This co-locates domain knowledge with the domain team (the frontend team owns the frontend agent's
+prompt + tools), and shrinks the autopilot chart to the **orchestrator + cross-cutting agents only**
+(ops: `k8s`/`helm`/`observability`; IaC codegen). The per-domain agents (`auth`, `blueprint`,
+`portal`, `restaction`, `documentation`, and new ones) **migrate out** of the autopilot chart into
+their component charts.
+
+**How the orchestrator learns the federated fleet** — two stages:
+
+- **Now — installer-aggregates (the `extraAgents` hook, §7a).** A component flagged `agent: true`
+  ships its `Agent` CR; the installer's `compositions.yaml` aggregates the enabled agents into the
+  autopilot composition's `extraAgents`. Works today. Because Helm replaces list overrides, **one
+  aggregator must build the whole list** — the installer is the natural one (it already knows the
+  enabled component set).
+- **Target — label discovery.** Components ship their agent labeled
+  `krateo.io/orchestrated-by: krateo-autopilot`; a small sync (a controller, or a kagent
+  enhancement) keeps the orchestrator's `type: Agent` tools in step with the labeled set — **zero
+  installer coordination**, components fully self-contained. This is the clean end-state.
+
+A component chart's agent contribution is uniform: the `Agent` CR (inline `systemMessage`, reusing
+the platform `ModelConfig` + shared MCP servers, with the right `toolNames`), the `agent: true`
+marker / orchestration label, and its prompt — all versioned **with the component**.
+
 ## 9. Roadmap
 
 - **Phase 1 — close the loop.** Ship `autopilot-alert-proxy` (HyperDX Webhook → A2A) so remediation
@@ -213,3 +254,8 @@ A new specialist is a uniform change:
   register it through that hook (autopilot-gated, no standalone), and harden the IaC codegen agents
   (ansible/tf → operator) and the ClickHouse-telemetry diagnostics. This establishes the standard
   path for *any* blueprint to contribute an autopilot-orchestrated domain agent.
+- **Phase 5 — federate the fleet (agents ship with their components).** Migrate the per-domain
+  agents out of the autopilot chart into their component charts (`frontend-chart`, `authn-chart`,
+  …), with the installer aggregating them via `extraAgents` (a per-component `agent: true` marker).
+  Then move to **label discovery** (`krateo.io/orchestrated-by: krateo-autopilot` + a sync), so the
+  autopilot chart is just the orchestrator + cross-cutting agents and components are self-contained.
