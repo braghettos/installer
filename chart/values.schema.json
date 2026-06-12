@@ -4012,8 +4012,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string",
-              "description": "Name of the kagent ModelConfig the agent uses (shipped by the autopilot)."
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4071,8 +4104,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string",
-              "description": "Name of the kagent ModelConfig the agent uses (shipped by the autopilot)."
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4130,7 +4196,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string"
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4187,7 +4287,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string"
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4244,7 +4378,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string"
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4301,7 +4469,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string"
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4358,7 +4560,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string"
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4415,7 +4651,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string"
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
@@ -4472,7 +4742,41 @@
               "type": "string"
             },
             "modelConfig": {
-              "type": "string"
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
             },
             "prompts": {
               "type": "object",
