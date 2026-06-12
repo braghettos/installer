@@ -162,10 +162,11 @@ privileged installs, the autopilot **edits the `Installer` CR** (`spec.features`
 `installers.composition.krateo.io`), the apiserver's strict schema validates every edit, and
 structural changes become declarative + audited rather than imperative `kubectl` mutations.
 
-> **OPEN DECISION:** whether the braghettos umbrella **replaces** the autopilot's old `install_krateo`
-> (repoint it to `helm install` the umbrella → drive the `Installer` CR; the installer's own agent
-> owns this domain) or **coexists** with it. This determines whether the new installer-agent
-> supersedes `install_krateo` or sits beside it.
+> **DECISION: replace.** The braghettos umbrella **replaces** the autopilot's old `install_krateo`
+> path. The orchestrator's install capability is repointed to `helm install` the umbrella →
+> self-bootstrap → drive the `Installer` CR; the old upstream `install_krateo` skill + its prompt
+> sections are removed, and the new `krateo-installer-agent` (in the `installer` repo) owns the
+> install/provisioning domain.
 
 ## 7. Open issues to resolve (carried from build notes)
 
@@ -240,6 +241,38 @@ their component charts.
 A component chart's agent contribution is uniform: the `Agent` CR (inline `systemMessage`, reusing
 the platform `ModelConfig` + shared MCP servers, with the right `toolNames`), the `agent: true`
 marker / orchestration label, and its prompt — all versioned **with the component**.
+
+### 8b. Agent → target repo (where each agent gets versioned)
+
+**Stay central** — the orchestrator + cross-cutting capability agents have no single component, so
+they remain in the **`autopilot`** repo (the `krateo-autopilot` chart):
+
+| Agent | Role | Repo |
+|---|---|---|
+| `krateo-autopilot` (orchestrator) | mandatory entry point / router | **autopilot** |
+| `k8s-agent` | Kubernetes ops on any resource | **autopilot** |
+| `helm-agent` | Helm ops on any release | **autopilot** |
+| `krateo-documentation-agent` | general Krateo docs | **autopilot** (candidate: `krateo-manifesto`) |
+
+**Federate** — component/domain agents move to the chart repo of the component they're expert in:
+
+| Agent | Domain / related component | Target repo |
+|---|---|---|
+| `krateo-auth-agent` | authn | **authn-chart** |
+| `krateo-blueprint-agent` | CompositionDefinitions / Compositions (the engine) | **core-provider-chart** |
+| `krateo-portal-agent` | portal | **portal-chart** |
+| `krateo-restaction-agent` | RESTActions / BFF (`templates.krateo.io`) | **snowplow-chart** |
+| `krateo-observability-agent` | telemetry / ClickStack | **clickstack-chart** |
+| `krateo-code-analysis-agent` | source tracing for operator gen | **oasgen-provider-chart** |
+| `krateo-ansible-to-operator-agent` | IaC → Krateo operator (KOG) | **oasgen-provider-chart** |
+| `krateo-tf-provider-to-operator-agent` | IaC → Krateo operator (KOG) | **oasgen-provider-chart** |
+| `krateo-tf-to-helm-agent` | IaC → Helm chart | **oasgen-provider-chart** |
+| `krateo-installer-agent` **(new)** | this installer + provisioning via the `Installer` CR | **installer** |
+
+Notes: the four IaC/codegen agents are capability agents (no *deployed* component) — homing them in
+**oasgen-provider-chart** (the Krateo Operator Generator / OASGen domain) keeps "ship with the
+related component" while acknowledging they're the generator's toolkit; they could alternatively
+stay central. A future per-UI agent would live in **frontend-chart**.
 
 ## 9. Roadmap
 
