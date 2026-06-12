@@ -131,6 +131,10 @@ componentValues:
     extraAgents:
       - name: krateo-installer-agent
       - name: krateo-authn-agent
+      - name: krateo-snowplow-agent
+      - name: krateo-frontend-agent
+      - name: krateo-clickstack-agent
+      - name: krateo-core-provider-agent
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -323,14 +327,50 @@ components:
     tier: observability
     feature: observabilityAgents
     vertexAI: true
+  - name: krateo-snowplow-agent
+    kind: KrateoSnowplowAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
+  - name: krateo-frontend-agent
+    kind: KrateoFrontendAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
+  - name: krateo-clickstack-agent
+    kind: KrateoClickstackAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
+  - name: krateo-core-provider-agent
+    kind: KrateoCoreProviderAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.8"
+    version: "0.1.9"
     deps:
       - clickhouse-mcp-server
       - kagent
       - krateo-installer-agent
       - krateo-authn-agent
+      - krateo-snowplow-agent
+      - krateo-frontend-agent
+      - krateo-clickstack-agent
+      - krateo-core-provider-agent
     tier: observability
     feature: observabilityAgents
     vertexAI: true

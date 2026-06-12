@@ -27,14 +27,14 @@ their repo tag is just a release marker.
 
 | Repo | PR | Tag | Publishes to `/krateo/…` |
 |------|----|-----|---------------------------|
-| `krateo-core-provider-chart` | #1 | `0.35.4` | core-provider:0.35.4, core-provider-crd:0.35.4 |
-| `krateo-authn-chart` | #1 | `0.22.2` | authn:0.22.2, authn-crd:0.22.2 (pinned), **krateo-authn-agent:0.1.0** (federated agent) |
-| `krateo-snowplow-chart` | #5 | `0.30.259` | snowplow:0.30.259, snowplow-crd:0.20.6 (pinned) |
-| `krateo-frontend-chart` | #5 | `1.0.12` | frontend:1.0.12, frontend-crd:1.0.25 (pinned) |
+| `krateo-core-provider-chart` | #1 | `0.35.4` | core-provider:0.35.4, core-provider-crd:0.35.4, **krateo-core-provider-agent:0.1.0** |
+| `krateo-authn-chart` | #1 | `0.22.2` | authn:0.22.2, authn-crd:0.22.2 (pinned), **krateo-authn-agent:0.1.0** |
+| `krateo-snowplow-chart` | #5 | `0.30.259` | snowplow:0.30.259, snowplow-crd:0.20.6, **krateo-snowplow-agent:0.1.0** |
+| `krateo-frontend-chart` | #5 | `1.0.12` | frontend:1.0.12, frontend-crd:1.0.25, **krateo-frontend-agent:0.1.0** |
 | `krateo-oasgen-provider-chart` | #1 | `0.9.0` | oasgen-provider:0.9.0, oasgen-provider-crd:0.9.0 |
 | `krateo-portal-chart` | #6 | `1.2.2` | portal:1.2.2 |
-| `krateo-clickstack-chart` | #1 | `0.1.2` † | krateo-clickstack:0.1.2, otel-collector-deployment:0.1.1, otel-collector-daemonset:0.1.1, krateo-sse-proxy:0.1.1 |
-| `krateo-autopilot` | #1 | `0.1.8` | krateo-autopilot:0.1.8 (auth federated out) |
+| `krateo-clickstack-chart` | #1 | `0.1.2` † | krateo-clickstack:0.1.2, otel-collector-deployment:0.1.1, otel-collector-daemonset:0.1.1, krateo-sse-proxy:0.1.1, **krateo-clickstack-agent:0.1.0** |
+| `krateo-autopilot` | #1 | `0.1.9` | krateo-autopilot:0.1.9 (all specialists federated out) |
 | `krateo-installer-charts` | #1 | `0.x` † | hyperdx-provider:0.1.1, kagent:0.1.0 (appVersion kagent 0.9.7), kagent-crds:0.1.0, clickhouse-mcp-server:0.1.7 |
 
 ## Tier 2 — the umbrella (LAST)
