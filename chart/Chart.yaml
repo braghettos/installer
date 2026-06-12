@@ -24,11 +24,11 @@ sources:
 dependencies:
   # composition engine
   - name: core-provider-crd
-    version: "0.35.5"
+    version: "0.35.6"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   - name: core-provider
-    version: "0.35.5"
+    version: "0.35.6"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # observability operators (ClickStack 3.0.0 prerequisites). cert-manager must be Ready
