@@ -3933,6 +3933,589 @@
             }
           },
           "description": "Overrides for the krateo-autopilot Composition (chart 0.1.7), deep-merged into its spec."
+        },
+        "krateo-installer-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string",
+              "description": "Namespace where the agent + its RBAC/ModelConfig are installed."
+            },
+            "modelConfig": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "The kagent ModelConfig the agent uses (referenced by name; optionally created here).",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "hitlApproval": {
+              "type": "boolean",
+              "description": "HITL approval gate on the mutating k8s tools the agent uses to edit the Installer CR."
+            },
+            "rbac": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Narrow Role/RoleBinding granting patch on installers.composition.krateo.io.",
+              "properties": {
+                "create": {
+                  "type": "boolean"
+                },
+                "serviceAccountName": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Agent pod resource requests/limits."
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Helm global values (injected by the composition runtime)."
+            }
+          },
+          "description": "Overrides for the krateo-installer-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-authn-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string",
+              "description": "Name of the kagent ModelConfig the agent uses (shipped by the autopilot)."
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "github MCP server the agent uses to read its component's codebase + chart.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-authn-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-snowplow-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string",
+              "description": "Name of the kagent ModelConfig the agent uses (shipped by the autopilot)."
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "github MCP server the agent uses to read its component's codebase + chart.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-snowplow-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-frontend-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string"
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-frontend-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-clickstack-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string"
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-clickstack-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-core-provider-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string"
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-core-provider-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-code-analysis-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string"
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-code-analysis-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-ansible-to-operator-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string"
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-ansible-to-operator-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-tf-provider-to-operator-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string"
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-tf-provider-to-operator-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-tf-to-helm-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "modelConfig": {
+              "type": "string"
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "Overrides for the krateo-tf-to-helm-agent Composition (chart 0.1.0), deep-merged into its spec."
         }
       }
     },
