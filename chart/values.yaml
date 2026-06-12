@@ -130,6 +130,7 @@ componentValues:
   krateo-autopilot:
     extraAgents:
       - name: krateo-installer-agent
+      - name: krateo-authn-agent
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -312,13 +313,24 @@ components:
     tier: observability
     feature: observabilityAgents
     vertexAI: true
+  # Federated specialist agents — each ships from its component's *-chart repo (kagent/chart),
+  # registered on the autopilot via componentValues.krateo-autopilot.extraAgents.
+  - name: krateo-authn-agent
+    kind: KrateoAuthnAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
+    vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.7"
+    version: "0.1.8"
     deps:
       - clickhouse-mcp-server
       - kagent
       - krateo-installer-agent
+      - krateo-authn-agent
     tier: observability
     feature: observabilityAgents
     vertexAI: true
