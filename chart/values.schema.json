@@ -215,6 +215,10 @@
         "podRestartAlert": {
           "type": "boolean",
           "default": false
+        },
+        "specialistAgents": {
+          "type": "boolean",
+          "description": "Deploy the 9 specialist/codegen agents + clickhouse-mcp (needs observabilityAgents). Set false for an agent-only install (just the autopilot + installer-agent)."
         }
       }
     },

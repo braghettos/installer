@@ -89,7 +89,8 @@ features:
   composableoperations: true      # core-provider
   oasgenprovider: true            # oasgen-provider
   observability: true             # clickstack/otel/agents group
-  observabilityAgents: true       # kagent operator + krateo-autopilot + MCP tools
+  observabilityAgents: true       # MINIMAL agent layer: kagent + krateo-installer-agent + krateo-autopilot
+  specialistAgents: true          # the 9 specialist/codegen agents + clickhouse-mcp (need observabilityAgents)
   githubMcp: false                # GitHub MCP (hosted RemoteMCPServer)
   podRestartAlert: false          # pod-restart alert pipeline
 
@@ -293,7 +294,7 @@ components:
     deps:
       - krateo-clickstack
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
   # kagent agentic platform as two compositions (wrapping unforked upstream charts):
   #   kagent-crds installs the kagent.dev/kmcp CRDs (helm-templates/-owned -> clean teardown);
   #   kagent (the operator) depends on it, so the CRDs are established before its CRs render.
@@ -329,7 +330,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-snowplow-agent
     kind: KrateoSnowplowAgent
@@ -337,7 +338,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-frontend-agent
     kind: KrateoFrontendAgent
@@ -345,7 +346,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-clickstack-agent
     kind: KrateoClickstackAgent
@@ -353,7 +354,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-core-provider-agent
     kind: KrateoCoreProviderAgent
@@ -361,7 +362,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   # Cross-cutting codegen agents (not component-tied) — shipped from braghettos/krateo-codegen-agents.
   - name: krateo-code-analysis-agent
@@ -370,7 +371,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-ansible-to-operator-agent
     kind: KrateoAnsibleToOperatorAgent
@@ -378,7 +379,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-tf-provider-to-operator-agent
     kind: KrateoTfProviderToOperatorAgent
@@ -386,7 +387,7 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-tf-to-helm-agent
     kind: KrateoTfToHelmAgent
@@ -394,24 +395,14 @@ components:
     deps:
       - kagent
     tier: observability
-    feature: observabilityAgents
+    feature: specialistAgents
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
     version: "0.1.10"
     deps:
-      - clickhouse-mcp-server
       - kagent
       - krateo-installer-agent
-      - krateo-authn-agent
-      - krateo-snowplow-agent
-      - krateo-frontend-agent
-      - krateo-clickstack-agent
-      - krateo-core-provider-agent
-      - krateo-code-analysis-agent
-      - krateo-ansible-to-operator-agent
-      - krateo-tf-provider-to-operator-agent
-      - krateo-tf-to-helm-agent
     tier: observability
     feature: observabilityAgents
     vertexAI: true

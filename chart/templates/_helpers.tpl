@@ -32,7 +32,11 @@
      Krateo CORE platform modules (the engine + the composable portal: authn/snowplow/
      frontend/portal) install REGARDLESS of their flag — they are not optional. Only the
      add-on features (observability, oasgen, githubMcp, podRestartAlert) are gated. */}}
-{{- define "inst.coreFeatures" -}}composableoperations composableportal composableportalstarter{{- end -}}
+{{/* No feature is force-enabled: every component gates on its feature flag, so a minimal
+     "agent-only" install (just the autopilot + installer-agent) can disable the platform and let
+     the agent provision it later by editing the Installer CR. Defaults in values.yaml are all true,
+     so a plain `helm install` still brings up the full platform. */}}
+{{- define "inst.coreFeatures" -}}{{- end -}}
 {{- define "inst.featureEnabled" -}}
 {{- $top := index . 0 -}}{{- $feat := index . 1 -}}
 {{- if not $feat -}}true

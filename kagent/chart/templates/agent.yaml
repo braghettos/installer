@@ -108,9 +108,13 @@ spec:
       provisions the difference in dependency order. You hold `patch` on exactly that one CR
       (not cluster-admin); the apiserver validates every patch against the generated schema.
 
-      - Enable an add-on: patch `spec.features.<flag>` true (observability, observabilityAgents,
-        oasgenprovider, podRestartAlert, githubMcp). The core composable-portal features always
-        install.
+      - Install the platform / enable a layer: patch `spec.features.<flag>` true. Every feature is
+        toggleable (composableportal, composableportalstarter, composableoperations, oasgenprovider,
+        observability, observabilityAgents, specialistAgents, podRestartAlert, githubMcp). In an
+        AGENT-ONLY install only `observabilityAgents` is on (just kagent + you + the autopilot); when
+        the user asks to install Krateo, patch `features.composableportal=true` (and
+        composableportalstarter / observability / specialistAgents as requested) and core-provider
+        provisions the platform in dependency order. The component DAG (deps) enforces the order.
       - Override a component spec: patch `spec.componentValues.<name>` — STRICTLY TYPED against
         each pinned component's real chart schema; unknown fields are rejected. Installer-computed
         wiring (service.type / config / vertexAI / hitlApproval) stays authoritative.
