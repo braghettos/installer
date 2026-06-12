@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Krateo PlatformOps installer — umbrella orchestrator values
 # ---------------------------------------------------------------------------
-ociRepo: oci://ghcr.io/braghettos/charts
+ociRepo: oci://ghcr.io/braghettos/krateo
 
 # Registry credentials for pulling component charts from a PRIVATE/authenticated OCI
 # registry. core-provider pulls each component chart IN-CLUSTER (and the umbrella's
@@ -34,7 +34,7 @@ installDefinitions: true
 bootstrap:
   coreProvider:
     enabled: true
-    version: "0.35.2"
+    version: "0.35.4"
   # ClickStack 3.0.0 operator prerequisites (disable any already present on the cluster).
   certManager:
     enabled: true
@@ -89,7 +89,8 @@ features:
   composableoperations: true      # core-provider
   oasgenprovider: true            # oasgen-provider
   observability: true             # clickstack/otel/agents group
-  observabilityAgents: true       # kagent operator + krateo-autopilot + MCP tools
+  observabilityAgents: true       # MINIMAL agent layer: kagent + krateo-installer-agent + krateo-autopilot
+  specialistAgents: true          # the 9 specialist/codegen agents + clickhouse-mcp (need observabilityAgents)
   githubMcp: false                # GitHub MCP (hosted RemoteMCPServer)
   podRestartAlert: false          # pod-restart alert pipeline
 
@@ -122,12 +123,23 @@ vertexAI:
 # wins on any leaf conflict — so you can safely add anything else here (e.g.
 # resources, replicaCount, service.annotations) and edit it in place on the live
 # Installer composition; a direct kubectl edit of the component CR reverts.
-# Default: unset (treated as empty). Example:
-#   componentValues:
+# Default below registers the installer's federated agent on the autopilot orchestrator (the
+# single entry point). Add per-component overrides here too, e.g.:
 #     snowplow:
 #       replicaCount: 2
-#     portal:
-#       someChartValue: foo
+componentValues:
+  krateo-autopilot:
+    extraAgents:
+      - name: krateo-installer-agent
+      - name: krateo-authn-agent
+      - name: krateo-snowplow-agent
+      - name: krateo-frontend-agent
+      - name: krateo-clickstack-agent
+      - name: krateo-core-provider-agent
+      - name: krateo-code-analysis-agent
+      - name: krateo-ansible-to-operator-agent
+      - name: krateo-tf-provider-to-operator-agent
+      - name: krateo-tf-to-helm-agent
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -148,7 +160,6 @@ components:
     version: "0.22.2"
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
   - name: oasgen-provider-crd
     kind: OasgenProviderCrd
     version: "0.9.0"
@@ -159,13 +170,11 @@ components:
     version: "1.0.25"
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
   - name: snowplow-crd
     kind: SnowplowCrd
     version: "0.20.6"
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
 
   # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
   - name: authn
@@ -201,7 +210,6 @@ components:
       - snowplow
     tier: platform
     feature: composableportal
-    repo: oci://ghcr.io/braghettos/krateo
     expose: true
     exposePort: 8080
     svcMatch: frontend
@@ -213,7 +221,6 @@ components:
       - frontend
     tier: platform
     feature: composableportalstarter
-    repo: oci://ghcr.io/braghettos
   - name: oasgen-provider
     kind: OasgenProvider
     version: "0.9.0"
@@ -233,7 +240,6 @@ components:
       - oasgen-provider
     tier: observability
     feature: podRestartAlert
-    repo: oci://ghcr.io/braghettos/krateo
 
   # ---- observability backend ----
   # ClickStack (ClickHouse + OTel gateway + HyperDX + MongoDB) is now a composition
@@ -246,7 +252,9 @@ components:
     version: "0.1.2"
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
+  # otel-collector-* and krateo-sse-proxy live in the krateo-clickstack-chart repo
+  # (grouped with the clickstack chart) and publish to the consolidated registry
+  # ociRepo = oci://ghcr.io/braghettos/krateo, like every other component.
   - name: otel-collector-deployment
     kind: OtelCollectorDeployment
     version: "0.1.1"
@@ -254,7 +262,6 @@ components:
       - krateo-clickstack
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
   - name: otel-collector-daemonset
     kind: OtelCollectorDaemonset
     version: "0.1.1"
@@ -262,7 +269,6 @@ components:
       - otel-collector-deployment
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
   - name: krateo-sse-proxy
     kind: KrateoSseProxy
     version: "0.1.1"
@@ -270,7 +276,6 @@ components:
       - krateo-clickstack
     tier: observability
     feature: observability
-    repo: oci://ghcr.io/braghettos/krateo
     expose: true
     exposePort: 8080
     svcMatch: sse-proxy
@@ -289,32 +294,115 @@ components:
     deps:
       - krateo-clickstack
     tier: observability
-    feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
+    feature: specialistAgents
   # kagent agentic platform as two compositions (wrapping unforked upstream charts):
   #   kagent-crds installs the kagent.dev/kmcp CRDs (helm-templates/-owned -> clean teardown);
   #   kagent (the operator) depends on it, so the CRDs are established before its CRs render.
   - name: kagent-crds
     kind: KagentCrds
-    version: "0.9.9"
+    version: "0.1.0"
     tier: observability
     feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
   - name: kagent
     kind: Kagent
-    version: "0.9.9"
+    version: "0.1.0"
     deps:
       - kagent-crds
     tier: observability
     feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
-  - name: krateo-autopilot
-    kind: KrateoAutopilot
-    version: "0.1.7"
+  # The installer's federated specialist agent (shipped from this repo's kagent/chart/), published
+  # to /krateo/krateo-installer-agent and registered on the autopilot orchestrator via
+  # componentValues.krateo-autopilot.extraAgents (below). It provisions/evolves the platform by
+  # editing the Installer CR — narrow RBAC, see kagent/AGENT-DRIVEN-PROVISIONING.md.
+  - name: krateo-installer-agent
+    kind: KrateoInstallerAgent
+    version: "0.1.0"
     deps:
-      - clickhouse-mcp-server
       - kagent
     tier: observability
     feature: observabilityAgents
-    repo: oci://ghcr.io/braghettos/krateo
+    vertexAI: true
+  # Federated specialist agents — each ships from its component's *-chart repo (kagent/chart),
+  # registered on the autopilot via componentValues.krateo-autopilot.extraAgents.
+  - name: krateo-authn-agent
+    kind: KrateoAuthnAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-snowplow-agent
+    kind: KrateoSnowplowAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-frontend-agent
+    kind: KrateoFrontendAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-clickstack-agent
+    kind: KrateoClickstackAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-core-provider-agent
+    kind: KrateoCoreProviderAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  # Cross-cutting codegen agents (not component-tied) — shipped from braghettos/krateo-codegen-agents.
+  - name: krateo-code-analysis-agent
+    kind: KrateoCodeAnalysisAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-ansible-to-operator-agent
+    kind: KrateoAnsibleToOperatorAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-tf-provider-to-operator-agent
+    kind: KrateoTfProviderToOperatorAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-tf-to-helm-agent
+    kind: KrateoTfToHelmAgent
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: specialistAgents
+    vertexAI: true
+  - name: krateo-autopilot
+    kind: KrateoAutopilot
+    version: "0.1.10"
+    deps:
+      - kagent
+      - krateo-installer-agent
+    tier: observability
+    feature: observabilityAgents
     vertexAI: true

@@ -1,0 +1,13 @@
+# Registers the krateo-installer-agent with Krateo: core-provider generates a
+# KrateoInstallerAgent CRD + controller from the published OCI chart's values.schema.json.
+# Normally the installer umbrella emits this (the agent is an installer component gated on
+# features.observabilityAgents); apply it standalone only for the agent-only demo.
+apiVersion: core.krateo.io/v1alpha1
+kind: CompositionDefinition
+metadata:
+  name: krateo-installer-agent
+  namespace: krateo-system
+spec:
+  chart:
+    url: oci://ghcr.io/braghettos/krateo/krateo-installer-agent
+    version: "0.1.0"

@@ -1,0 +1,33 @@
+namespace: krateo-system
+
+# ModelConfig the agent uses. Per the agents standard, prefer REFERENCING the autopilot's
+# ModelConfig by name (set create=false, name=<an autopilot ModelConfig>). create=true also
+# ships a GeminiVertexAI (ADC) ModelConfig here, for the standalone "spawn only the agent" case.
+modelConfig:
+  name: vertex-gemini
+  create: true
+  model: gemini-2.5-pro
+  # GeminiVertexAI via Application Default Credentials (no API key). projectID/location are
+  # wired by the installer from .Values.vertexAI when this ships as an installer component.
+  vertexAI:
+    projectID: ""
+    location: us-central1
+
+# Human-in-the-loop gate on the mutating tools (k8s_patch_resource, k8s_apply_manifest) the
+# agent uses to edit the Installer CR. true = pause for approval (safe); false = autonomous.
+hitlApproval: true
+
+# Narrow RBAC: bind patch-on-installers (+ read compositiondefinitions) to the ServiceAccount the
+# kagent tool-server runs as (that SA executes the agent's k8s_patch_resource calls). Not
+# cluster-admin — the agent provisions only by editing one CR, validated by the apiserver.
+rbac:
+  create: true
+  serviceAccountName: kagent
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi

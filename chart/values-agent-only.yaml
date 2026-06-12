@@ -1,0 +1,30 @@
+# Agent-only install profile — bring up ONLY the autopilot + the installer-agent (+ kagent), then
+# let the agent install the rest of Krateo by editing the Installer CR.
+#
+#   helm install installer oci://ghcr.io/braghettos/krateo/installer \
+#     -n krateo-system --create-namespace -f values-agent-only.yaml \
+#     --set vertexAI.enabled=false          # on kind: use a Gemini API key Secret instead of ADC
+#
+# Then talk to krateo-autopilot ("install Krateo") -> it routes to krateo-installer-agent, which
+# patches the Installer CR (e.g. features.composableportal=true, specialistAgents=true, ...) and
+# core-provider provisions the full platform in dependency order.
+# Skip the observability operator prerequisites (cert-manager / ClickHouse / MongoDB) — they're only
+# needed once `observability` is turned on. The composition engine (core-provider) stays.
+bootstrap:
+  certManager:
+    enabled: false
+  clickhouseOperator:
+    enabled: false
+  mongodbOperator:
+    enabled: false
+
+features:
+  composableportal: false
+  composableportalstarter: false
+  composableoperations: false
+  oasgenprovider: false
+  observability: false
+  observabilityAgents: true        # the minimal agent layer: kagent + installer-agent + autopilot
+  specialistAgents: false          # not the 9 specialist/codegen agents yet
+  githubMcp: false
+  podRestartAlert: false

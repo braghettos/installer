@@ -7,6 +7,10 @@ triggered, and how the autopilot provisions/operates the platform through the `I
 > Implementation lives in the **`krateo-autopilot`** chart (a Krateo composition deployed by this
 > installer when `features.observabilityAgents=true`); kagent (operator + `kagent-tool-server`) is
 > a sibling composition. This document is the architecture + roadmap for the next phase of work.
+>
+> **Standing convention:** how agents are packaged, versioned, federated (the `extraAgents` hook)
+> and evaluated (outcome-based challenges) is the **`AGENTS-VERSIONING.md`** standard in the
+> `krateo-autopilot` repo. This doc is the design rationale; that file is the authoritative rule.
 
 ## 1. Where we are today
 
