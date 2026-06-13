@@ -77,19 +77,23 @@ stateDiagram-v2
         post-install hook Job blocks until core-provider has
         generated installers.composition.krateo.io, then applies
         the Installer CR (spec = picked values, bootstrap OFF).
+        AUTO-HEAL: the same Job then strips any stale crossplane
+        krateo.io/external-create-{pending,failed} annotation off the
+        Installer CR until it goes Synced (the cdc occasionally loses
+        the first-reconcile create race) - so the install is hands-off.
     end note
 
-    AwaitingInstallerCRD --> PassA: core-provider reconciles the Installer CR (re-renders in composition mode)
+    AwaitingInstallerCRD --> PassA: Installer CR Synced -> core-provider re-renders in composition mode
 
-    state "Self-reconcile loop" as Loop {
-        PassA: Pass A - register CompositionDefinitions
-        PassB: Pass B - emit Compositions
+    state "Self-reconcile loop (cdc resync = 60s)" as Loop {
+        PassA: Pass A - register component CompositionDefinitions
+        PassB: Pass B - emit component CRs (gated)
         PassA --> PassB: per component, CRD generated AND deps Ready=True
-        PassB --> PassA: next reconcile re-renders, more components unlock
+        PassB --> PassA: next resync re-renders; the cdc re-discovers new CRDs (RESTMapper Reset on miss), unlocking the next dependency level
     }
 
     PassB --> Ready: all enabled components Ready=True (exposure + portal config wired via lookup)
-    Ready --> PassA: every reconcile re-renders (drift correction / version propagation)
+    Ready --> PassA: every resync re-renders (drift correction / version propagation)
 
     Ready --> Draining: helm uninstall installer
     Bootstrapping --> Draining: helm uninstall installer
@@ -161,13 +165,23 @@ flowchart LR
         oasgencrd[oasgen-provider-crd] --> oasgen[oasgen-provider]
         oasgen --> hyperdx[hyperdx-provider]
     end
-    subgraph agents["agents"]
+    subgraph agents["agents (observabilityAgents + specialistAgents)"]
         clickstack --> mcp[clickhouse-mcp-server]
         kagentcrds[kagent-crds] --> kagent
-        mcp --> autopilot[krateo-autopilot]
-        kagent --> autopilot
+        kagent --> iagent[krateo-installer-agent]
+        kagent --> autopilot[krateo-autopilot]
+        iagent -. a2a .-> autopilot
+        kagent --> specialists[9 federated specialists<br/>authn/snowplow/frontend/clickstack/<br/>core-provider/code-analysis/3x codegen]
+        specialists -. a2a .-> autopilot
     end
 ```
+
+> **observabilityAgents** = the minimal layer (`kagent-crds` → `kagent` → `krateo-installer-agent`
+> + `krateo-autopilot`) — the agent-only profile. **specialistAgents** adds the 9 federated
+> component experts + `clickhouse-mcp-server`. The autopilot is the single orchestrator; every other
+> agent registers on it as an A2A sub-agent (`componentValues.krateo-autopilot.extraAgents`, gated
+> to the agents actually enabled). Deep dive — topology, ModelConfigs, the hands-off bootstrap
+> sequence, and the engine internals: **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
 ## Layout
 
