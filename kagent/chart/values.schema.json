@@ -11,18 +11,37 @@
     "modelConfig": {
       "type": "object",
       "additionalProperties": false,
-      "description": "The kagent ModelConfig the agent uses (referenced by name; optionally created here).",
+      "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
       "properties": {
-        "name": { "type": "string" },
-        "create": { "type": "boolean" },
-        "model": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
+        "create": {
+          "type": "boolean"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
         "vertexAI": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "projectID": { "type": "string" },
-            "location": { "type": "string" }
+            "projectID": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
           }
+        },
+        "apiKeySecret": {
+          "type": "string"
+        },
+        "apiKeySecretKey": {
+          "type": "string"
         }
       }
     },
@@ -35,8 +54,12 @@
       "additionalProperties": false,
       "description": "Narrow Role/RoleBinding granting patch on installers.composition.krateo.io.",
       "properties": {
-        "create": { "type": "boolean" },
-        "serviceAccountName": { "type": "string" }
+        "create": {
+          "type": "boolean"
+        },
+        "serviceAccountName": {
+          "type": "string"
+        }
       }
     },
     "resources": {
