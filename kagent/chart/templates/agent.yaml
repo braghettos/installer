@@ -59,7 +59,12 @@ spec:
       from the `installer` CompositionDefinition — so it cannot be a templated resource
       (Helm `lookup` is render-time and can't see a CRD it's about to create). Hence the
       post-install hook Job: it waits for that CRD, then applies the `Installer` CR whose
-      spec is the umbrella's own values with all bootstrap flags OFF. core-provider
+      spec is the umbrella's own values with all bootstrap flags OFF. The SAME Job then
+      AUTO-HEALS the CR's first reconcile: core-provider (crossplane-runtime) occasionally
+      loses the create race and parks the CR on `krateo.io/external-create-pending` /
+      `-failed` with "cannot determine creation result" — a HARD stop that does NOT
+      self-clear — so the Job strips those annotations until the CR goes Synced. That is
+      why the install is fully hands-off (no manual `kubectl`). core-provider then
       reconciles the CR by re-rendering in composition mode:
 
       - **Pass A** (`definitions.yaml`): one CompositionDefinition per enabled component.
@@ -68,10 +73,20 @@ spec:
       - **Pass B** (`compositions.yaml`): one Composition per component, GATED on
         `inst.crdExists` (the component's CRD serves the version-derived apiVersion) AND
         `inst.depsReady` (every dep Composition is Ready=True). Layers unlock as deps go
-        Ready, on each reconcile.
+        Ready — one level per cdc RESYNC (`COMPOSITION_CONTROLLER_RESYNC_INTERVAL=60s`): the
+        cdc re-discovers freshly-generated CRDs on a RESTMapper cache miss, so the gate flips
+        and the next level emits.
+
+      ENGINE: this requires **core-provider 1.0.x** (cdc 1.0.2 / chart-inspector 1.0.2),
+      pinned by the `core-provider` bootstrap subchart (0.35.7). The agent layer ships many
+      components at the SAME chart version `0.1.0` (kagent-crds, kagent, you, the autopilot,
+      9 specialists) — distinct Kinds, one shared apiVersion `composition.krateo.io/v0-1-0`.
+      1.0.x resolves a CR → its CompositionDefinition by version AND kind and names each cdc
+      `{resource}-{apiVersion}-controller`; the old 0.26.1 could not and dead-locked
+      ("too many definitions"). If you ever see that error, the engine is too old.
 
       Key helpers: `inst.apiVersion` derives the served apiVersion from the chart version
-      (portal 1.2.2 → composition.krateo.io/v1-2-2). `inst.lbip` wires the frontend
+      (portal 1.2.3 → composition.krateo.io/v1-2-3). `inst.lbip` wires the frontend
       `config.json` URLs from peer LoadBalancer IPs at reconcile time (no post-install patch).
 
       ## Teardown — three Helm hooks (the hard part)
@@ -118,6 +133,14 @@ spec:
       - Override a component spec: patch `spec.componentValues.<name>` — STRICTLY TYPED against
         each pinned component's real chart schema; unknown fields are rejected. Installer-computed
         wiring (service.type / config / vertexAI / hitlApproval) stays authoritative.
+      - Configure an agent's model: patch `spec.componentValues.<agent>.modelConfig` (yours, the
+        autopilot, or any `krateo-<component>-agent`). Fields: `name`, `create`
+        (false = reference an existing ModelConfig such as the autopilot's `gemini-flash`/`gemini-pro`;
+        true = provision a dedicated one), `provider`, `model`, `vertexAI.{projectID,location}`,
+        `apiKeySecret`/`apiKeySecretKey`. `provider` is an ENUM — Anthropic, OpenAI, AzureOpenAI,
+        Ollama, Gemini, GeminiVertexAI, AnthropicVertexAI, Bedrock, SAPAICore (the kagent CRD list);
+        a typo is rejected at patch time. The autopilot instead uses a `models` map (flash + pro).
+        For a dedicated GeminiVertexAI ModelConfig set `modelConfig.vertexAI.projectID` explicitly.
       - Private registry: `spec.registryAuth` (enabled + username + passwordRef
         [+ insecureSkipVerifyTLS]) → emitted as `CompositionDefinition.spec.chart.credentials`.
       - Exposure: `spec.exposure.type` = NodePort | LoadBalancer | Ingress.
