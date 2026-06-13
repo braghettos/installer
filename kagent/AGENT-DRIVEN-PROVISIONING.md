@@ -1,9 +1,9 @@
 # Agent-driven provisioning — driving the platform from the Installer CR
 
-A pattern (and procedure) for letting a kagent agent — e.g. the
-[`krateo-installer-expert`](./agent-installer-expert.yaml) — **provision and evolve the Krateo
-platform by editing the `Installer` custom resource**, instead of running privileged installs
-itself.
+A pattern (and procedure) for letting a kagent agent — the `krateo-installer-agent` (federated
+from [`kagent/chart`](./chart)) — **provision and evolve the Krateo platform by editing the
+`Installer` custom resource**, instead of running privileged installs itself. The
+`krateo-autopilot` orchestrator routes "install Krateo" requests to it.
 
 The `Installer` CR (`installers.composition.krateo.io`) is the platform's single **declarative
 desired-state surface**. core-provider self-reconciles it: change `spec.features`, `components`,
@@ -34,27 +34,26 @@ validation (below) keeps that intent valid. Every change is an ordinary, audited
 
 ### 1. Bootstrap the engine + the agent (privileged, once)
 
-A human or pipeline runs the one privileged `helm install`. The Krateo **composable-portal core**
-always comes up; gate everything else off so the initial footprint is minimal, and bring up kagent
-+ the agent:
+A human or pipeline runs the one privileged `helm install` with the **agent-only profile**, which
+brings up only the composition engine + kagent + the `krateo-installer-agent` + the
+`krateo-autopilot` — no platform components yet:
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
-  -n krateo-system --create-namespace \
-  --set exposure.type=NodePort \
-  --set features.observability=false \
-  --set features.oasgenprovider=false \
-  --set features.podRestartAlert=false
-# (enable observabilityAgents, or install kagent standalone, to get the kagent runtime)
-
-kubectl apply -f kagent/modelconfig-vertex-gemini.yaml
-kubectl apply -f kagent/agent-installer-expert.yaml
+curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+  -n krateo-system --create-namespace -f values-agent-only.yaml \
+  --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 ```
 
-After this the `Installer` CR exists and the agent is running. This is the only step that needs
-broad privilege.
+After this the `Installer` CR exists and the agent is running. The `krateo-installer-agent` is a
+federated kagent `Agent` (shipped from `kagent/chart`, installed as the `krateo-installer-agent`
+composition) — its chart already provisions its `ModelConfig` and the narrow RBAC below, so no
+standalone `kubectl apply` is needed. This is the only step that needs broad privilege.
 
 ### 2. Grant the agent narrow RBAC
+
+> For `krateo-installer-agent` this is **already done by its chart** (`kagent/chart/templates/rbac.yaml`).
+> The Role below is the template to replicate for any *other* agent you want to drive the Installer.
 
 The agent only needs to read/patch the `Installer` CR and observe the rollout — **not**
 cluster-admin. Bind this to whatever ServiceAccount the kagent tool-server runs as:

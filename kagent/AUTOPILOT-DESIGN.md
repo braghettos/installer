@@ -155,7 +155,7 @@ expressed as an `Installer` CR edit (Section 6), not an ad-hoc patch.
 **Two different installers — do not conflate.** The autopilot's existing `install_krateo` skill +
 install prompts target the **upstream krateoplatformops** flow (`helm install …/github-provider`,
 `git-provider`, `argocd`, core-provider) — the *old* installer. **This** installer
-(`braghettos/installer`) is a completely different mechanism: a self-bootstrapping
+(`braghettos/krateo-installer`) is a completely different mechanism: a self-bootstrapping
 compose-of-compositions OCI umbrella whose control surface is the `Installer` CR. Provisioning it is
 a **new capability the autopilot does not have today**.
 
