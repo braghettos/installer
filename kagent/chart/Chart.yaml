@@ -10,4 +10,13 @@ type: application
 # tag is the umbrella's version — so the agent versions independently. The installer references
 # krateo-installer-agent at this version; bump it here when the agent changes.
 version: 0.1.0
+# appVersion + the SOURCE_REF in `sources` are STAMPED to the release tag by release-oci on every
+# tag (appVersion := <tag>, s/SOURCE_REF/<tag>/), so the published agent advertises the exact
+# installer release it ships with and its `sources` point at that released ref — which the agent
+# reads at runtime via the github MCP (discovering its codebase + chart structurally, not from a
+# baked snapshot). The literal below is the local/default; release-oci overwrites it on publish.
 appVersion: 0.1.0
+home: https://krateo.io
+sources:
+  # the installer codebase + this agent chart, pinned to the released ref on publish
+  - https://github.com/braghettos/krateo-installer/tree/SOURCE_REF

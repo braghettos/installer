@@ -41,5 +41,11 @@ jobs:
 
       - name: Package & push the federated agent chart (krateo-installer-agent)
         run: |
+          # Stamp the released version + pin sources so the agent tracks and READS this exact
+          # release (its chart `version` stays its own pinned 0.1.0 stream — the installer pins
+          # that). appVersion := the tag; SOURCE_REF in `sources` := the tag, so the agent's
+          # github-MCP discovery reads the released snapshot, not a moving branch.
+          sed -i "s/^appVersion:.*/appVersion: \"${GITHUB_REF_NAME}\"/" kagent/chart/Chart.yaml
+          sed -i "s/SOURCE_REF/${GITHUB_REF_NAME}/g" kagent/chart/Chart.yaml
           helm package kagent/chart -d dist-agent/
           helm push dist-agent/*.tgz "${OCI_REPO}"
