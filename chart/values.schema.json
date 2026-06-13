@@ -3871,7 +3871,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -3945,7 +3956,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4037,7 +4059,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4129,7 +4162,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4220,7 +4264,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4311,7 +4366,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4402,7 +4468,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4493,7 +4570,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4584,7 +4672,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4675,7 +4774,18 @@
                   "type": "boolean"
                 },
                 "provider": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
                 },
                 "model": {
                   "type": "string"
@@ -4781,7 +4891,18 @@
                     "type": "string"
                   },
                   "provider": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "Anthropic",
+                      "OpenAI",
+                      "AzureOpenAI",
+                      "Ollama",
+                      "Gemini",
+                      "GeminiVertexAI",
+                      "AnthropicVertexAI",
+                      "Bedrock",
+                      "SAPAICore"
+                    ]
                   }
                 }
               },
