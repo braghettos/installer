@@ -7,7 +7,9 @@ oasgen-provider, observability, agents) — wiring exposure + the portal config 
 reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-install patching**.
 
 > New here? Read **[README.md](./README.md)** for the architecture (the two render modes, the
-> self-reconcile loop, the teardown hooks, and a state-machine diagram).
+> self-reconcile loop, the teardown hooks, and a state-machine diagram), and
+> **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the deep dive — sequence diagrams, the per-component
+> lifecycle FSM, the engine internals, the agent topology, and ModelConfig resolution.
 
 - **Umbrella source:** https://github.com/braghettos/krateo-installer (published to `oci://ghcr.io/braghettos/krateo/installer`)
 - **Charts (OCI):** all components publish to the consolidated `oci://ghcr.io/braghettos/krateo/*` registry.
