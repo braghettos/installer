@@ -39,6 +39,30 @@ def strip_required(node):
     return node
 
 
+# A ModelConfig's provider must be one kagent supports (kagent.dev/v1alpha2 ModelConfig CRD enum).
+# Injected into every component's `provider` string field so the installer rejects a typo'd/unknown
+# provider at `helm install` — even for an agent chart whose own schema hasn't been republished with
+# the enum yet (the agent charts carry the same enum at source). Keep in sync with the CRD.
+KAGENT_PROVIDERS = [
+    "Anthropic", "OpenAI", "AzureOpenAI", "Ollama", "Gemini",
+    "GeminiVertexAI", "AnthropicVertexAI", "Bedrock", "SAPAICore",
+]
+
+
+def inject_provider_enum(node):
+    """Add the kagent provider enum to any `provider: {type: string}` (modelConfig / models.*)."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == "provider" and isinstance(v, dict) and v.get("type") == "string" and "enum" not in v:
+                v["enum"] = list(KAGENT_PROVIDERS)
+            else:
+                inject_provider_enum(v)
+    elif isinstance(node, list):
+        for v in node:
+            inject_provider_enum(v)
+    return node
+
+
 def main():
     vals = yaml.safe_load(open(os.path.join(CHART, "values.yaml")))
     oci = vals["ociRepo"]
@@ -64,6 +88,7 @@ def main():
             s.pop("$schema", None)
             s.pop("title", None)
             strip_required(s)
+            inject_provider_enum(s)
             s["description"] = f"Overrides for the {name} Composition (chart {ver}), deep-merged into its spec."
             props[name] = s
             print(f"  typed {name} ({ver})")
