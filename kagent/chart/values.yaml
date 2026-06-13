@@ -6,12 +6,15 @@ namespace: krateo-system
 modelConfig:
   name: vertex-gemini
   create: true
+  provider: GeminiVertexAI          # GeminiVertexAI (ADC) | Gemini (API key) | Anthropic | OpenAI
   model: gemini-2.5-pro
   # GeminiVertexAI via Application Default Credentials (no API key). projectID/location are
   # wired by the installer from .Values.vertexAI when this ships as an installer component.
   vertexAI:
     projectID: ""
     location: us-central1
+  apiKeySecret: ""                  # used when the provider needs a key (Gemini/Anthropic/OpenAI)
+  apiKeySecretKey: ""
 
 # Human-in-the-loop gate on the mutating tools (k8s_patch_resource, k8s_apply_manifest) the
 # agent uses to edit the Installer CR. true = pause for approval (safe); false = autonomous.

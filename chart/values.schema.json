@@ -345,23 +345,20 @@
       "additionalProperties": false,
       "properties": {
         "authn-crd": {
-          "description": "Overrides for the authn-crd Composition (chart 0.22.2), deep-merged into its spec.",
           "type": "object",
+          "description": "Overrides for the authn-crd Composition (chart 0.22.2), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
               "type": "object",
-              "title": "Global values"
-            },
-            "crds": {
-              "type": "object",
-              "title": "Upstream authn-crd passthrough (empty)"
+              "title": "Global values",
+              "description": "Helm global values (injected when this chart is used as a subchart)."
             }
           }
         },
         "oasgen-provider-crd": {
           "type": "object",
-          "description": "Overrides for the oasgen-provider-crd Composition (chart 0.9.0), deep-merged into its spec.",
+          "description": "Overrides for the oasgen-provider-crd Composition (chart 0.9.2), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
@@ -372,38 +369,31 @@
           }
         },
         "frontend-crd": {
-          "description": "Overrides for the frontend-crd Composition (chart 1.0.25), deep-merged into its spec.",
           "type": "object",
+          "description": "Overrides for the frontend-crd Composition (chart 1.0.25), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
               "type": "object",
               "title": "Global values"
-            },
-            "crds": {
-              "type": "object",
-              "title": "Upstream frontend-crd passthrough (empty)"
             }
           }
         },
         "snowplow-crd": {
-          "description": "Overrides for the snowplow-crd Composition (chart 0.20.6), deep-merged into its spec.",
           "type": "object",
+          "description": "Overrides for the snowplow-crd Composition (chart 0.20.6), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
               "type": "object",
-              "title": "Global values"
-            },
-            "crds": {
-              "type": "object",
-              "title": "Upstream snowplow-crd passthrough (empty)"
+              "title": "Global values",
+              "description": "Helm global values (injected when this chart is used as a subchart)."
             }
           }
         },
         "authn": {
           "type": "object",
-          "description": "Overrides for the authn Composition (chart 0.22.2), deep-merged into its spec.",
+          "description": "Overrides for the authn Composition (chart 0.22.3), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "replicaCount": {
@@ -1296,143 +1286,174 @@
         },
         "frontend": {
           "type": "object",
+          "description": "Overrides for the frontend Composition (chart 1.0.12), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "replicaCount": {
               "type": "integer",
-              "title": "Replica count"
+              "title": "Replica count",
+              "default": 1
             },
             "image": {
               "type": "object",
+              "title": "Image",
               "additionalProperties": false,
               "properties": {
                 "repository": {
                   "type": "string",
-                  "title": "Image repository"
+                  "title": "Image repository",
+                  "default": "ghcr.io/krateoplatformops/frontend"
                 },
                 "pullPolicy": {
                   "type": "string",
+                  "title": "Image pull policy",
                   "enum": [
                     "IfNotPresent",
                     "Always",
                     "Never"
                   ],
-                  "title": "Image pull policy"
+                  "default": "IfNotPresent"
                 },
                 "tag": {
                   "type": "string",
+                  "title": "Image tag",
                   "description": "Overrides the image tag whose default is the chart appVersion.",
-                  "title": "Image tag"
+                  "default": ""
                 }
-              },
-              "title": "Image"
+              }
             },
             "imagePullSecrets": {
               "type": "array",
-              "title": "Image pull secrets"
+              "title": "Image pull secrets",
+              "items": {
+                "type": "object"
+              },
+              "default": []
             },
             "nameOverride": {
               "type": "string",
-              "title": "Name override"
+              "title": "Name override",
+              "default": ""
             },
             "fullnameOverride": {
               "type": "string",
-              "title": "Fullname override"
+              "title": "Fullname override",
+              "default": ""
             },
             "serviceAccount": {
               "type": "object",
+              "title": "Service account",
               "additionalProperties": false,
               "properties": {
                 "create": {
                   "type": "boolean",
-                  "title": "Create service account"
+                  "title": "Create service account",
+                  "default": true
                 },
                 "automount": {
                   "type": "boolean",
-                  "title": "Automount service account token"
+                  "title": "Automount service account token",
+                  "default": true
                 },
                 "annotations": {
                   "type": "object",
-                  "additionalProperties": true,
-                  "title": "Service account annotations"
+                  "title": "Service account annotations",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "default": {}
                 },
                 "name": {
                   "type": "string",
-                  "title": "Service account name"
+                  "title": "Service account name",
+                  "default": ""
                 }
-              },
-              "title": "Service account"
+              }
             },
             "podAnnotations": {
               "type": "object",
-              "additionalProperties": true,
-              "title": "Pod annotations"
+              "title": "Pod annotations",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {}
             },
             "podLabels": {
               "type": "object",
-              "additionalProperties": true,
-              "title": "Pod labels"
+              "title": "Pod labels",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {}
             },
             "podSecurityContext": {
               "type": "object",
-              "additionalProperties": true,
-              "title": "Pod security context"
+              "title": "Pod security context",
+              "default": {}
             },
             "securityContext": {
               "type": "object",
-              "additionalProperties": true,
-              "title": "Container security context"
+              "title": "Container security context",
+              "default": {}
             },
             "service": {
               "type": "object",
+              "title": "Service",
               "additionalProperties": false,
               "properties": {
                 "annotations": {
                   "type": "object",
-                  "additionalProperties": true,
-                  "title": "Service annotations"
+                  "title": "Service annotations",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "default": {}
                 },
                 "type": {
                   "type": "string",
+                  "title": "Service type",
                   "enum": [
                     "ClusterIP",
                     "NodePort",
                     "LoadBalancer"
                   ],
-                  "title": "Service type"
+                  "default": "ClusterIP"
                 },
                 "port": {
                   "type": "integer",
-                  "title": "Service port"
-                },
-                "nodePort": {
-                  "type": "integer"
+                  "title": "Service port",
+                  "default": 8080
                 }
-              },
-              "title": "Service"
+              }
             },
             "ingress": {
               "type": "object",
+              "title": "Ingress",
               "additionalProperties": false,
               "properties": {
                 "enabled": {
                   "type": "boolean",
-                  "title": "Enable ingress"
+                  "title": "Enable ingress",
+                  "default": false
                 },
                 "className": {
                   "type": "string",
-                  "title": "Ingress class name"
+                  "title": "Ingress class name",
+                  "default": ""
                 },
                 "annotations": {
                   "type": "object",
-                  "additionalProperties": true,
-                  "title": "Ingress annotations"
+                  "title": "Ingress annotations",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "default": {}
                 },
                 "hosts": {
                   "type": "array",
+                  "title": "Ingress hosts",
                   "items": {
                     "type": "object",
-                    "additionalProperties": false,
                     "properties": {
                       "host": {
                         "type": "string",
@@ -1440,9 +1461,9 @@
                       },
                       "paths": {
                         "type": "array",
+                        "title": "Paths",
                         "items": {
                           "type": "object",
-                          "additionalProperties": false,
                           "properties": {
                             "path": {
                               "type": "string",
@@ -1453,153 +1474,178 @@
                               "title": "Path type"
                             }
                           }
-                        },
-                        "title": "Paths"
+                        }
                       }
                     }
                   },
-                  "title": "Ingress hosts"
+                  "default": [
+                    {
+                      "host": "chart-example.local",
+                      "paths": [
+                        {
+                          "path": "/",
+                          "pathType": "ImplementationSpecific"
+                        }
+                      ]
+                    }
+                  ]
                 },
                 "tls": {
                   "type": "array",
-                  "title": "TLS configuration"
+                  "title": "TLS configuration",
+                  "items": {
+                    "type": "object"
+                  },
+                  "default": []
                 }
-              },
-              "title": "Ingress"
+              }
             },
             "resources": {
               "type": "object",
-              "additionalProperties": true,
-              "title": "Resources"
+              "title": "Resources",
+              "default": {}
             },
             "livenessProbe": {
               "type": "object",
-              "additionalProperties": false,
-              "properties": {
+              "title": "Liveness probe",
+              "default": {
                 "httpGet": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    },
-                    "port": {
-                      "type": "string"
-                    }
-                  }
+                  "path": "/",
+                  "port": "http"
                 }
-              },
-              "title": "Liveness probe"
+              }
             },
             "readinessProbe": {
               "type": "object",
-              "additionalProperties": false,
-              "properties": {
+              "title": "Readiness probe",
+              "default": {
                 "httpGet": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    },
-                    "port": {
-                      "type": "string"
-                    }
-                  }
+                  "path": "/",
+                  "port": "http"
                 }
-              },
-              "title": "Readiness probe"
+              }
             },
             "autoscaling": {
               "type": "object",
+              "title": "Autoscaling",
               "additionalProperties": false,
               "properties": {
                 "enabled": {
                   "type": "boolean",
-                  "title": "Enable autoscaling"
+                  "title": "Enable autoscaling",
+                  "default": false
                 },
                 "minReplicas": {
                   "type": "integer",
-                  "title": "Minimum replicas"
+                  "title": "Minimum replicas",
+                  "default": 1
                 },
                 "maxReplicas": {
                   "type": "integer",
-                  "title": "Maximum replicas"
+                  "title": "Maximum replicas",
+                  "default": 100
                 },
                 "targetCPUUtilizationPercentage": {
                   "type": "integer",
-                  "title": "Target CPU utilization percentage"
+                  "title": "Target CPU utilization percentage",
+                  "default": 80
                 },
                 "targetMemoryUtilizationPercentage": {
                   "type": "integer",
                   "title": "Target memory utilization percentage"
                 }
-              },
-              "title": "Autoscaling"
+              }
             },
             "nodeSelector": {
               "type": "object",
-              "additionalProperties": true,
-              "title": "Node selector"
+              "title": "Node selector",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {}
             },
             "tolerations": {
               "type": "array",
-              "title": "Tolerations"
+              "title": "Tolerations",
+              "items": {
+                "type": "object"
+              },
+              "default": []
             },
             "affinity": {
               "type": "object",
-              "additionalProperties": true,
-              "title": "Affinity"
+              "title": "Affinity",
+              "default": {}
             },
             "config": {
               "type": "object",
-              "additionalProperties": false,
+              "title": "Frontend runtime config",
+              "description": "Runtime configuration rendered into the frontend ConfigMap (API base URLs and loader routes).",
+              "additionalProperties": {
+                "type": "string"
+              },
               "properties": {
                 "SNOWPLOW_API_BASE_URL": {
                   "type": "string",
-                  "title": "Snowplow API base URL"
+                  "title": "Snowplow API base URL",
+                  "default": "http://localhost:8081"
                 },
                 "AUTHN_API_BASE_URL": {
                   "type": "string",
-                  "title": "Authn API base URL"
+                  "title": "Authn API base URL",
+                  "default": "http://localhost:8082"
                 },
                 "EVENTS_PUSH_API_BASE_URL": {
                   "type": "string",
-                  "title": "Events push API base URL"
+                  "title": "Events push API base URL",
+                  "default": "http://localhost:8083"
                 },
                 "EVENTS_API_BASE_URL": {
                   "type": "string",
-                  "title": "Events API base URL"
+                  "title": "Events API base URL",
+                  "default": "http://localhost:8083"
                 },
                 "SMITHERY_API_BASE_URL": {
                   "type": "string",
-                  "title": "Smithery API base URL"
+                  "title": "Smithery API base URL",
+                  "default": "http://localhost:8088"
                 },
                 "INIT": {
                   "type": "string",
-                  "title": "Init route"
+                  "title": "Init route",
+                  "default": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
                 },
                 "ROUTES_LOADER": {
                   "type": "string",
-                  "title": "Routes loader route"
+                  "title": "Routes loader route",
+                  "default": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
                 }
               },
-              "description": "Runtime configuration rendered into the frontend ConfigMap (API base URLs and loader routes).",
-              "title": "Frontend runtime config"
+              "default": {
+                "SNOWPLOW_API_BASE_URL": "http://localhost:8081",
+                "AUTHN_API_BASE_URL": "http://localhost:8082",
+                "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
+                "EVENTS_API_BASE_URL": "http://localhost:8083",
+                "SMITHERY_API_BASE_URL": "http://localhost:8088",
+                "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system",
+                "ROUTES_LOADER": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
+              }
             },
             "env": {
               "type": "object",
-              "additionalProperties": true,
+              "title": "Environment variables",
               "description": "Free-form extra environment variables for the frontend container.",
-              "title": "Environment variables"
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {}
             },
             "global": {
               "type": "object",
-              "additionalProperties": true,
-              "description": "Helm global values (injected by the composition runtime)."
+              "title": "Global values",
+              "description": "Helm global values (injected when used as a subchart)."
             }
-          },
-          "description": "Overrides for the frontend Composition (chart 1.0.12), deep-merged into its spec."
+          }
         },
         "portal": {
           "additionalProperties": true,
@@ -1624,11 +1670,11 @@
             }
           },
           "type": "object",
-          "description": "Overrides for the portal Composition (chart 1.2.2), deep-merged into its spec."
+          "description": "Overrides for the portal Composition (chart 1.2.3), deep-merged into its spec."
         },
         "oasgen-provider": {
           "type": "object",
-          "description": "Overrides for the oasgen-provider Composition (chart 0.9.0), deep-merged into its spec.",
+          "description": "Overrides for the oasgen-provider Composition (chart 0.9.2), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "replicaCount": {
@@ -2098,6 +2144,16 @@
               "type": "object",
               "title": "Global values",
               "description": "Helm global values (injected when this chart is used as a subchart)."
+            },
+            "livenessProbe": {
+              "type": "object",
+              "description": "Kubernetes probe configuration (httpGet/tcpSocket/exec + timing). Empty/unset uses chart defaults.",
+              "additionalProperties": true
+            },
+            "readinessProbe": {
+              "type": "object",
+              "description": "Kubernetes probe configuration (httpGet/tcpSocket/exec + timing). Empty/unset uses chart defaults.",
+              "additionalProperties": true
             }
           }
         },
@@ -3738,7 +3794,7 @@
           "description": "Overrides for the clickhouse-mcp-server Composition (chart 0.1.7), deep-merged into its spec."
         },
         "kagent-crds": {
-          "description": "Overrides for the kagent-crds Composition (chart 0.9.9), deep-merged into its spec.",
+          "description": "Overrides for the kagent-crds Composition (chart 0.1.0), deep-merged into its spec.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3767,7 +3823,7 @@
           }
         },
         "kagent": {
-          "description": "Overrides for the kagent Composition (chart 0.9.9), deep-merged into its spec.",
+          "description": "Overrides for the kagent Composition (chart 0.1.0), deep-merged into its spec.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3795,149 +3851,6 @@
             }
           }
         },
-        "krateo-autopilot": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "namespace": {
-              "type": "string",
-              "description": "Namespace where the autopilot resources are installed."
-            },
-            "geminiApiKey": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "secretName": {
-                  "type": "string"
-                },
-                "secretKey": {
-                  "type": "string"
-                }
-              },
-              "description": "Reference to an existing secret holding the Gemini API key."
-            },
-            "models": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "object",
-                "additionalProperties": true,
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "model": {
-                    "type": "string"
-                  },
-                  "provider": {
-                    "type": "string"
-                  }
-                }
-              },
-              "description": "Model configurations, keyed by an arbitrary alias."
-            },
-            "vertexAI": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "enabled": {
-                  "type": "boolean"
-                },
-                "projectID": {
-                  "type": "string",
-                  "description": "GCP project ID hosting Vertex AI."
-                },
-                "location": {
-                  "type": "string",
-                  "description": "Vertex AI region, e.g. us-central1."
-                },
-                "secretName": {
-                  "type": "string"
-                }
-              },
-              "description": "Gemini Vertex AI provider configuration. When enabled, ModelConfigs use provider GeminiVertexAI with Application Default Credentials (no API key) \u2014 the pod's GKE node SA must have aiplatform access. secretName is optional (only for explicit SA-key auth)."
-            },
-            "mcpServers": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "object",
-                "additionalProperties": true,
-                "properties": {
-                  "enabled": {
-                    "type": "boolean"
-                  },
-                  "url": {
-                    "type": "string"
-                  },
-                  "protocol": {
-                    "type": "string"
-                  }
-                }
-              },
-              "description": "Remote MCP servers, keyed by an arbitrary alias."
-            },
-            "agents": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "object",
-                "additionalProperties": true,
-                "properties": {
-                  "enabled": {
-                    "type": "boolean"
-                  },
-                  "modelConfig": {
-                    "type": "string"
-                  },
-                  "skillRef": {
-                    "type": "string"
-                  }
-                }
-              },
-              "description": "Agents to deploy, keyed by agent name."
-            },
-            "prompts": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "language": {
-                  "type": "string"
-                }
-              },
-              "description": "Prompts configuration."
-            },
-            "hitlApproval": {
-              "type": "boolean",
-              "description": "HITL approval gate for mutating k8s tools. true=pause for approval (safe); false=autonomous remediation."
-            },
-            "global": {
-              "type": "object",
-              "additionalProperties": true,
-              "description": "Helm global values (injected by the composition runtime)."
-            },
-            "extraAgents": {
-              "type": "array",
-              "description": "Extra A2A sub-agents to register on the orchestrator (component/blueprint specialists, e.g. krateo-installer-agent). Reachable only via the orchestrator's routing.",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "name"
-                ],
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "kind": {
-                    "type": "string"
-                  },
-                  "apiGroup": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          },
-          "description": "Overrides for the krateo-autopilot Composition (chart 0.1.7), deep-merged into its spec."
-        },
         "krateo-installer-agent": {
           "type": "object",
           "additionalProperties": false,
@@ -3949,13 +3862,16 @@
             "modelConfig": {
               "type": "object",
               "additionalProperties": false,
-              "description": "The kagent ModelConfig the agent uses (referenced by name; optionally created here).",
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
               "properties": {
                 "name": {
                   "type": "string"
                 },
                 "create": {
                   "type": "boolean"
+                },
+                "provider": {
+                  "type": "string"
                 },
                 "model": {
                   "type": "string"
@@ -3971,6 +3887,12 @@
                       "type": "string"
                     }
                   }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
                 }
               }
             },
@@ -4824,6 +4746,146 @@
             }
           },
           "description": "Overrides for the krateo-tf-to-helm-agent Composition (chart 0.1.0), deep-merged into its spec."
+        },
+        "krateo-autopilot": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string",
+              "description": "Namespace where the autopilot resources are installed."
+            },
+            "geminiApiKey": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "secretName": {
+                  "type": "string"
+                },
+                "secretKey": {
+                  "type": "string"
+                }
+              },
+              "description": "Reference to an existing secret holding the Gemini API key."
+            },
+            "models": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "Model configurations, keyed by an arbitrary alias."
+            },
+            "vertexAI": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "projectID": {
+                  "type": "string",
+                  "description": "GCP project ID hosting Vertex AI."
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Vertex AI region, e.g. us-central1."
+                },
+                "secretName": {
+                  "type": "string"
+                }
+              },
+              "description": "Gemini Vertex AI provider configuration. When enabled, ModelConfigs use provider GeminiVertexAI with Application Default Credentials (no API key) \u2014 the pod's GKE node SA must have aiplatform access. secretName is optional (only for explicit SA-key auth)."
+            },
+            "mcpServers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "protocol": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "Remote MCP servers, keyed by an arbitrary alias."
+            },
+            "agents": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "modelConfig": {
+                    "type": "string"
+                  },
+                  "skillRef": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "Agents to deploy, keyed by agent name."
+            },
+            "prompts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              },
+              "description": "Prompts configuration."
+            },
+            "hitlApproval": {
+              "type": "boolean",
+              "description": "HITL approval gate for mutating k8s tools. true=pause for approval (safe); false=autonomous remediation."
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Helm global values (injected by the composition runtime)."
+            },
+            "extraAgents": {
+              "type": "array",
+              "description": "Extra A2A sub-agents to register on the orchestrator (component/blueprint-contributed specialists, e.g. the installer's krateo-installer-agent). The orchestrator stays the single mandatory entry point; these are reachable only via its routing.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "apiGroup": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Overrides for the krateo-autopilot Composition (chart 0.1.11), deep-merged into its spec."
         }
       }
     },
