@@ -305,6 +305,76 @@ pinned component chart's `values.schema.json` and embeds it. This is why a compo
 change ships as a new installer version** (with a regenerated schema), not as an in-place edit of a
 running one — see [Changing component versions](#changing-component-versions).
 
+### Give an agent a different model (ModelConfig)
+
+The agents don't have to share one model. Each agent's model is set through `componentValues`
+(install-time `values.yaml`/`--set`, or an in-place edit of the Installer CR — `modelConfig` is
+**not** one of the four installer-authoritative fields, so your override flows through cleanly).
+
+By default the **autopilot** provisions two shared `ModelConfig`s — `gemini-flash` and `gemini-pro`
+(Vertex-backed) — and every specialist + the installer-agent **reference `gemini-flash`**. The two
+agent shapes:
+
+- **`krateo-autopilot`** uses a `models` map (`models.flash`, `models.pro`) — the two ModelConfigs
+  it creates and routes between.
+- **`krateo-installer-agent`** and every **`krateo-<component>-agent`** use a single `modelConfig`
+  block:
+
+  | field | meaning |
+  |---|---|
+  | `name` | the `ModelConfig` the agent's `Agent` CR references |
+  | `create` | `false` = reference an existing ModelConfig by `name`; `true` = provision a dedicated one |
+  | `provider` | `GeminiVertexAI` (ADC, no key) · `Gemini` · `Anthropic` · `OpenAI` |
+  | `model` | the model id |
+  | `vertexAI.{projectID,location}` | used when `provider: GeminiVertexAI` |
+  | `apiKeySecret` / `apiKeySecretKey` | Secret holding the key, when the provider needs one |
+
+**1. Point an agent at a different existing ModelConfig** (e.g. give the snowplow agent the larger
+`gemini-pro` the autopilot already created):
+
+```yaml
+spec:                              # (or top-level for `helm install -f`)
+  componentValues:
+    krateo-snowplow-agent:
+      modelConfig:
+        name: gemini-pro           # create stays false — just reference it
+```
+
+**2. Give an agent its own dedicated ModelConfig** (e.g. run the code-analysis agent on Anthropic
+Claude instead of Vertex):
+
+```bash
+kubectl -n krateo-system create secret generic anthropic-api-key --from-literal=apiKey=<KEY>
+```
+```yaml
+  componentValues:
+    krateo-code-analysis-agent:
+      modelConfig:
+        name: claude-sonnet
+        create: true               # provision a new ModelConfig for THIS agent
+        provider: Anthropic
+        model: claude-sonnet-4-5
+        apiKeySecret: anthropic-api-key
+        apiKeySecretKey: apiKey
+```
+
+**3. Change the autopilot's own models** (it has two slots):
+
+```yaml
+  componentValues:
+    krateo-autopilot:
+      models:
+        pro:
+          model: gemini-2.5-pro
+          provider: GeminiVertexAI
+```
+
+Apply any of these at install (`-f values.yaml` / `--set componentValues.krateo-snowplow-agent.modelConfig.name=gemini-pro`)
+or at runtime via `kubectl edit installers.composition.krateo.io installer` — core-provider
+re-renders the agent's Composition and it picks up the new model on the next reconcile. For a
+dedicated `GeminiVertexAI` ModelConfig (`create: true`), set `modelConfig.vertexAI.projectID`
+explicitly — the global `--set vertexAI.projectID` only flows into the autopilot's shared ModelConfigs.
+
 ## Private (authenticated) registries
 
 If the component charts live in a **private** OCI registry, core-provider needs credentials to pull

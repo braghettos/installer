@@ -116,6 +116,9 @@ The same surface drives the rest of the configuration model:
 - **`spec.features.<flag>`** — enable/disable a capability group (observability, oasgenprovider,
   podRestartAlert, observabilityAgents, …). Additive and clean.
 - **`spec.componentValues.<name>`** — override a component's Composition spec (strictly typed).
+  Includes **per-agent `modelConfig`** — point an agent at a different ModelConfig or give it a
+  dedicated one (Vertex / Gemini / Anthropic / OpenAI); see *Give an agent a different model* in the
+  [QUICKSTART](../QUICKSTART.md#give-an-agent-a-different-model-modelconfig).
 - **`spec.registryAuth`** — point components at a private registry.
 - **`spec.components`** — advanced; changing a component **version** is a GVR change (prefer a new
   installer version — see the QUICKSTART).
