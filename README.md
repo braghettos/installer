@@ -7,17 +7,37 @@ itself as an `Installer` composition, and then self-reconciles: it registers eac
 `Ready` and its CRD exists (Pass B), resolving exposure (`service.type`) and the portal config
 (peer LoadBalancer IPs) by reconciliation — no prerequisite scripts, no post-install patching.
 
-- **Chart:** `oci://ghcr.io/braghettos/charts/installer`
+- **Chart:** `oci://ghcr.io/braghettos/krateo/installer` (current: **`0.2.60`**)
 - **Install guide:** see **[QUICKSTART.md](./QUICKSTART.md)** — kind (local) and managed GKE.
 - **Kind:** `Installer` (`composition.krateo.io`).
-- **Expert agent:** a kagent `Agent` that knows this blueprint — see **[kagent/](./kagent)**.
+- **Engine:** core-provider **1.0.x** (cdc 1.0.2 / chart-inspector 1.0.2), pinned by the `core-provider` bootstrap subchart `0.35.7`.
+- **Expert agent:** a kagent `Agent` that knows this blueprint — see **[kagent/](./kagent)** and the [agent-driven guide](./kagent/AGENT-DRIVEN-PROVISIONING.md).
+
+There are two ways to install, both from **one `helm install`**:
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
-  -n krateo-system --create-namespace --set exposure.type=LoadBalancer --wait
+# (A) FULL platform — every component (authn -> snowplow -> frontend -> portal, oasgen,
+#     observability, all agents) provisioned by the umbrella's self-reconcile loop:
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+  -n krateo-system --create-namespace --set exposure.type=LoadBalancer \
+  --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
+
+# (B) AGENT-ONLY — bring up just kagent + the installer-agent + the autopilot, then let the
+#     autopilot install the rest of Krateo by editing the Installer CR (see QUICKSTART):
+curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+  -n krateo-system --create-namespace -f values-agent-only.yaml \
+  --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
+
 # tear the whole platform down (ordered, finalizer-safe, no manual cleanup):
 helm uninstall installer -n krateo-system
 ```
+
+Both are **hands-off**: the self-bootstrap auto-heals the Installer CR's first reconcile and the
+composition engine advances the rollout on its resync loop (60s) — no manual `kubectl`.
+`vertexAI` powers the agents via Application Default Credentials on GKE (node SA needs
+`roles/aiplatform.user` or `roles/editor` + `cloud-platform` scope); on kind set
+`--set vertexAI.enabled=false` and supply a Gemini API key Secret instead.
 
 ## How it works — the two render modes
 
@@ -171,8 +191,9 @@ compositiondefinition.yaml        install the umbrella itself as a CompositionDe
 ## Releasing
 
 Pushing a semver tag triggers `.github/workflows/release-oci.yaml`, which packages and pushes
-`chart/` to `oci://ghcr.io/braghettos/charts/installer:<tag>` (`CHART_VERSION` is substituted
-from the tag). Component charts live in their own `braghettos/*` repos and publish the same way.
+`chart/` to `oci://ghcr.io/braghettos/krateo/installer:<tag>` (`CHART_VERSION` is substituted
+from the tag) plus the federated `krateo-installer-agent` (`kagent/chart`). Component charts live
+in their own `braghettos/krateo-*` repos and publish to the same consolidated `/krateo` registry.
 
 **When you change a component's pinned version** (in `chart/values.yaml`), regenerate the typed
 `componentValues` schema before tagging:

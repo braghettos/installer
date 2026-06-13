@@ -9,25 +9,26 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 > New here? Read **[README.md](./README.md)** for the architecture (the two render modes, the
 > self-reconcile loop, the teardown hooks, and a state-machine diagram).
 
-- **Umbrella source:** https://github.com/braghettos/installer (published to `oci://ghcr.io/braghettos/charts/installer`)
-- **Charts (OCI):** `oci://ghcr.io/braghettos/charts/*`, `oci://ghcr.io/braghettos/krateo/*`, `oci://ghcr.io/braghettos/portal`.
+- **Umbrella source:** https://github.com/braghettos/krateo-installer (published to `oci://ghcr.io/braghettos/krateo/installer`)
+- **Charts (OCI):** all components publish to the consolidated `oci://ghcr.io/braghettos/krateo/*` registry.
 
 | chart | version |
 |---|---|
-| **installer (umbrella)** | **`0.2.53`** |
-| core-provider / -crd (bootstrap subchart) | `0.35.4` |
+| **installer (umbrella)** | **`0.2.60`** |
+| core-provider / -crd (bootstrap subchart; app core-provider `1.0.1`, cdc `1.0.2`, chart-inspector `1.0.2`) | `0.35.7` |
 | cert-manager / clickhouse-operator / mongodb community-operator (bootstrap subcharts) | `v1.20.2` / `0.0.5` / `0.13.0` |
-| authn / -crd | `0.22.2` |
+| authn / -crd | `0.22.3` / `0.22.2` |
 | snowplow / -crd | `0.30.259` / `0.20.6` |
 | frontend / -crd | `1.0.12` / `1.0.25` |
-| portal | `1.2.2` |
-| oasgen-provider / -crd | `0.9.0` |
+| portal | `1.2.3` |
+| oasgen-provider / -crd | `0.9.2` |
 | hyperdx-provider | `0.1.1` |
-| krateo-clickstack (now a composition, app ClickStack `3.0.0`) | `0.1.2` |
+| krateo-clickstack (composition, app ClickStack `3.0.0`) | `0.1.2` |
 | krateo-sse-proxy / otel-collector-{deployment,daemonset} | `0.1.1` |
 | clickhouse-mcp-server | `0.1.7` |
-| kagent-crds / kagent (now compositions) | `0.9.9` |
-| krateo-autopilot | `0.1.7` |
+| kagent-crds / kagent (compositions; app kagent `0.9.7`) | `0.1.0` |
+| krateo-autopilot | `0.1.11` |
+| krateo-installer-agent + 9 federated specialists (authn/snowplow/frontend/clickstack/core-provider/code-analysis/ansible/tf-provider/tf-to-helm agents) | `0.1.0` |
 
 > Each installer version pins a tested set of component versions (GVRs) and types `componentValues`
 > against their schemas. Changing a component version means a **new installer version**, not an
@@ -100,7 +101,7 @@ Pick `exposure.type` for your cluster: `LoadBalancer` on a cloud cluster (GKE, e
 
 ```bash
 # GKE / cloud — external LoadBalancer IPs:
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
   -n krateo-system --create-namespace \
   --set exposure.type=LoadBalancer \
   --wait
@@ -108,7 +109,7 @@ helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.5
 
 ```bash
 # kind / local — NodePort Services pinned to the host-mapped nodePorts (step 0):
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -128,7 +129,7 @@ That's it. The install:
 **Light install (portal + login only — good for constrained kind, NodePort):**
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -136,9 +137,9 @@ helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.5
   --set componentValues.authn.service.nodePort=30082 \
   --set features.observability=false \
   --set features.observabilityAgents=false \
+  --set features.specialistAgents=false \
   --set bootstrap.clickhouseOperator.enabled=false \
   --set bootstrap.mongodbOperator.enabled=false \
-  --set bootstrap.kagent.enabled=false \
   --wait
 ```
 
@@ -152,6 +153,29 @@ helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.5
 kubectl -n krateo-system create secret generic gemini-api-key --from-literal=apiKey=<KEY>
 ```
 
+> **GKE Vertex ADC:** the node SA needs an IAM role covering `aiplatform.*` (`roles/aiplatform.user`
+> or `roles/editor`) and the `cloud-platform` OAuth scope; the default Compute SA + a cluster created
+> with `--scopes=cloud-platform` and `--workload-metadata=GCE_METADATA` works with no key, no SA file.
+
+### Agent-only install — let the autopilot install Krateo
+
+Bring up **only** kagent + the installer-agent + the autopilot, then drive the rest of the
+platform *through the agent* by patching the `Installer` CR (see
+**[kagent/AGENT-DRIVEN-PROVISIONING.md](./kagent/AGENT-DRIVEN-PROVISIONING.md)**):
+
+```bash
+curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+  -n krateo-system --create-namespace -f values-agent-only.yaml \
+  --set vertexAI.enabled=true --set vertexAI.projectID=<YOUR_GCP_PROJECT>
+```
+
+This renders just the `observabilityAgents` layer (kagent-crds → kagent → krateo-installer-agent
++ krateo-autopilot) — 4 compositions, no platform components, no ClickHouse/MongoDB operators.
+Once the autopilot pod is `Running`, ask it to **“install Krateo”**: it routes to
+`krateo-installer-agent`, which patches the `Installer` CR (`features.composableportal=true`, …),
+and core-provider provisions the full platform in dependency order — hands-off.
+
 ### Watch it converge
 
 ```bash
@@ -161,8 +185,9 @@ kubectl -n krateo-system get svc
 ```
 
 `helm install --wait` returns once the bootstrap layer is up; the component layer then rolls out
-on core-provider's reconcile loop (a few minutes). All 19 CompositionDefinitions reaching
-`READY=True` and a `demo-system` namespace appearing means the platform is up.
+on core-provider's reconcile loop (~60s per dependency level). When every enabled component's
+CompositionDefinition reports `READY=True` (28 for the full profile; 4 for agent-only) and a
+`demo-system` namespace appears, the platform is up — with no manual `kubectl` at any point.
 
 ## 2. Access the portal
 
@@ -228,7 +253,7 @@ To bump a component (e.g. portal):
 2. re-run `python3 hack/gen-componentvalues-schema.py chart` to regenerate the typed schema for the
    new component GVRs,
 3. release a new installer chart version (push a semver tag),
-4. `helm upgrade installer oci://ghcr.io/braghettos/charts/installer --version <new> -n krateo-system`.
+4. `helm upgrade installer oci://ghcr.io/braghettos/krateo/installer --version <new> -n krateo-system`.
 
 > **You *can* edit `components[].version` in the live `Installer` CR — it works** (core-provider
 > adds the new served CRD version, migrates the stored object via a neutral `vacuum` storage
@@ -297,7 +322,7 @@ kubectl -n krateo-system create secret generic ghcr-pat --from-literal=token=<TO
 helm registry login ghcr.io -u <USER> -p <TOKEN>
 
 # 3. Install, pointing registryAuth at that Secret (namespace omitted -> defaults to krateo-system):
-helm install installer oci://ghcr.io/braghettos/charts/installer --version 0.2.53 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
   -n krateo-system \
   --set exposure.type=LoadBalancer \
   --set registryAuth.enabled=true \
