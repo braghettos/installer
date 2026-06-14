@@ -39,6 +39,23 @@ def strip_required(node):
     return node
 
 
+def strip_default(node):
+    """Recursively drop `default`. core-provider 1.0.x renders this schema into the Installer
+    CRD's openAPIV3Schema; a `default: []` on an array-of-object field (e.g. frontend
+    tolerations/imagePullSecrets/ingress.hosts/ingress.tls) makes the generated CRD invalid on
+    strict apiservers (k8s 1.35: `default.[0] must be of type object`). componentValues are
+    partial overrides — they need no schema defaults (the component charts supply real defaults
+    at deploy time)."""
+    if isinstance(node, dict):
+        node.pop("default", None)
+        for v in node.values():
+            strip_default(v)
+    elif isinstance(node, list):
+        for v in node:
+            strip_default(v)
+    return node
+
+
 # A ModelConfig's provider must be one kagent supports (kagent.dev/v1alpha2 ModelConfig CRD enum).
 # Injected into every component's `provider` string field so the installer rejects a typo'd/unknown
 # provider at `helm install` — even for an agent chart whose own schema hasn't been republished with
@@ -88,6 +105,7 @@ def main():
             s.pop("$schema", None)
             s.pop("title", None)
             strip_required(s)
+            strip_default(s)
             inject_provider_enum(s)
             s["description"] = f"Overrides for the {name} Composition (chart {ver}), deep-merged into its spec."
             props[name] = s
