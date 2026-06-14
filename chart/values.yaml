@@ -34,7 +34,7 @@ installDefinitions: true
 bootstrap:
   coreProvider:
     enabled: true
-    version: "0.35.7"
+    version: "0.35.8"
   # ClickStack 3.0.0 operator prerequisites (disable any already present on the cluster).
   certManager:
     enabled: true
@@ -170,7 +170,7 @@ components:
     feature: composableportal
   - name: oasgen-provider-crd
     kind: OasgenProviderCrd
-    version: "0.9.2"
+    version: "0.9.3"
     tier: platform
     feature: oasgenprovider
   - name: frontend-crd
@@ -187,7 +187,7 @@ components:
   # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
   - name: authn
     kind: Authn
-    version: "0.22.3"
+    version: "0.22.4"
     deps:
       - authn-crd
     tier: platform
@@ -199,7 +199,7 @@ components:
       - AUTHN_API_BASE_URL
   - name: snowplow
     kind: Snowplow
-    version: "0.30.259"
+    version: "1.0.3"
     deps:
       - snowplow-crd
     tier: platform
@@ -211,7 +211,7 @@ components:
       - SNOWPLOW_API_BASE_URL
   - name: frontend
     kind: Frontend
-    version: "1.0.12"
+    version: "1.0.14"
     deps:
       - frontend-crd
       - authn
@@ -231,7 +231,7 @@ components:
     feature: composableportalstarter
   - name: oasgen-provider
     kind: OasgenProvider
-    version: "0.9.2"
+    version: "0.9.3"
     deps:
       - oasgen-provider-crd
     tier: platform
