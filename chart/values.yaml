@@ -164,25 +164,25 @@ components:
   #      charts (braghettos/krateo). CRDs ship in the upstream templates/ (helm-owned ->
   #      clean teardown); the wrapper only adds the values.schema.json core-provider needs. ----
   - name: authn-crd
-    kind: AuthnCrd
+    kind: KrateoAuthnCrd
     chart: krateo-authn-crd
     version: "0.22.2"
     tier: platform
     feature: composableportal
   - name: oasgen-provider-crd
-    kind: OasgenProviderCrd
+    kind: KrateoOasgenProviderCrd
     chart: krateo-oasgen-provider-crd
     version: "0.9.4"
     tier: platform
     feature: oasgenprovider
   - name: frontend-crd
-    kind: FrontendCrd
+    kind: KrateoFrontendCrd
     chart: krateo-frontend-crd
     version: "1.0.25"
     tier: platform
     feature: composableportal
   - name: snowplow-crd
-    kind: SnowplowCrd
+    kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
     version: "0.20.6"
     tier: platform
@@ -190,7 +190,7 @@ components:
 
   # ---- platform apps (each depends on its dedicated CRD composition being Ready) ----
   - name: authn
-    kind: Authn
+    kind: KrateoAuthn
     chart: krateo-authn
     version: "0.22.6"
     deps:
@@ -203,7 +203,7 @@ components:
     configKeys:
       - AUTHN_API_BASE_URL
   - name: snowplow
-    kind: Snowplow
+    kind: KrateoSnowplow
     chart: krateo-snowplow
     version: "1.0.6"
     deps:
@@ -216,7 +216,7 @@ components:
     configKeys:
       - SNOWPLOW_API_BASE_URL
   - name: frontend
-    kind: Frontend
+    kind: KrateoFrontend
     chart: krateo-frontend
     version: "1.0.16"
     deps:
@@ -237,7 +237,7 @@ components:
     tier: platform
     feature: composableportalstarter
   - name: oasgen-provider
-    kind: OasgenProvider
+    kind: KrateoOasgenProvider
     chart: krateo-oasgen-provider
     version: "0.9.4"
     deps:
