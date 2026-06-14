@@ -184,7 +184,7 @@ components:
   - name: snowplow-crd
     kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
-    version: "0.20.6"
+    version: "0.21.0"
     tier: platform
     feature: composableportal
 
