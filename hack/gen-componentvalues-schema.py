@@ -87,7 +87,10 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         for c in vals["components"]:
             name, ver = c["name"], str(c["version"])
-            ref = f'{c.get("repo", oci)}/{name}'
+            # The OCI artifact is the chart name, which may differ from the component identity
+            # (e.g. component `frontend` -> chart `krateo-frontend`). Honor the `chart:` override.
+            artifact = c.get("chart", name)
+            ref = f'{c.get("repo", oci)}/{artifact}'
             dest = os.path.join(tmp, name)
             os.makedirs(dest, exist_ok=True)
             r = subprocess.run(
@@ -102,11 +105,12 @@ def main():
                 print(f"  WARN {name}: no values.schema.json in chart", file=sys.stderr)
                 continue
             s = json.load(open(found[0]))
-            s.pop("$schema", None)
-            s.pop("title", None)
-            strip_required(s)
-            strip_default(s)
-            inject_provider_enum(s)
+            s.pop("$schema", None)  # a sub-schema embedded in a CRD must not carry its own $schema
+            # FAITHFUL embed: do NOT strip `required` or `default` — preserve each component's
+            # values.schema.json verbatim. (core-provider 1.0.x renders these into the Installer
+            # CRD; array `default`s are now handled correctly by the crdgen fix in
+            # braghettos/plumbing >= v1.7.5, so no stripping workaround is needed.)
+            inject_provider_enum(s)  # additive only (kagent provider enum) — nothing removed
             s["description"] = f"Overrides for the {name} Composition (chart {ver}), deep-merged into its spec."
             props[name] = s
             print(f"  typed {name} ({ver})")
