@@ -82,12 +82,12 @@
         }
       }
     },
-    "core-provider": {
+    "krateo-core-provider": {
       "type": "object",
       "title": "core-provider subchart values",
       "description": "Passthrough to the bootstrap core-provider subchart."
     },
-    "core-provider-crd": {
+    "krateo-core-provider-crd": {
       "type": "object",
       "title": "core-provider-crd subchart values",
       "description": "Passthrough to the bootstrap core-provider-crd subchart."
