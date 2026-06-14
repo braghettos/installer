@@ -139,11 +139,11 @@ componentValues:
   krateo-autopilot:
     extraAgents:
       - name: krateo-installer-agent
-      - name: krateo-authn-agent
-      - name: krateo-snowplow-agent
-      - name: krateo-frontend-agent
-      - name: krateo-clickstack-agent
-      - name: krateo-core-provider-agent
+      - name: authn-agent
+      - name: snowplow-agent
+      - name: frontend-agent
+      - name: clickstack-agent
+      - name: core-provider-agent
       - name: krateo-code-analysis-agent
       - name: krateo-ansible-to-operator-agent
       - name: krateo-tf-provider-to-operator-agent
@@ -340,41 +340,46 @@ components:
     vertexAI: true
   # Federated specialist agents — each ships from its component's *-chart repo (kagent/chart),
   # registered on the autopilot via componentValues.krateo-autopilot.extraAgents.
-  - name: krateo-authn-agent
+  - name: authn-agent
     kind: KrateoAuthnAgent
-    version: "0.1.0"
+    chart: krateo-authn-agent
+    version: "0.1.1"
     deps:
       - kagent
     tier: observability
     feature: specialistAgents
     vertexAI: true
-  - name: krateo-snowplow-agent
+  - name: snowplow-agent
     kind: KrateoSnowplowAgent
-    version: "0.1.0"
+    chart: krateo-snowplow-agent
+    version: "0.1.1"
     deps:
       - kagent
     tier: observability
     feature: specialistAgents
     vertexAI: true
-  - name: krateo-frontend-agent
+  - name: frontend-agent
     kind: KrateoFrontendAgent
-    version: "0.1.0"
+    chart: krateo-frontend-agent
+    version: "0.1.1"
     deps:
       - kagent
     tier: observability
     feature: specialistAgents
     vertexAI: true
-  - name: krateo-clickstack-agent
+  - name: clickstack-agent
     kind: KrateoClickstackAgent
-    version: "0.1.0"
+    chart: krateo-clickstack-agent
+    version: "0.1.1"
     deps:
       - kagent
     tier: observability
     feature: specialistAgents
     vertexAI: true
-  - name: krateo-core-provider-agent
+  - name: core-provider-agent
     kind: KrateoCoreProviderAgent
-    version: "0.1.0"
+    chart: krateo-core-provider-agent
+    version: "0.1.1"
     deps:
       - kagent
     tier: observability
