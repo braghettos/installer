@@ -350,6 +350,7 @@
       "properties": {
         "authn-crd": {
           "type": "object",
+          "title": "Authn CRDs",
           "description": "Overrides for the authn-crd Composition (chart 0.22.2), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
@@ -362,7 +363,8 @@
         },
         "oasgen-provider-crd": {
           "type": "object",
-          "description": "Overrides for the oasgen-provider-crd Composition (chart 0.9.2), deep-merged into its spec.",
+          "title": "Oasgen Provider CRDs",
+          "description": "Overrides for the oasgen-provider-crd Composition (chart 0.9.4), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
@@ -374,6 +376,7 @@
         },
         "frontend-crd": {
           "type": "object",
+          "title": "Frontend CRDs",
           "description": "Overrides for the frontend-crd Composition (chart 1.0.25), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
@@ -385,6 +388,7 @@
         },
         "snowplow-crd": {
           "type": "object",
+          "title": "Snowplow CRDs",
           "description": "Overrides for the snowplow-crd Composition (chart 0.20.6), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
@@ -397,7 +401,8 @@
         },
         "authn": {
           "type": "object",
-          "description": "Overrides for the authn Composition (chart 0.22.3), deep-merged into its spec.",
+          "title": "Authn",
+          "description": "Overrides for the authn Composition (chart 0.22.6), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "replicaCount": {
@@ -440,7 +445,10 @@
                   "name": {
                     "type": "string"
                   }
-                }
+                },
+                "required": [
+                  "name"
+                ]
               }
             },
             "nameOverride": {
@@ -690,6 +698,7 @@
           }
         },
         "snowplow": {
+          "title": "chart values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -1286,16 +1295,18 @@
               "description": "Helm global values (injected by the composition runtime)."
             }
           },
-          "description": "Overrides for the snowplow Composition (chart 0.30.259), deep-merged into its spec."
+          "description": "Overrides for the snowplow Composition (chart 1.0.6), deep-merged into its spec."
         },
         "frontend": {
           "type": "object",
-          "description": "Overrides for the frontend Composition (chart 1.0.12), deep-merged into its spec.",
+          "title": "Frontend",
+          "description": "Overrides for the frontend Composition (chart 1.0.16), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "replicaCount": {
               "type": "integer",
-              "title": "Replica count"
+              "title": "Replica count",
+              "default": 1
             },
             "image": {
               "type": "object",
@@ -1304,7 +1315,8 @@
               "properties": {
                 "repository": {
                   "type": "string",
-                  "title": "Image repository"
+                  "title": "Image repository",
+                  "default": "ghcr.io/krateoplatformops/frontend"
                 },
                 "pullPolicy": {
                   "type": "string",
@@ -1313,12 +1325,14 @@
                     "IfNotPresent",
                     "Always",
                     "Never"
-                  ]
+                  ],
+                  "default": "IfNotPresent"
                 },
                 "tag": {
                   "type": "string",
                   "title": "Image tag",
-                  "description": "Overrides the image tag whose default is the chart appVersion."
+                  "description": "Overrides the image tag whose default is the chart appVersion.",
+                  "default": ""
                 }
               }
             },
@@ -1327,15 +1341,18 @@
               "title": "Image pull secrets",
               "items": {
                 "type": "object"
-              }
+              },
+              "default": []
             },
             "nameOverride": {
               "type": "string",
-              "title": "Name override"
+              "title": "Name override",
+              "default": ""
             },
             "fullnameOverride": {
               "type": "string",
-              "title": "Fullname override"
+              "title": "Fullname override",
+              "default": ""
             },
             "serviceAccount": {
               "type": "object",
@@ -1344,22 +1361,26 @@
               "properties": {
                 "create": {
                   "type": "boolean",
-                  "title": "Create service account"
+                  "title": "Create service account",
+                  "default": true
                 },
                 "automount": {
                   "type": "boolean",
-                  "title": "Automount service account token"
+                  "title": "Automount service account token",
+                  "default": true
                 },
                 "annotations": {
                   "type": "object",
                   "title": "Service account annotations",
                   "additionalProperties": {
                     "type": "string"
-                  }
+                  },
+                  "default": {}
                 },
                 "name": {
                   "type": "string",
-                  "title": "Service account name"
+                  "title": "Service account name",
+                  "default": ""
                 }
               }
             },
@@ -1368,22 +1389,26 @@
               "title": "Pod annotations",
               "additionalProperties": {
                 "type": "string"
-              }
+              },
+              "default": {}
             },
             "podLabels": {
               "type": "object",
               "title": "Pod labels",
               "additionalProperties": {
                 "type": "string"
-              }
+              },
+              "default": {}
             },
             "podSecurityContext": {
               "type": "object",
-              "title": "Pod security context"
+              "title": "Pod security context",
+              "default": {}
             },
             "securityContext": {
               "type": "object",
-              "title": "Container security context"
+              "title": "Container security context",
+              "default": {}
             },
             "service": {
               "type": "object",
@@ -1395,7 +1420,8 @@
                   "title": "Service annotations",
                   "additionalProperties": {
                     "type": "string"
-                  }
+                  },
+                  "default": {}
                 },
                 "type": {
                   "type": "string",
@@ -1404,11 +1430,13 @@
                     "ClusterIP",
                     "NodePort",
                     "LoadBalancer"
-                  ]
+                  ],
+                  "default": "ClusterIP"
                 },
                 "port": {
                   "type": "integer",
-                  "title": "Service port"
+                  "title": "Service port",
+                  "default": 8080
                 }
               }
             },
@@ -1419,18 +1447,21 @@
               "properties": {
                 "enabled": {
                   "type": "boolean",
-                  "title": "Enable ingress"
+                  "title": "Enable ingress",
+                  "default": false
                 },
                 "className": {
                   "type": "string",
-                  "title": "Ingress class name"
+                  "title": "Ingress class name",
+                  "default": ""
                 },
                 "annotations": {
                   "type": "object",
                   "title": "Ingress annotations",
                   "additionalProperties": {
                     "type": "string"
-                  }
+                  },
+                  "default": {}
                 },
                 "hosts": {
                   "type": "array",
@@ -1460,28 +1491,53 @@
                         }
                       }
                     }
-                  }
+                  },
+                  "default": [
+                    {
+                      "host": "chart-example.local",
+                      "paths": [
+                        {
+                          "path": "/",
+                          "pathType": "ImplementationSpecific"
+                        }
+                      ]
+                    }
+                  ]
                 },
                 "tls": {
                   "type": "array",
                   "title": "TLS configuration",
                   "items": {
                     "type": "object"
-                  }
+                  },
+                  "default": []
                 }
               }
             },
             "resources": {
               "type": "object",
-              "title": "Resources"
+              "title": "Resources",
+              "default": {}
             },
             "livenessProbe": {
               "type": "object",
-              "title": "Liveness probe"
+              "title": "Liveness probe",
+              "default": {
+                "httpGet": {
+                  "path": "/",
+                  "port": "http"
+                }
+              }
             },
             "readinessProbe": {
               "type": "object",
-              "title": "Readiness probe"
+              "title": "Readiness probe",
+              "default": {
+                "httpGet": {
+                  "path": "/",
+                  "port": "http"
+                }
+              }
             },
             "autoscaling": {
               "type": "object",
@@ -1490,19 +1546,23 @@
               "properties": {
                 "enabled": {
                   "type": "boolean",
-                  "title": "Enable autoscaling"
+                  "title": "Enable autoscaling",
+                  "default": false
                 },
                 "minReplicas": {
                   "type": "integer",
-                  "title": "Minimum replicas"
+                  "title": "Minimum replicas",
+                  "default": 1
                 },
                 "maxReplicas": {
                   "type": "integer",
-                  "title": "Maximum replicas"
+                  "title": "Maximum replicas",
+                  "default": 100
                 },
                 "targetCPUUtilizationPercentage": {
                   "type": "integer",
-                  "title": "Target CPU utilization percentage"
+                  "title": "Target CPU utilization percentage",
+                  "default": 80
                 },
                 "targetMemoryUtilizationPercentage": {
                   "type": "integer",
@@ -1515,18 +1575,21 @@
               "title": "Node selector",
               "additionalProperties": {
                 "type": "string"
-              }
+              },
+              "default": {}
             },
             "tolerations": {
               "type": "array",
               "title": "Tolerations",
               "items": {
                 "type": "object"
-              }
+              },
+              "default": []
             },
             "affinity": {
               "type": "object",
-              "title": "Affinity"
+              "title": "Affinity",
+              "default": {}
             },
             "config": {
               "type": "object",
@@ -1538,32 +1601,48 @@
               "properties": {
                 "SNOWPLOW_API_BASE_URL": {
                   "type": "string",
-                  "title": "Snowplow API base URL"
+                  "title": "Snowplow API base URL",
+                  "default": "http://localhost:8081"
                 },
                 "AUTHN_API_BASE_URL": {
                   "type": "string",
-                  "title": "Authn API base URL"
+                  "title": "Authn API base URL",
+                  "default": "http://localhost:8082"
                 },
                 "EVENTS_PUSH_API_BASE_URL": {
                   "type": "string",
-                  "title": "Events push API base URL"
+                  "title": "Events push API base URL",
+                  "default": "http://localhost:8083"
                 },
                 "EVENTS_API_BASE_URL": {
                   "type": "string",
-                  "title": "Events API base URL"
+                  "title": "Events API base URL",
+                  "default": "http://localhost:8083"
                 },
                 "SMITHERY_API_BASE_URL": {
                   "type": "string",
-                  "title": "Smithery API base URL"
+                  "title": "Smithery API base URL",
+                  "default": "http://localhost:8088"
                 },
                 "INIT": {
                   "type": "string",
-                  "title": "Init route"
+                  "title": "Init route",
+                  "default": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
                 },
                 "ROUTES_LOADER": {
                   "type": "string",
-                  "title": "Routes loader route"
+                  "title": "Routes loader route",
+                  "default": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
                 }
+              },
+              "default": {
+                "SNOWPLOW_API_BASE_URL": "http://localhost:8081",
+                "AUTHN_API_BASE_URL": "http://localhost:8082",
+                "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
+                "EVENTS_API_BASE_URL": "http://localhost:8083",
+                "SMITHERY_API_BASE_URL": "http://localhost:8088",
+                "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system",
+                "ROUTES_LOADER": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
               }
             },
             "env": {
@@ -1572,7 +1651,8 @@
               "description": "Free-form extra environment variables for the frontend container.",
               "additionalProperties": {
                 "type": "string"
-              }
+              },
+              "default": {}
             },
             "global": {
               "type": "object",
@@ -1585,16 +1665,19 @@
           "additionalProperties": true,
           "properties": {
             "enableAdminUser": {
+              "default": true,
               "description": "Enable admin user (basic authentication) with cluster-admin permissions",
               "title": "enableAdminUser",
               "type": "boolean"
             },
             "enableCyberjokerUser": {
+              "default": true,
               "description": "Enable cyberjoker user (basic authentication) with namespace-scoped permissions",
               "title": "enableCyberjokerUser",
               "type": "boolean"
             },
             "enableDemoSystemNamespace": {
+              "default": true,
               "description": "enabling the demo creates the demo-system namespace, deploys two Route resources within it, and grants permissions to the cyberjoker user if that user is enabled",
               "title": "enableDemoSystemNamespace",
               "type": "boolean"
@@ -1605,7 +1688,8 @@
         },
         "oasgen-provider": {
           "type": "object",
-          "description": "Overrides for the oasgen-provider Composition (chart 0.9.2), deep-merged into its spec.",
+          "title": "OasgenProvider",
+          "description": "Overrides for the oasgen-provider Composition (chart 0.9.4), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "replicaCount": {
@@ -2089,6 +2173,7 @@
           }
         },
         "hyperdx-provider": {
+          "title": "hyperdx-provider values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -2141,6 +2226,7 @@
           "description": "Overrides for the hyperdx-provider Composition (chart 0.1.1), deep-merged into its spec."
         },
         "krateo-clickstack": {
+          "title": "krateo-clickstack values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -2380,6 +2466,7 @@
           "description": "Overrides for the krateo-clickstack Composition (chart 0.1.2), deep-merged into its spec."
         },
         "otel-collector-deployment": {
+          "title": "otel-collector-deployment values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -2881,6 +2968,7 @@
           "description": "Overrides for the otel-collector-deployment Composition (chart 0.1.1), deep-merged into its spec."
         },
         "otel-collector-daemonset": {
+          "title": "otel-collector-daemonset values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3412,6 +3500,7 @@
           "description": "Overrides for the otel-collector-daemonset Composition (chart 0.1.1), deep-merged into its spec."
         },
         "krateo-sse-proxy": {
+          "title": "krateo-sse-proxy values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3563,6 +3652,7 @@
           "description": "Overrides for the krateo-sse-proxy Composition (chart 0.1.1), deep-merged into its spec."
         },
         "clickhouse-mcp-server": {
+          "title": "clickhouse-mcp-server values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3725,6 +3815,7 @@
           "description": "Overrides for the clickhouse-mcp-server Composition (chart 0.1.7), deep-merged into its spec."
         },
         "kagent-crds": {
+          "title": "kagent-crds values",
           "description": "Overrides for the kagent-crds Composition (chart 0.1.0), deep-merged into its spec.",
           "type": "object",
           "additionalProperties": false,
@@ -3754,6 +3845,7 @@
           }
         },
         "kagent": {
+          "title": "kagent values",
           "description": "Overrides for the kagent Composition (chart 0.1.0), deep-merged into its spec.",
           "type": "object",
           "additionalProperties": false,
@@ -3772,13 +3864,18 @@
                 "providers": {
                   "type": "object",
                   "additionalProperties": true,
-                  "properties": {}
+                  "properties": {
+                    "default": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
           }
         },
         "krateo-installer-agent": {
+          "title": "krateo-installer-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3864,7 +3961,8 @@
           },
           "description": "Overrides for the krateo-installer-agent Composition (chart 0.1.0), deep-merged into its spec."
         },
-        "krateo-authn-agent": {
+        "authn-agent": {
+          "title": "krateo-authn-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3965,9 +4063,10 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-authn-agent Composition (chart 0.1.0), deep-merged into its spec."
+          "description": "Overrides for the authn-agent Composition (chart 0.1.1), deep-merged into its spec."
         },
-        "krateo-snowplow-agent": {
+        "snowplow-agent": {
+          "title": "krateo-snowplow-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4068,9 +4167,10 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-snowplow-agent Composition (chart 0.1.0), deep-merged into its spec."
+          "description": "Overrides for the snowplow-agent Composition (chart 0.1.1), deep-merged into its spec."
         },
-        "krateo-frontend-agent": {
+        "frontend-agent": {
+          "title": "krateo-frontend-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4170,9 +4270,10 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-frontend-agent Composition (chart 0.1.0), deep-merged into its spec."
+          "description": "Overrides for the frontend-agent Composition (chart 0.1.1), deep-merged into its spec."
         },
-        "krateo-clickstack-agent": {
+        "clickstack-agent": {
+          "title": "krateo-clickstack-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4272,9 +4373,10 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-clickstack-agent Composition (chart 0.1.0), deep-merged into its spec."
+          "description": "Overrides for the clickstack-agent Composition (chart 0.1.1), deep-merged into its spec."
         },
-        "krateo-core-provider-agent": {
+        "core-provider-agent": {
+          "title": "krateo-core-provider-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4374,9 +4476,10 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-core-provider-agent Composition (chart 0.1.0), deep-merged into its spec."
+          "description": "Overrides for the core-provider-agent Composition (chart 0.1.1), deep-merged into its spec."
         },
         "krateo-code-analysis-agent": {
+          "title": "krateo-code-analysis-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4479,6 +4582,7 @@
           "description": "Overrides for the krateo-code-analysis-agent Composition (chart 0.1.0), deep-merged into its spec."
         },
         "krateo-ansible-to-operator-agent": {
+          "title": "krateo-ansible-to-operator-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4581,6 +4685,7 @@
           "description": "Overrides for the krateo-ansible-to-operator-agent Composition (chart 0.1.0), deep-merged into its spec."
         },
         "krateo-tf-provider-to-operator-agent": {
+          "title": "krateo-tf-provider-to-operator-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4683,6 +4788,7 @@
           "description": "Overrides for the krateo-tf-provider-to-operator-agent Composition (chart 0.1.0), deep-merged into its spec."
         },
         "krateo-tf-to-helm-agent": {
+          "title": "krateo-tf-to-helm-agent values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4785,6 +4891,7 @@
           "description": "Overrides for the krateo-tf-to-helm-agent Composition (chart 0.1.0), deep-merged into its spec."
         },
         "krateo-autopilot": {
+          "title": "krateo-autopilot values",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -4919,6 +5026,9 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
+                "required": [
+                  "name"
+                ],
                 "properties": {
                   "name": {
                     "type": "string"
