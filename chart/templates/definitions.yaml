@@ -15,7 +15,7 @@ metadata:
     krateo.io/tier: {{ $c.tier }}
 spec:
   chart:
-    url: {{ default $.Values.ociRepo $c.repo }}/{{ $c.name }}
+    url: {{ default $.Values.ociRepo $c.repo }}/{{ default $c.name $c.chart }}
     version: {{ $c.version | quote }}
     {{- if $c.chartRepo }}
     repo: {{ $c.chartRepo | quote }}

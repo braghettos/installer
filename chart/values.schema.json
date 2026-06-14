@@ -279,6 +279,10 @@
             "type": "string",
             "description": "OCI registry base overriding ociRepo for this component's chart URL."
           },
+          "chart": {
+            "type": "string",
+            "description": "Chart artifact name overriding the component name in the OCI URL (e.g. krateo-snowplow). The component name stays the CompositionDefinition/Composition identity; only the chart path changes."
+          },
           "chartRepo": {
             "type": "string",
             "description": "CompositionDefinition spec.chart.repo \u2014 classic helm repo NAME (only for non-OCI helm-repo charts; OCI components don't need it)."
