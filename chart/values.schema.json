@@ -1295,8 +1295,7 @@
           "properties": {
             "replicaCount": {
               "type": "integer",
-              "title": "Replica count",
-              "default": 1
+              "title": "Replica count"
             },
             "image": {
               "type": "object",
@@ -1305,8 +1304,7 @@
               "properties": {
                 "repository": {
                   "type": "string",
-                  "title": "Image repository",
-                  "default": "ghcr.io/krateoplatformops/frontend"
+                  "title": "Image repository"
                 },
                 "pullPolicy": {
                   "type": "string",
@@ -1315,14 +1313,12 @@
                     "IfNotPresent",
                     "Always",
                     "Never"
-                  ],
-                  "default": "IfNotPresent"
+                  ]
                 },
                 "tag": {
                   "type": "string",
                   "title": "Image tag",
-                  "description": "Overrides the image tag whose default is the chart appVersion.",
-                  "default": ""
+                  "description": "Overrides the image tag whose default is the chart appVersion."
                 }
               }
             },
@@ -1331,18 +1327,15 @@
               "title": "Image pull secrets",
               "items": {
                 "type": "object"
-              },
-              "default": []
+              }
             },
             "nameOverride": {
               "type": "string",
-              "title": "Name override",
-              "default": ""
+              "title": "Name override"
             },
             "fullnameOverride": {
               "type": "string",
-              "title": "Fullname override",
-              "default": ""
+              "title": "Fullname override"
             },
             "serviceAccount": {
               "type": "object",
@@ -1351,26 +1344,22 @@
               "properties": {
                 "create": {
                   "type": "boolean",
-                  "title": "Create service account",
-                  "default": true
+                  "title": "Create service account"
                 },
                 "automount": {
                   "type": "boolean",
-                  "title": "Automount service account token",
-                  "default": true
+                  "title": "Automount service account token"
                 },
                 "annotations": {
                   "type": "object",
                   "title": "Service account annotations",
                   "additionalProperties": {
                     "type": "string"
-                  },
-                  "default": {}
+                  }
                 },
                 "name": {
                   "type": "string",
-                  "title": "Service account name",
-                  "default": ""
+                  "title": "Service account name"
                 }
               }
             },
@@ -1379,26 +1368,22 @@
               "title": "Pod annotations",
               "additionalProperties": {
                 "type": "string"
-              },
-              "default": {}
+              }
             },
             "podLabels": {
               "type": "object",
               "title": "Pod labels",
               "additionalProperties": {
                 "type": "string"
-              },
-              "default": {}
+              }
             },
             "podSecurityContext": {
               "type": "object",
-              "title": "Pod security context",
-              "default": {}
+              "title": "Pod security context"
             },
             "securityContext": {
               "type": "object",
-              "title": "Container security context",
-              "default": {}
+              "title": "Container security context"
             },
             "service": {
               "type": "object",
@@ -1410,8 +1395,7 @@
                   "title": "Service annotations",
                   "additionalProperties": {
                     "type": "string"
-                  },
-                  "default": {}
+                  }
                 },
                 "type": {
                   "type": "string",
@@ -1420,13 +1404,11 @@
                     "ClusterIP",
                     "NodePort",
                     "LoadBalancer"
-                  ],
-                  "default": "ClusterIP"
+                  ]
                 },
                 "port": {
                   "type": "integer",
-                  "title": "Service port",
-                  "default": 8080
+                  "title": "Service port"
                 }
               }
             },
@@ -1437,21 +1419,18 @@
               "properties": {
                 "enabled": {
                   "type": "boolean",
-                  "title": "Enable ingress",
-                  "default": false
+                  "title": "Enable ingress"
                 },
                 "className": {
                   "type": "string",
-                  "title": "Ingress class name",
-                  "default": ""
+                  "title": "Ingress class name"
                 },
                 "annotations": {
                   "type": "object",
                   "title": "Ingress annotations",
                   "additionalProperties": {
                     "type": "string"
-                  },
-                  "default": {}
+                  }
                 },
                 "hosts": {
                   "type": "array",
@@ -1481,53 +1460,28 @@
                         }
                       }
                     }
-                  },
-                  "default": [
-                    {
-                      "host": "chart-example.local",
-                      "paths": [
-                        {
-                          "path": "/",
-                          "pathType": "ImplementationSpecific"
-                        }
-                      ]
-                    }
-                  ]
+                  }
                 },
                 "tls": {
                   "type": "array",
                   "title": "TLS configuration",
                   "items": {
                     "type": "object"
-                  },
-                  "default": []
+                  }
                 }
               }
             },
             "resources": {
               "type": "object",
-              "title": "Resources",
-              "default": {}
+              "title": "Resources"
             },
             "livenessProbe": {
               "type": "object",
-              "title": "Liveness probe",
-              "default": {
-                "httpGet": {
-                  "path": "/",
-                  "port": "http"
-                }
-              }
+              "title": "Liveness probe"
             },
             "readinessProbe": {
               "type": "object",
-              "title": "Readiness probe",
-              "default": {
-                "httpGet": {
-                  "path": "/",
-                  "port": "http"
-                }
-              }
+              "title": "Readiness probe"
             },
             "autoscaling": {
               "type": "object",
@@ -1536,23 +1490,19 @@
               "properties": {
                 "enabled": {
                   "type": "boolean",
-                  "title": "Enable autoscaling",
-                  "default": false
+                  "title": "Enable autoscaling"
                 },
                 "minReplicas": {
                   "type": "integer",
-                  "title": "Minimum replicas",
-                  "default": 1
+                  "title": "Minimum replicas"
                 },
                 "maxReplicas": {
                   "type": "integer",
-                  "title": "Maximum replicas",
-                  "default": 100
+                  "title": "Maximum replicas"
                 },
                 "targetCPUUtilizationPercentage": {
                   "type": "integer",
-                  "title": "Target CPU utilization percentage",
-                  "default": 80
+                  "title": "Target CPU utilization percentage"
                 },
                 "targetMemoryUtilizationPercentage": {
                   "type": "integer",
@@ -1565,21 +1515,18 @@
               "title": "Node selector",
               "additionalProperties": {
                 "type": "string"
-              },
-              "default": {}
+              }
             },
             "tolerations": {
               "type": "array",
               "title": "Tolerations",
               "items": {
                 "type": "object"
-              },
-              "default": []
+              }
             },
             "affinity": {
               "type": "object",
-              "title": "Affinity",
-              "default": {}
+              "title": "Affinity"
             },
             "config": {
               "type": "object",
@@ -1591,48 +1538,32 @@
               "properties": {
                 "SNOWPLOW_API_BASE_URL": {
                   "type": "string",
-                  "title": "Snowplow API base URL",
-                  "default": "http://localhost:8081"
+                  "title": "Snowplow API base URL"
                 },
                 "AUTHN_API_BASE_URL": {
                   "type": "string",
-                  "title": "Authn API base URL",
-                  "default": "http://localhost:8082"
+                  "title": "Authn API base URL"
                 },
                 "EVENTS_PUSH_API_BASE_URL": {
                   "type": "string",
-                  "title": "Events push API base URL",
-                  "default": "http://localhost:8083"
+                  "title": "Events push API base URL"
                 },
                 "EVENTS_API_BASE_URL": {
                   "type": "string",
-                  "title": "Events API base URL",
-                  "default": "http://localhost:8083"
+                  "title": "Events API base URL"
                 },
                 "SMITHERY_API_BASE_URL": {
                   "type": "string",
-                  "title": "Smithery API base URL",
-                  "default": "http://localhost:8088"
+                  "title": "Smithery API base URL"
                 },
                 "INIT": {
                   "type": "string",
-                  "title": "Init route",
-                  "default": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
+                  "title": "Init route"
                 },
                 "ROUTES_LOADER": {
                   "type": "string",
-                  "title": "Routes loader route",
-                  "default": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
+                  "title": "Routes loader route"
                 }
-              },
-              "default": {
-                "SNOWPLOW_API_BASE_URL": "http://localhost:8081",
-                "AUTHN_API_BASE_URL": "http://localhost:8082",
-                "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
-                "EVENTS_API_BASE_URL": "http://localhost:8083",
-                "SMITHERY_API_BASE_URL": "http://localhost:8088",
-                "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system",
-                "ROUTES_LOADER": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
               }
             },
             "env": {
@@ -1641,8 +1572,7 @@
               "description": "Free-form extra environment variables for the frontend container.",
               "additionalProperties": {
                 "type": "string"
-              },
-              "default": {}
+              }
             },
             "global": {
               "type": "object",
@@ -1655,19 +1585,16 @@
           "additionalProperties": true,
           "properties": {
             "enableAdminUser": {
-              "default": true,
               "description": "Enable admin user (basic authentication) with cluster-admin permissions",
               "title": "enableAdminUser",
               "type": "boolean"
             },
             "enableCyberjokerUser": {
-              "default": true,
               "description": "Enable cyberjoker user (basic authentication) with namespace-scoped permissions",
               "title": "enableCyberjokerUser",
               "type": "boolean"
             },
             "enableDemoSystemNamespace": {
-              "default": true,
               "description": "enabling the demo creates the demo-system namespace, deploys two Route resources within it, and grants permissions to the cyberjoker user if that user is enabled",
               "title": "enableDemoSystemNamespace",
               "type": "boolean"
@@ -3845,11 +3772,7 @@
                 "providers": {
                   "type": "object",
                   "additionalProperties": true,
-                  "properties": {
-                    "default": {
-                      "type": "string"
-                    }
-                  }
+                  "properties": {}
                 }
               }
             }
