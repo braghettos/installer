@@ -16,17 +16,17 @@ home: https://krateo.io
 sources:
   - https://github.com/braghettos/installer
 
-# Bootstrap dependency: the Krateo composition engine (core-provider) + its dedicated CRD
-# chart, pulled from the braghettos OCI registry. Conditioned on bootstrap.coreProvider.enabled
-# so it is skipped when registering the umbrella on an already-running Krateo. CRDs first,
-# then the controller; the install is expected to run with --wait so the engine is Ready
-# before core-provider reconciles the umbrella's compositions.
+# Bootstrap dependency: the Krateo composition engine controller (core-provider).
+#
+# The engine's CRD chart (krateo-core-provider-crd) is NOT bundled here. It is applied as
+# the FIRST bootstrap step in its own helm release — `helm install krateo-core-provider-crd`
+# — BEFORE this umbrella. Reason: the umbrella creates CompositionDefinition CRs in this
+# release, and the dedicated CRD chart ships its CRDs in templates/ (uniform standard,
+# resource-policy: keep — NO crds/ exception for core-provider). A CRD in templates/ is not
+# pre-established within its own release, so it must land in a SEPARATE earlier release; then
+# helm can bind this umbrella's CompositionDefinition CRs. See QUICKSTART (two-step bootstrap).
 dependencies:
-  # composition engine
-  - name: krateo-core-provider-crd
-    version: "0.36.5"
-    repository: oci://ghcr.io/braghettos/krateo
-    condition: bootstrap.coreProvider.enabled
+  # composition engine controller (its CRDs are pre-applied separately; see above)
   - name: krateo-core-provider
     version: "0.35.12"
     repository: oci://ghcr.io/braghettos/krateo
