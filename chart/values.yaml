@@ -166,13 +166,13 @@ components:
   - name: authn-crd
     kind: KrateoAuthnCrd
     chart: krateo-authn-crd
-    version: "0.22.2"
+    version: "0.22.4"
     tier: platform
     feature: composableportal
   - name: oasgen-provider-crd
     kind: KrateoOasgenProviderCrd
     chart: krateo-oasgen-provider-crd
-    version: "0.9.4"
+    version: "0.9.5"
     tier: platform
     feature: oasgenprovider
   - name: frontend-crd
@@ -184,7 +184,7 @@ components:
   - name: snowplow-crd
     kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
-    version: "0.21.0"
+    version: "0.21.1"
     tier: platform
     feature: composableportal
 
