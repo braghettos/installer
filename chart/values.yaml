@@ -205,7 +205,7 @@ components:
   - name: snowplow
     kind: KrateoSnowplow
     chart: krateo-snowplow
-    version: "1.0.6"
+    version: "1.0.10"
     deps:
       - snowplow-crd
     tier: platform
