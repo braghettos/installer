@@ -273,7 +273,7 @@ components:
   # ociRepo = oci://ghcr.io/braghettos/krateo, like every other component.
   - name: otel-collector-deployment
     kind: OtelCollectorDeployment
-    version: "0.1.1"
+    version: "0.2.0"
     deps:
       - krateo-clickstack
     tier: observability
@@ -287,7 +287,7 @@ components:
     feature: observability
   - name: krateo-sse-proxy
     kind: KrateoSseProxy
-    version: "0.1.2"
+    version: "0.1.3"
     deps:
       - krateo-clickstack
     tier: observability
