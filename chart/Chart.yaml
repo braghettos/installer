@@ -24,7 +24,7 @@ sources:
 dependencies:
   # composition engine
   - name: krateo-core-provider-crd
-    version: "0.36.4"
+    version: "0.36.5"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   - name: krateo-core-provider
