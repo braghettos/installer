@@ -251,7 +251,7 @@ components:
   # Requires features.oasgenprovider=true (for the oasgen-provider dep).
   - name: hyperdx-provider
     kind: HyperdxProvider
-    version: "0.1.1"
+    version: "0.1.2"
     deps:
       - oasgen-provider
     tier: observability
