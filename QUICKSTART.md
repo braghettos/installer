@@ -16,21 +16,22 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 
 | chart | version |
 |---|---|
-| **installer (umbrella)** | **`0.2.60`** |
-| core-provider / -crd (bootstrap subchart; app core-provider `1.0.1`, cdc `1.0.2`, chart-inspector `1.0.2`) | `0.35.7` |
+| **installer (umbrella)** | **`0.2.87`** |
+| core-provider / -crd (bootstrap subchart; app core-provider **`2.0.2`**, **de-webhooked** — needs **k8s ≥ 1.36**) | `0.36.7` |
 | cert-manager / clickhouse-operator / mongodb community-operator (bootstrap subcharts) | `v1.20.2` / `0.0.5` / `0.13.0` |
-| authn / -crd | `0.22.3` / `0.22.2` |
-| snowplow / -crd | `0.30.259` / `0.20.6` |
-| frontend / -crd | `1.0.12` / `1.0.25` |
+| authn / -crd | `0.22.6` / `0.22.4` |
+| snowplow / -crd | `1.0.10` / `0.21.1` |
+| frontend / -crd | `1.0.16` / `1.0.25` |
 | portal | `1.2.3` |
-| oasgen-provider / -crd | `0.9.2` |
-| hyperdx-provider | `0.1.1` |
-| krateo-clickstack (composition, app ClickStack `3.0.0`) | `0.1.2` |
-| krateo-sse-proxy / otel-collector-{deployment,daemonset} | `0.1.1` |
+| oasgen-provider / -crd | `0.9.4` / `0.9.5` |
+| hyperdx-provider | `0.1.2` |
+| krateo-clickstack (composition, app ClickStack `3.0.0`) | `0.1.5` |
+| krateo-sse-proxy / otel-collector-deployment / otel-collector-daemonset | `0.1.3` / `0.2.0` / `0.1.1` |
 | clickhouse-mcp-server | `0.1.7` |
 | kagent-crds / kagent (compositions; app kagent `0.9.7`) | `0.1.0` |
-| krateo-autopilot | `0.1.11` |
-| krateo-installer-agent + 9 federated specialists (authn/snowplow/frontend/clickstack/core-provider/code-analysis/ansible/tf-provider/tf-to-helm agents) | `0.1.0` |
+| krateo-autopilot | `0.1.12` |
+| krateo-installer-agent | `0.1.0` |
+| 9 federated specialists (authn/snowplow/frontend/clickstack/core-provider agents `0.1.1`; code-analysis/ansible/tf-provider/tf-to-helm `0.1.0`) | `0.1.1` / `0.1.0` |
 
 > Each installer version pins a tested set of component versions (GVRs) and types `componentValues`
 > against their schemas. Changing a component version means a **new installer version**, not an
@@ -39,7 +40,10 @@ reconciliation**, with **no prerequisite scripts, no manual RBAC, and no post-in
 ## Prerequisites
 
 - `kubectl` and `helm` ≥ 3.16
-- A cluster: a `kind` cluster, or a managed GKE cluster (any managed K8s works; GKE shown).
+- A cluster running **Kubernetes ≥ 1.36** — core-provider `2.0.x` is de-webhooked and uses a
+  `MutatingAdmissionPolicy` (GA in 1.36). A `kind` cluster (≥ node image `v1.36`) or a managed GKE
+  cluster (any managed K8s ≥ 1.36 works; GKE shown). For the *full* platform GKE **Standard** is
+  recommended over Autopilot (Warden constraints on some platform components).
 - Outbound access to `ghcr.io`.
 
 Everything else — the composition engine (core-provider) and the observability operators
@@ -103,7 +107,7 @@ Pick `exposure.type` for your cluster: `LoadBalancer` on a cloud cluster (GKE, e
 
 ```bash
 # GKE / cloud — external LoadBalancer IPs:
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system --create-namespace \
   --set exposure.type=LoadBalancer \
   --wait
@@ -111,7 +115,7 @@ helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.6
 
 ```bash
 # kind / local — NodePort Services pinned to the host-mapped nodePorts (step 0):
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -131,7 +135,7 @@ That's it. The install:
 **Light install (portal + login only — good for constrained kind, NodePort):**
 
 ```bash
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system --create-namespace \
   --set exposure.type=NodePort \
   --set componentValues.frontend.service.nodePort=30080 \
@@ -167,7 +171,7 @@ platform *through the agent* by patching the `Installer` CR (see
 
 ```bash
 curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system --create-namespace -f values-agent-only.yaml \
   --set vertexAI.enabled=true --set vertexAI.projectID=<YOUR_GCP_PROJECT>
 ```
@@ -177,6 +181,12 @@ This renders just the `observabilityAgents` layer (kagent-crds → kagent → kr
 Once the autopilot pod is `Running`, ask it to **“install Krateo”**: it routes to
 `krateo-installer-agent`, which patches the `Installer` CR (`features.composableportal=true`, …),
 and core-provider provisions the full platform in dependency order — hands-off.
+
+> **kagent UI** (`observabilityAgents`) is exposed through the same exposure layer — the kagent
+> component carries `serviceValuesPath: kagentapp.ui.service`, so `exposure.type=LoadBalancer`/`NodePort`
+> flips the nested UI Service while the kagent chart keeps its ClusterIP default. Plain-HTTP is safe
+> on kagent ≥ 0.9.7. **Adding your own autopilot-orchestrated agent:**
+> **[kagent/ADDING-AN-AGENT.md](./kagent/ADDING-AN-AGENT.md)**.
 
 ### Watch it converge
 
@@ -466,7 +476,7 @@ kubectl -n krateo-system create secret generic ghcr-pat --from-literal=token=<TO
 helm registry login ghcr.io -u <USER> -p <TOKEN>
 
 # 3. Install, pointing registryAuth at that Secret (namespace omitted -> defaults to krateo-system):
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system \
   --set exposure.type=LoadBalancer \
   --set registryAuth.enabled=true \

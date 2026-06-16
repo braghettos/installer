@@ -2,12 +2,12 @@
 
 Deep dive into how the umbrella installs and runs the platform: the layers, the self-bootstrap +
 self-reconcile machinery (with the hands-off auto-heal and the cdc resync), the per-component
-CompositionDefinition lifecycle, the core-provider `1.0.x` engine internals, the agent runtime, and
+CompositionDefinition lifecycle, the core-provider `2.0.x` engine internals, the agent runtime, and
 the ModelConfig surface. For the install commands see **[QUICKSTART.md](./QUICKSTART.md)**; for the
 two render modes + teardown see **[README.md](./README.md)**.
 
-Current pins: installer `0.2.62` · core-provider `1.0.1` / cdc `1.0.2` / chart-inspector `1.0.2`
-(chart `0.35.7`) · autopilot `0.1.11` · kagent app `0.9.7`.
+Current pins: installer `0.2.87` · core-provider **`2.0.2`** (de-webhooked — `MutatingAdmissionPolicy`,
+requires **k8s ≥ 1.36**; chart `0.36.7`) · autopilot `0.1.12` · kagent app `0.9.7`.
 
 ---
 
@@ -19,7 +19,7 @@ trusted engine reacting to one declarative CR.
 ```mermaid
 flowchart TB
     subgraph helm["Helm (one install, privileged — bootstrap mode)"]
-        cp["core-provider 1.0.1<br/>(+ chart-inspector, cdc image)"]
+        cp["core-provider 2.0.2 (de-webhooked)<br/>(+ chart-inspector, cdc image)"]
         ops["bootstrap operators<br/>cert-manager · ClickHouse · MongoDB"]
         sb["self-bootstrap Job<br/>(applies Installer CR + auto-heal)"]
         icd["installer CompositionDefinition"]
@@ -124,14 +124,22 @@ stateDiagram-v2
 
 ---
 
-## 4. Engine internals — core-provider `1.0.x` same-version disambiguation
+## 4. Engine internals — core-provider `2.0.x` (de-webhooked) + same-version disambiguation
+
+**De-webhooked (2.0.x).** Unlike the 1.x line (which ran a `/mutate` admission webhook + a
+conversion webhook backed by a CSR-issued serving cert), core-provider **2.0.x** uses a
+`MutatingAdmissionPolicy` (`admissionregistration.k8s.io/v1`, **GA in Kubernetes 1.36**) and
+`NoneConverter` CRDs — no webhook server, no CSR, no cert-manager dependency for the engine itself.
+**This is why the installer requires k8s ≥ 1.36.** (It also means GKE Autopilot's Warden, which
+blocks the `system:node` CSR the 1.x webhook needed, is no longer a blocker for the engine — though
+the full platform still wants Standard for other reasons.)
 
 The agent layer ships **many components at the same chart version `0.1.0`** (kagent-crds, kagent,
 installer-agent, and 9 specialists). Each generates a CRD under the **same** apiVersion
 `composition.krateo.io/v0-1-0` but a **different Kind** (`KagentCrds`, `Kagent`,
 `KrateoInstallerAgent`, …). The old engine (`0.26.1`) couldn't tell them apart and stalled
 ("too many definitions"); `1.0.x` resolves a CR → its CompositionDefinition by **version *and*
-kind**, and names each spawned controller by **resource + version**:
+kind** (carried forward into 2.0.x), and names each spawned controller by **resource + version**:
 
 ```mermaid
 flowchart LR
@@ -143,9 +151,9 @@ flowchart LR
     ca & cb & cc -->|"match CD by status.apiVersion + kind"| reg["core-provider CD registry"]
 ```
 
-> Requirement, not optional: the installer **must** run core-provider `1.0.x`. On `0.26.1` any
-> namespace with >1 component at one chart version deadlocks. See the `core-provider-1.0.x-required`
-> note. cdc controllers are named `{resource}-{apiVersion}-controller` via the spawn-template
+> Requirement, not optional: the installer **must** run core-provider **`1.0.x` or newer** (it pins
+> `2.0.2`). On `0.26.1` any namespace with >1 component at one chart version deadlocks ("too many
+> definitions"). cdc controllers are named `{resource}-{apiVersion}-controller` via the spawn-template
 > ConfigMap (`assets/cdc/configmap.yaml`).
 
 ---
@@ -191,7 +199,7 @@ flowchart TB
     spec --> models
 ```
 
-Notes that bite if wrong (all fixed in `0.2.62`):
+Notes that bite if wrong:
 - **Tool-server name.** Agents reference `RemoteMCPServer/kagent-tool-server` by the kagent
   default-install convention. The kagent composition sets `kagentapp.fullnameOverride=kagent` so the
   server is named `kagent-tool-server` (not `kagent-<release-hash>-tool-server`).
@@ -199,6 +207,14 @@ Notes that bite if wrong (all fixed in `0.2.62`):
   is enabled (`compositions.yaml`); in agent-only mode it references only `krateo-installer-agent`,
   so kagent doesn't fail to compile it ("Agent … not found").
 - **k8s-agent prompt.** The autopilot chart ships `prompts/k8s_agent` (added `0.1.11`).
+- **kagent-ui exposure.** The UI Service is nested at `kagentapp.ui.service` (not the chart
+  top-level `service`), so the umbrella exposes it via the kagent component's `serviceValuesPath:
+  kagentapp.ui.service` — when `exposure.type=LoadBalancer`/`NodePort` the exposure layer flips that
+  Service while the kagent chart keeps its ClusterIP default. Plain-HTTP is safe on kagent ≥ 0.9.7.
+- **Adding an agent / dynamic spawn.** The autopilot only routes to agents in its `type: Agent` tool
+  list (installer-built from enabled components). A bare `kubectl apply` of an `Agent` CR spawns a
+  running, directly-A2A-reachable agent but does **not** make it orchestrated — see
+  **[ADDING-AN-AGENT.md](./kagent/ADDING-AN-AGENT.md)**.
 
 ---
 
@@ -207,13 +223,27 @@ Notes that bite if wrong (all fixed in `0.2.62`):
 Each agent's model is configured through `componentValues.<agent>.modelConfig` — independent of the
 global `vertexAI` defaults. See *Give an agent a different model* in the QUICKSTART.
 
+**Ownership topology (the seam for any model change):** the **autopilot OWNS** the two shared
+ModelConfigs `gemini-flash` + `gemini-pro`; the installer-agent and all 9 specialists reference them
+**by name** with `create:false`. So flipping those two flips the whole fleet — which is exactly how
+the opt-in **`localModel`** path works (default off; `vertexAI` stays the default):
+
 ```mermaid
 flowchart LR
     ap["krateo-autopilot<br/>models: flash + pro"] -->|creates| mcf["ModelConfig gemini-flash"]
     ap -->|creates| mcp["ModelConfig gemini-pro"]
     sp["specialist / installer-agent<br/>modelConfig.create=false (default)"] -.->|references by name| mcf
     ded["any agent<br/>modelConfig.create=true"] -->|provisions its own| own["dedicated ModelConfig<br/>(Vertex / Gemini / Anthropic / OpenAI)"]
+    lm["localModel.enabled=true<br/>(umbrella opt-in)"] -.->|"autopilot (modelOwner) renders flash+pro as provider:Ollama @ host;<br/>every other agent pointed at refName (gemini-flash)"| mcf
 ```
+
+> **Local LLM in one flag.** `--set localModel.enabled=true --set localModel.host=<ollama-url>
+> --set localModel.model=qwen3.6` makes `compositions.yaml` inject `localModel` into the autopilot
+> (the `modelOwner`) so it renders `gemini-flash`/`gemini-pro` as `provider: Ollama`, and point every
+> other agent at `refName` (`create:false`) — the entire fleet runs on the local model, no
+> per-agent-chart change, `vertexAI` injection suppressed. Use a **tool-calling-capable** model
+> (qwen3.6 recommended; gemma ≤3 cannot tool-call). See
+> [QUICKSTART — local model](./QUICKSTART.md#run-the-agent-layer-on-a-local-model-ollama).
 
 `modelConfig` fields (strictly typed in `componentValues`; `additionalProperties:false`):
 

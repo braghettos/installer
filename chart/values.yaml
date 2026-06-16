@@ -33,8 +33,9 @@ installDefinitions: true
 # already exists; the subchart would be redundant).
 bootstrap:
   coreProvider:
+    # The engine subchart version is pinned in Chart.yaml (krateo-core-provider: 0.36.7, app
+    # core-provider 2.0.2 — de-webhooked, needs k8s >= 1.36); this flag only toggles installing it.
     enabled: true
-    version: "0.35.8"
   # ClickStack 3.0.0 operator prerequisites (disable any already present on the cluster).
   certManager:
     enabled: true

@@ -97,7 +97,10 @@ domain work it has a specialist for — it routes.
 ### 3.2 Model tiering
 `gemini-flash` for routing + ops + platform Q&A (latency + cost); `gemini-pro` for the IaC codegen
 / code-analysis agents (reasoning-heavy). One `ModelConfig` per tier, Vertex ADC (no key) on GKE
-workload identity. This stays a chart value so a site can swap providers.
+workload identity. This stays a chart value so a site can swap providers. The autopilot **owns**
+these two ModelConfigs and the rest of the fleet references them by name — so the installer's opt-in
+`localModel` flag flips just these two to `provider: Ollama` and the whole fleet runs on a local LLM
+(see [QUICKSTART — local model](../QUICKSTART.md#run-the-agent-layer-on-a-local-model-ollama)).
 
 ### 3.3 Tool/MCP layer
 Three MCP backends, declared per-agent via `toolNames` (kagent only exposes a RemoteMCPServer's
@@ -208,6 +211,9 @@ This makes the installer's agent a first-class, autopilot-gated specialist — a
 blueprint the same clean way to contribute a domain agent.
 
 ## 8. Extending the fleet (adding an agent)
+
+> **Practical step-by-step (with a verified worked example + the dynamic `kubectl apply` test):**
+> **[ADDING-AN-AGENT.md](./ADDING-AN-AGENT.md)**. This section is the design rationale.
 
 A new specialist is a uniform change:
 1. `agents.<name>` block in `values.yaml` (`enabled`, `modelConfig`).

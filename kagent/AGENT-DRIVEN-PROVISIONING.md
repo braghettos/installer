@@ -40,7 +40,7 @@ brings up only the composition engine + kagent + the `krateo-installer-agent` + 
 
 ```bash
 curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system --create-namespace -f values-agent-only.yaml \
   --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 ```

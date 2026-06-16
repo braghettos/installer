@@ -7,10 +7,10 @@ itself as an `Installer` composition, and then self-reconciles: it registers eac
 `Ready` and its CRD exists (Pass B), resolving exposure (`service.type`) and the portal config
 (peer LoadBalancer IPs) by reconciliation — no prerequisite scripts, no post-install patching.
 
-- **Chart:** `oci://ghcr.io/braghettos/krateo/installer` (current: **`0.2.60`**)
+- **Chart:** `oci://ghcr.io/braghettos/krateo/installer` (current: **`0.2.87`**)
 - **Install guide:** see **[QUICKSTART.md](./QUICKSTART.md)** — kind (local) and managed GKE.
 - **Kind:** `Installer` (`composition.krateo.io`).
-- **Engine:** core-provider **1.0.x** (cdc 1.0.2 / chart-inspector 1.0.2), pinned by the `core-provider` bootstrap subchart `0.35.7`.
+- **Engine:** core-provider **2.0.x** (app `2.0.2`, **de-webhooked** — uses `MutatingAdmissionPolicy`, GA in **k8s ≥ 1.36**, instead of a mutating webhook), pinned by the `krateo-core-provider` bootstrap subchart `0.36.7`. Requires **Kubernetes ≥ 1.36**.
 - **Expert agent:** a kagent `Agent` that knows this blueprint — see **[kagent/](./kagent)** and the [agent-driven guide](./kagent/AGENT-DRIVEN-PROVISIONING.md).
 
 There are two ways to install, both from **one `helm install`**:
@@ -18,14 +18,14 @@ There are two ways to install, both from **one `helm install`**:
 ```bash
 # (A) FULL platform — every component (authn -> snowplow -> frontend -> portal, oasgen,
 #     observability, all agents) provisioned by the umbrella's self-reconcile loop:
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system --create-namespace --set exposure.type=LoadBalancer \
   --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 
 # (B) AGENT-ONLY — bring up just kagent + the installer-agent + the autopilot, then let the
 #     autopilot install the rest of Krateo by editing the Installer CR (see QUICKSTART):
 curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.60 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
   -n krateo-system --create-namespace -f values-agent-only.yaml \
   --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 
@@ -37,7 +37,10 @@ Both are **hands-off**: the self-bootstrap auto-heals the Installer CR's first r
 composition engine advances the rollout on its resync loop (60s) — no manual `kubectl`.
 `vertexAI` powers the agents via Application Default Credentials on GKE (node SA needs
 `roles/aiplatform.user` or `roles/editor` + `cloud-platform` scope); on kind set
-`--set vertexAI.enabled=false` and supply a Gemini API key Secret instead.
+`--set vertexAI.enabled=false` and supply a Gemini API key Secret instead. To run the **whole
+agent fleet on a local LLM** (no cloud), add `--set localModel.enabled=true --set
+localModel.host=<ollama-url> --set localModel.model=qwen3.6` — see
+[QUICKSTART — local model](./QUICKSTART.md#run-the-agent-layer-on-a-local-model-ollama).
 
 ## How it works — the two render modes
 
@@ -181,7 +184,8 @@ flowchart LR
 > component experts + `clickhouse-mcp-server`. The autopilot is the single orchestrator; every other
 > agent registers on it as an A2A sub-agent (`componentValues.krateo-autopilot.extraAgents`, gated
 > to the agents actually enabled). Deep dive — topology, ModelConfigs, the hands-off bootstrap
-> sequence, and the engine internals: **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+> sequence, and the engine internals: **[ARCHITECTURE.md](./ARCHITECTURE.md)**. Adding your own
+> autopilot-orchestrated agent: **[kagent/ADDING-AN-AGENT.md](./kagent/ADDING-AN-AGENT.md)**.
 
 ## Layout
 
