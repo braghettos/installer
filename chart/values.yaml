@@ -265,7 +265,7 @@ components:
   # split), so the collectors read the credentials Secret directly — no replica needed.
   - name: krateo-clickstack
     kind: KrateoClickstack
-    version: "0.1.4"
+    version: "0.1.5"
     tier: observability
     feature: observability
   # otel-collector-* and krateo-sse-proxy live in the krateo-clickstack-chart repo
