@@ -1,75 +1,104 @@
-# Release runbook — consolidating on `oci://ghcr.io/braghettos/krateo`
+# Release runbook
 
-One-time merge + tag order for the repo-sanitization / registry-consolidation work, so the
-installer never references an artifact that isn't published yet.
+How to cut releases in the Krateo installer ecosystem. Everything publishes to the single
+consolidated registry **`oci://ghcr.io/braghettos/krateo`**, and the installer pins every component
+from it.
 
-## The one rule
+> **History:** the one-time migration that consolidated all charts onto `/krateo` (off the old
+> `/charts` + bare-`braghettos` locations) is **complete** — every component repo now publishes to
+> `/krateo` via the canonical CI below. This runbook is the steady-state process; the migration
+> ordering it used to hold is no longer needed.
 
-The installer resolves **every** component from `oci://ghcr.io/braghettos/krateo/<chart>:<pinned>`.
-So **every pinned artifact must exist at `/krateo` before the umbrella is tagged.** The app-chart
-forks currently publish to `/charts` (or bare `braghettos`) — those are the artifacts that don't
-exist at `/krateo` yet and gate everything.
+## The invariants
 
-Per repo, the sub-order is always: **merge PR → confirm the release CI run is green → tag →
-confirm the artifact pushed.** Merging flips the workflow's `OCI_REPO` to `/krateo`; the semver tag
-triggers `release-oci.yaml`.
+1. **One registry.** Every chart → `oci://ghcr.io/braghettos/krateo/<chart>:<version>`. Nothing is
+   ever unpublished; tagging only *adds*.
+2. **The installer pins only published versions.** A version listed in `chart/values.yaml`
+   `components[].version` (or a bootstrap subchart in `Chart.yaml`) **must already exist at
+   `/krateo`** before the umbrella is tagged — so a component release always precedes the installer
+   release that pins it.
+3. **A component GVR/schema change ships as a new installer version**, never an in-place edit of a
+   running one — because `values.schema.json` types `componentValues` against each pinned chart's
+   real schema (regenerated per release). See
+   [QUICKSTART — Changing component versions](./QUICKSTART.md#changing-component-versions).
 
-## Pre-flight (done)
+## Canonical CI (byte-identical across repos)
 
-- `krateo-core-provider-chart` standalone CompositionDefinition bumped `0.35.2` → **`0.35.4`** to
-  match the installer pin. (Already pushed to that PR.)
+| Repo kind | Workflows | Trigger → effect |
+|---|---|---|
+| **chart repos** (`krateo-*-chart`, `krateo-installer`, …) | `lint.yaml` + `release-oci.yaml` | semver tag `X.Y.Z` → discover every first-class chart (`chart/`, `crds-subchart/`, `kagent/chart/`, …; vendored subcharts skipped), substitute `CHART_VERSION`/`SOURCE_REF`→tag and `APP_VERSION`→the code repo's latest semver tag, package & push each to `/krateo/<chart>:<tag>`. `workflow_dispatch` accepts `chart_version`/`app_version` inputs. |
+| **code repos** (`krateo-authn`, `krateo-snowplow`, `krateo-sse-proxy`, …) | `release-pullrequest.yaml` + `release-tag.yaml` | PR → build/test; semver tag → multi-platform image (`docker/build-push-action@v7`, `linux/amd64,linux/arm64`) to `ghcr.io/<repo>:<tag>`, **and** if a `make generate` target exists, generate CRDs and publish them (with `helm.sh/resource-policy: keep` injected) to the repo's `-chart` repo's CRD sub-chart. Single `make generate` entry point. |
 
-## Tier 1 — component repos (independent; may run in parallel)
+CI is intentionally identical across repos so any repo can be reasoned about the same way — the
+same `release-oci.yaml` is byte-for-byte shared by all chart repos, and the same `release-tag.yaml`
+by all code repos.
 
-For the app-chart forks the **tag value = the chart version** (they use the `CHART_VERSION`
-placeholder). Charts that are literal-versioned (marked †) publish at their own pinned versions, so
-their repo tag is just a release marker.
+## Recipe A — release a chart change (chart repo)
 
-| Repo | PR | Tag | Publishes to `/krateo/…` |
-|------|----|-----|---------------------------|
-| `krateo-core-provider-chart` | #1 | `0.35.4` | core-provider:0.35.4, core-provider-crd:0.35.4, **krateo-core-provider-agent:0.1.0** |
-| `krateo-authn-chart` | #1 | `0.22.2` | authn:0.22.2, authn-crd:0.22.2 (pinned), **krateo-authn-agent:0.1.0** |
-| `krateo-snowplow-chart` | #5 | `0.30.259` | snowplow:0.30.259, snowplow-crd:0.20.6, **krateo-snowplow-agent:0.1.0** |
-| `krateo-frontend-chart` | #5 | `1.0.12` | frontend:1.0.12, frontend-crd:1.0.25, **krateo-frontend-agent:0.1.0** |
-| `krateo-oasgen-provider-chart` | #1 | `0.9.0` | oasgen-provider:0.9.0, oasgen-provider-crd:0.9.0 |
-| `krateo-portal-chart` | #6 | `1.2.2` | portal:1.2.2 |
-| `krateo-clickstack-chart` | #1 | `0.1.2` † | krateo-clickstack:0.1.2, otel-collector-deployment:0.1.1, otel-collector-daemonset:0.1.1, krateo-sse-proxy:0.1.1, **krateo-clickstack-agent:0.1.0** |
-| `krateo-codegen-agents` | (main) | `0.1.0` † | krateo-code-analysis-agent:0.1.0, krateo-ansible-to-operator-agent:0.1.0, krateo-tf-provider-to-operator-agent:0.1.0, krateo-tf-to-helm-agent:0.1.0 |
-| `krateo-autopilot` | #1 | `0.1.10` | krateo-autopilot:0.1.10 (orchestrator only; all specialists federated) |
-| `krateo-installer-charts` | #1 | `0.x` † | hyperdx-provider:0.1.1, kagent:0.1.0 (appVersion kagent 0.9.7), kagent-crds:0.1.0, clickhouse-mcp-server:0.1.7 |
+```bash
+# in e.g. krateo-snowplow-chart, after merging the change to main:
+git tag 1.0.11 && git push origin 1.0.11        # tag value = the chart version
+gh run watch -R braghettos/krateo-snowplow-chart   # release-oci goes green
+helm show chart oci://ghcr.io/braghettos/krateo/snowplow --version 1.0.11   # confirm published
+```
 
-## Tier 2 — the umbrella (LAST)
+## Recipe B — release a code change (code repo)
 
-Only after **all** Tier-1 artifacts are confirmed at `/krateo`:
+```bash
+# in e.g. krateo-sse-proxy, after merging:
+git tag 0.1.4 && git push origin 0.1.4
+# release-tag.yaml: builds + pushes the multi-arch image, and (if `make generate` exists)
+# publishes the regenerated CRDs to krateo-sse-proxy-chart's CRD sub-chart.
+```
 
-| Repo | PR | Tag |
-|------|----|-----|
-| `krateo-installer` | #1 | the installer release version → publishes `/krateo/installer` **and** `/krateo/krateo-installer-agent:0.1.0` (the federated agent, in the same CI run) |
+Then bump the consuming chart's `appVersion`/image tag and run **Recipe A** for that chart.
 
-## Why this is low-risk even if the order slips
+## Recipe C — cut a new installer version (the main one)
 
-- Tagging only **publishes**; nothing is ever unpublished. Merging `krateo-installer-charts #1`
-  (which drops the moved/duplicated charts) does **not** delete existing `/krateo` artifacts from
-  its prior releases.
-- The CRD/duplicated artifacts (`authn-crd`, `frontend`, `frontend-crd`, `snowplow-crd`,
-  `krateo-autopilot`, `kagent`, `hyperdx-provider`, `clickhouse-mcp-server`, `otel-*`,
-  `krateo-sse-proxy`) **already exist** at `/krateo` from earlier installer-charts releases — the
-  fork tags just re-publish them as the new single source.
-- The genuinely-new-to-`/krateo` artifacts are the **app charts** `authn, snowplow, frontend,
-  core-provider, oasgen-provider, portal, clickstack` — these tags are what actually gate a working
-  install.
+When you change a pinned component version, an installer template/value, or the schema:
 
-## Verify before Tier 2
+```bash
+# 0. Make sure every NEW pinned component version is already published (invariant #2).
+# 1. Edit chart/values.yaml components[].version (and/or Chart.yaml bootstrap subchart pins).
+# 2. Regenerate the typed componentValues schema (pulls each pinned chart's values.schema.json):
+python3 hack/gen-componentvalues-schema.py chart
+# 3. Lint locally (CHART_VERSION must be a real semver for lint):
+#    (CI lints on PR; for a local check, substitute a dummy version first.)
+# 4. PR → merge → tag the installer release:
+git tag 0.2.88 && git push origin 0.2.88
+# release-oci publishes BOTH /krateo/installer:0.2.88 AND /krateo/krateo-installer-agent
+# (the federated agent in kagent/chart/, in the same CI run).
+helm show values oci://ghcr.io/braghettos/krateo/installer --version 0.2.88 | grep -A3 '^localModel:'
+```
 
-```sh
-helm pull oci://ghcr.io/braghettos/krateo/core-provider     --version 0.35.4
-helm pull oci://ghcr.io/braghettos/krateo/snowplow          --version 0.30.259
-helm pull oci://ghcr.io/braghettos/krateo/portal            --version 1.2.2
-helm pull oci://ghcr.io/braghettos/krateo/krateo-autopilot  --version 0.1.7
+> **Provenance order for a coordinated change** (e.g. a new autopilot feature): release the
+> **component** first (Recipe A/B), confirm it at `/krateo`, *then* re-pin + release the installer.
+> Example from this repo's history: autopilot `0.1.12` was merged + tagged, then the installer
+> re-pinned it (`components[].version: 0.1.12`), regen'd the schema, and released `0.2.87`.
+
+## Live upgrade (in place, on a running cluster)
+
+`helm upgrade installer … --version <new>` bumps the seed `installer` CompositionDefinition; the
+self-reconcile picks up the new chart version. But the live **Installer CR is frozen** at the old
+component defaults and **new CR fields are pruned** unless you edit through the **version-qualified
+GVR** (`installers.v<new>.composition.krateo.io`). Full recipe + the nudges (CR re-apply, the
+version-qualified patch, stale-CRD-cache restart, helm-ownership re-point) are in the
+`installer-version-upgrade-nudges` project memory. For a clean validation, a fresh install of the
+new version is the lowest-risk path.
+
+## Verify before relying on a release
+
+```bash
+helm show chart oci://ghcr.io/braghettos/krateo/installer        --version <new>
+helm show chart oci://ghcr.io/braghettos/krateo/krateo-autopilot --version <pinned>
+# spot-check any component you bumped:
+helm show chart oci://ghcr.io/braghettos/krateo/<component>      --version <pinned>
 ```
 
 ## Related
 
-- Org repo-sanitization standard (naming / registry / CI / topics / README).
-- `kagent/AUTOPILOT-DESIGN.md` + the `krateo-autopilot` repo's `AGENTS-VERSIONING.md`
-  (agents packaging / versioning / federation / eval).
+- [QUICKSTART.md](./QUICKSTART.md) — install, the version table (the current pinned set), changing component versions
+- [README.md](./README.md) / [ARCHITECTURE.md](./ARCHITECTURE.md) — the two render modes, self-bootstrap, engine internals
+- [CHART-STANDARD.md](./CHART-STANDARD.md) — the `app`/`crds`/`agent` chart shapes + the `sources` rule
+- [kagent/ADDING-AN-AGENT.md](./kagent/ADDING-AN-AGENT.md) — releasing a new autopilot-orchestrated agent
+- `krateo-autopilot` repo's `AGENTS-VERSIONING.md` — agent packaging/versioning/federation
