@@ -151,14 +151,6 @@ componentValues:
   kagent:
     kagentapp:
       fullnameOverride: kagent
-      # Expose the kagent UI over a plain-HTTP LoadBalancer. Safe as of kagent >= 0.9.7:
-      # PR #1868 made the chat's generateId() feature-detect crypto.randomUUID and fall back
-      # to uuidv4() (crypto.getRandomValues), so the chat dispatches in an insecure context.
-      # No TLS needed (only the navigator.clipboard copy buttons degrade). The generic
-      # component `expose:true` mechanism can't target this nested ui.service, so set it here.
-      ui:
-        service:
-          type: LoadBalancer
   krateo-autopilot:
     extraAgents:
       - name: krateo-installer-agent
@@ -349,6 +341,15 @@ components:
       - kagent-crds
     tier: observability
     feature: observabilityAgents
+    # Expose the kagent UI through the installer's exposure layer (exposure.type), leaving the
+    # kagent chart's ui.service default ClusterIP. kagent's Service is nested at
+    # kagentapp.ui.service (not the chart top-level `service`), so serviceValuesPath targets it.
+    # Safe over plain HTTP as of kagent >= 0.9.7 (PR #1868: crypto.randomUUID feature-detect +
+    # uuidv4 fallback) — no TLS needed; only navigator.clipboard copy buttons degrade.
+    expose: true
+    exposePort: 8080
+    svcMatch: kagent-ui
+    serviceValuesPath: kagentapp.ui.service
   # The installer's federated specialist agent (shipped from this repo's kagent/chart/), published
   # to /krateo/krateo-installer-agent and registered on the autopilot orchestrator via
   # componentValues.krateo-autopilot.extraAgents (below). It provisions/evolves the platform by

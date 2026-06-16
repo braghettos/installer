@@ -296,6 +296,10 @@
           "svcMatch": {
             "type": "string"
           },
+          "serviceValuesPath": {
+            "type": "string",
+            "description": "Dotted path to the component chart's Service values block when it is NOT the chart top-level `service` (e.g. kagent's UI Service lives at `kagentapp.ui.service`). The exposure layer builds this nested path and sets `.type` = .Values.exposure.type, flipping the right Service to LoadBalancer/NodePort while the component chart keeps its default."
+          },
           "consumer": {
             "type": "boolean"
           },
