@@ -45,6 +45,11 @@ helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.6
   --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 ```
 
+> **Fully local, no cloud:** swap the Vertex flags for `--set vertexAI.enabled=false
+> --set localModel.enabled=true --set localModel.host=<ollama-url> --set localModel.model=qwen3.6`
+> to run the whole agent fleet on a local Ollama model — see
+> [QUICKSTART — Run the agent layer on a local model (Ollama)](../QUICKSTART.md#run-the-agent-layer-on-a-local-model-ollama).
+
 After this the `Installer` CR exists and the agent is running. The `krateo-installer-agent` is a
 federated kagent `Agent` (shipped from `kagent/chart`, installed as the `krateo-installer-agent`
 composition) — its chart already provisions its `ModelConfig` and the narrow RBAC below, so no

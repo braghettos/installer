@@ -308,6 +308,10 @@
           "vertexAI": {
             "type": "boolean",
             "description": "Inject the umbrella's .vertexAI block into this component's Composition spec (krateo-autopilot)."
+          },
+          "modelOwner": {
+            "type": "boolean",
+            "description": "This agent OWNS the shared ModelConfigs the rest of the fleet references (krateo-autopilot). With localModel.enabled it gets .localModel injected to render them as Ollama; every other agent is pointed at localModel.refName (create:false)."
           }
         },
         "required": [
@@ -316,6 +320,32 @@
           "version",
           "tier"
         ]
+      }
+    },
+    "localModel": {
+      "type": "object",
+      "title": "Local LLM (Ollama)",
+      "description": "Opt-in (off by default). Run the whole agent fleet on one local Ollama model instead of Gemini/Vertex. The modelOwner agent renders its shared ModelConfigs as provider Ollama at host; every other agent references refName (create:false). Use a tool-calling-capable model (qwen3.6 recommended).",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "host": {
+          "type": "string",
+          "description": "Ollama endpoint, e.g. http://ollama.ollama.svc.cluster.local:11434."
+        },
+        "model": {
+          "type": "string",
+          "default": "qwen3.6",
+          "description": "Local model id pulled in Ollama; must support tool calling."
+        },
+        "refName": {
+          "type": "string",
+          "default": "gemini-flash",
+          "description": "The owner-created ModelConfig name the other agents reference."
+        }
       }
     },
     "vertexAI": {
