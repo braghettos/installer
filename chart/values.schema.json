@@ -381,7 +381,7 @@
         "authn-crd": {
           "type": "object",
           "title": "Authn CRDs",
-          "description": "Overrides for the authn-crd Composition (chart 0.22.2), deep-merged into its spec.",
+          "description": "Overrides for the authn-crd Composition (chart 0.22.4), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
@@ -394,7 +394,7 @@
         "oasgen-provider-crd": {
           "type": "object",
           "title": "Oasgen Provider CRDs",
-          "description": "Overrides for the oasgen-provider-crd Composition (chart 0.9.4), deep-merged into its spec.",
+          "description": "Overrides for the oasgen-provider-crd Composition (chart 0.9.5), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
@@ -419,7 +419,7 @@
         "snowplow-crd": {
           "type": "object",
           "title": "Snowplow CRDs",
-          "description": "Overrides for the snowplow-crd Composition (chart 0.20.6), deep-merged into its spec.",
+          "description": "Overrides for the snowplow-crd Composition (chart 0.21.1), deep-merged into its spec.",
           "additionalProperties": false,
           "properties": {
             "global": {
@@ -867,7 +867,7 @@
             },
             "probePort": {
               "type": "integer",
-              "description": "Dedicated kubelet-probe listener port; 0 disables it and falls back to the main port.",
+              "description": "DEPRECATED / no-op on the 1.0.x ship line: the binary has no dedicated probe listener; probes target the main http port. Retained for values-compatibility only -- setting it has no effect.",
               "title": "Probe Port"
             },
             "ingress": {
@@ -1325,7 +1325,7 @@
               "description": "Helm global values (injected by the composition runtime)."
             }
           },
-          "description": "Overrides for the snowplow Composition (chart 1.0.6), deep-merged into its spec."
+          "description": "Overrides for the snowplow Composition (chart 1.0.10), deep-merged into its spec."
         },
         "frontend": {
           "type": "object",
@@ -2253,7 +2253,7 @@
               }
             }
           },
-          "description": "Overrides for the hyperdx-provider Composition (chart 0.1.1), deep-merged into its spec."
+          "description": "Overrides for the hyperdx-provider Composition (chart 0.1.2), deep-merged into its spec."
         },
         "krateo-clickstack": {
           "title": "krateo-clickstack values",
@@ -2493,7 +2493,7 @@
               "description": "Upstream clickstack chart values, passed through opaquely."
             }
           },
-          "description": "Overrides for the krateo-clickstack Composition (chart 0.1.2), deep-merged into its spec."
+          "description": "Overrides for the krateo-clickstack Composition (chart 0.1.5), deep-merged into its spec."
         },
         "otel-collector-deployment": {
           "title": "otel-collector-deployment values",
@@ -2995,7 +2995,7 @@
               "description": "Values forwarded to the upstream opentelemetry-collector subchart."
             }
           },
-          "description": "Overrides for the otel-collector-deployment Composition (chart 0.1.1), deep-merged into its spec."
+          "description": "Overrides for the otel-collector-deployment Composition (chart 0.2.0), deep-merged into its spec."
         },
         "otel-collector-daemonset": {
           "title": "otel-collector-daemonset values",
@@ -3679,7 +3679,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-sse-proxy Composition (chart 0.1.1), deep-merged into its spec."
+          "description": "Overrides for the krateo-sse-proxy Composition (chart 0.1.3), deep-merged into its spec."
         },
         "clickhouse-mcp-server": {
           "title": "clickhouse-mcp-server values",
@@ -4993,6 +4993,25 @@
               },
               "description": "Gemini Vertex AI provider configuration. When enabled, ModelConfigs use provider GeminiVertexAI with Application Default Credentials (no API key) \u2014 the pod's GKE node SA must have aiplatform access. secretName is optional (only for explicit SA-key auth)."
             },
+            "localModel": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Opt-in: render every model slot as a kagent ModelConfig with provider Ollama pointing at host. Takes precedence over vertexAI. Default false (vertexAI/Gemini stays the default)."
+                },
+                "host": {
+                  "type": "string",
+                  "description": "Ollama endpoint, e.g. http://ollama.ollama.svc.cluster.local:11434."
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Local model id pulled in Ollama; overrides every slot's model id. Must support tool calling (e.g. qwen3.6)."
+                }
+              },
+              "description": "Local LLM (Ollama) provider \u2014 opt-in path to run the agents on a local, no-cloud model."
+            },
             "mcpServers": {
               "type": "object",
               "additionalProperties": {
@@ -5073,7 +5092,7 @@
               }
             }
           },
-          "description": "Overrides for the krateo-autopilot Composition (chart 0.1.11), deep-merged into its spec."
+          "description": "Overrides for the krateo-autopilot Composition (chart 0.1.12), deep-merged into its spec."
         }
       }
     },
