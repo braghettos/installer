@@ -47,6 +47,7 @@ Then register it on your autopilot via `extraAgents` (or talk to it directly for
 
 ## Related
 
+- [ADDING-AN-AGENT.md](./ADDING-AN-AGENT.md) — add your own autopilot-orchestrated agent (+ the dynamic `kubectl apply` test)
 - [AGENT-DRIVEN-PROVISIONING.md](./AGENT-DRIVEN-PROVISIONING.md) — provisioning via the Installer CR
 - [AUTOPILOT-DESIGN.md](./AUTOPILOT-DESIGN.md) — the orchestrator + fleet design
 - The `krateo-autopilot` repo's `AGENTS-VERSIONING.md` — the agents packaging/versioning/`/kagent` standard
