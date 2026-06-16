@@ -45,10 +45,21 @@
 {{- $_ := set $spec "config" $cfg }}
 {{- end }}
 {{- end }}
-{{- /* Vertex AI passthrough: components flagged vertexAI:true (krateo-autopilot) get the
-       umbrella's .Values.vertexAI injected into their Composition spec, so the autopilot
-       ModelConfigs use GeminiVertexAI via ADC. */}}
-{{- if and $c.vertexAI $top.Values.vertexAI.enabled }}
+{{- /* Agent model wiring. localModel (opt-in) takes precedence over vertexAI:
+       - localModel.enabled: the model OWNER (krateo-autopilot, modelOwner:true) gets
+         .Values.localModel injected so it renders its gemini-flash/gemini-pro ModelConfigs
+         as provider Ollama at localModel.host; every OTHER agent (vertexAI:true) is pointed
+         at that owner-created ModelConfig (modelConfig.create=false, name=localModel.refName),
+         so the WHOLE fleet runs on the one local LLM with no per-agent-chart change.
+       - else (default): components flagged vertexAI:true get .Values.vertexAI injected so the
+         autopilot/agents use GeminiVertexAI via ADC. */}}
+{{- if $top.Values.localModel.enabled }}
+{{- if $c.modelOwner }}
+{{- $_ := set $spec "localModel" (dict "enabled" true "host" $top.Values.localModel.host "model" $top.Values.localModel.model) }}
+{{- else if $c.vertexAI }}
+{{- $_ := set $spec "modelConfig" (dict "create" false "name" $top.Values.localModel.refName) }}
+{{- end }}
+{{- else if and $c.vertexAI $top.Values.vertexAI.enabled }}
 {{- $_ := set $spec "vertexAI" (dict "enabled" true "projectID" $top.Values.vertexAI.projectID "location" $top.Values.vertexAI.location) }}
 {{- end }}
 {{- /* HITL approval gate for the autopilot's mutating k8s tools (vertexAI:true == the autopilot). */}}

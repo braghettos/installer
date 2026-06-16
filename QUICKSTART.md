@@ -234,6 +234,7 @@ umbrella self-applies. Schema: `chart/values.schema.json`.
 | `features.githubMcp` | `false` | hosted GitHub MCP RemoteMCPServer |
 | `vertexAI.enabled` / `projectID` / `location` | `true` / — | autopilot LLM via Vertex AI ADC |
 | `secrets.geminiApiKey` | `gemini-api-key` | secret name used when `vertexAI.enabled=false` |
+| `localModel.enabled` / `host` / `model` | `false` / — / `qwen3.6` | opt-in: run the whole agent fleet on a local Ollama model (see [Run the agent layer on a local model](#run-the-agent-layer-on-a-local-model-ollama)) |
 | `hitlApproval` | `true` | human-in-the-loop approval for the autopilot |
 | `componentValues.<name>` | unset | per-component spec overrides, deep-merged (see [Customizing a component's spec](#customizing-a-components-spec)) |
 | `registryAuth.*` (`enabled`, `username`, `passwordRef`, `insecureSkipVerifyTLS`) | `false` | private-registry credentials + TLS-skip for in-cluster component-chart pulls (see [Private registries](#private-authenticated-registries)) |
@@ -376,6 +377,77 @@ or at runtime via `kubectl edit installers.composition.krateo.io installer` — 
 re-renders the agent's Composition and it picks up the new model on the next reconcile. For a
 dedicated `GeminiVertexAI` ModelConfig (`create: true`), set `modelConfig.vertexAI.projectID`
 explicitly — the global `--set vertexAI.projectID` only flows into the autopilot's shared ModelConfigs.
+
+### Run the agent layer on a local model (Ollama)
+
+Instead of Gemini/Vertex, you can run the **entire** agent fleet — the autopilot, the
+installer-agent, and every specialist — on **one local LLM** served by
+[Ollama](https://ollama.com), with no cloud model credentials. This is **opt-in**: the
+`vertexAI` default is unchanged; you turn it on with `localModel.enabled=true`. It pairs
+naturally with the [agent-only install](#agent-only-install--let-the-autopilot-install-krateo)
+("the kagent approach") — bring up just the agents, talk to them locally, no cloud at all.
+
+**How it wires up (one knob, whole fleet):** the **autopilot owns** the two shared
+`ModelConfig`s (`gemini-flash` / `gemini-pro`) that every other agent references by name
+(`create: false`). With `localModel.enabled`, the installer injects `localModel` into the
+autopilot so it renders *those two* as `provider: Ollama` pointing at your endpoint, and points
+every other agent at `gemini-flash` — so flipping one flag moves the whole fleet to the local
+model, **no per-agent configuration**.
+
+**Pick a tool-calling-capable model — this matters.** These agents are *tool-heavy* (the
+installer-agent fires `k8s_patch_resource` / `helm_*`; the autopilot routes multi-tool A2A
+loops). The model **must** support function/tool calling or the agents will chat but never
+*act*:
+
+| model (`--set localModel.model=`) | notes |
+|---|---|
+| **`qwen3.6`** (default; 35B‑A3B MoE, ~24 GB Q4) | **Recommended.** Most reliable local tool-caller; native tool calling in Ollama, no template hacks. MoE (~3B active) → fast. |
+| `qwen3:14b` (~10 GB) / `qwen3.5:9b` (~6 GB) | Lighter fallbacks for smaller GPUs — same Qwen3 tool-calling reliability, less headroom. |
+| `gemma4` (26B‑A4B, ~24 GB) | Works, but dense and **fragile**: needs the `--jinja --chat-template-kwargs '{"enable_thinking":false}'` server config or tool calls return empty content. |
+| ~~`gemma:2b/7b`, gemma2, gemma3~~ | **Avoid** — gemma ≤ 3 cannot tool-call in Ollama; the agents won't be able to take actions. |
+
+**1. Run Ollama in-cluster and pull the model** (any reachable Ollama works — in-cluster shown):
+
+```bash
+kubectl create namespace ollama
+kubectl -n ollama create deployment ollama --image=ollama/ollama --port=11434
+kubectl -n ollama expose deployment ollama --port=11434
+# pull a tool-calling model into the running pod (GPU node strongly recommended):
+kubectl -n ollama exec deploy/ollama -- ollama pull qwen3.6
+# -> reachable in-cluster at  http://ollama.ollama.svc.cluster.local:11434
+```
+
+> A GPU node pool makes the agents usable; on CPU-only the model loads but tool-call latency is
+> high. For a quick laptop test you can instead point `host` at a host-run Ollama
+> (`http://host.docker.internal:11434` on Docker Desktop / kind).
+
+**2. Install (or upgrade) with the local-model flags** — here on the agent-only profile:
+
+```bash
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version <ver> \
+  -n krateo-system --create-namespace -f values-agent-only.yaml \
+  --set vertexAI.enabled=false \
+  --set localModel.enabled=true \
+  --set localModel.host=http://ollama.ollama.svc.cluster.local:11434 \
+  --set localModel.model=qwen3.6
+```
+
+`localModel` knobs (all under the top-level `localModel:`):
+
+| key | default | meaning |
+|---|---|---|
+| `localModel.enabled` | `false` | opt in to the local Ollama provider (takes precedence over `vertexAI`) |
+| `localModel.host` | `""` | Ollama endpoint, e.g. `http://ollama.ollama.svc.cluster.local:11434` |
+| `localModel.model` | `qwen3.6` | model id pulled in Ollama (must support tool calling) |
+| `localModel.refName` | `gemini-flash` | the autopilot-owned `ModelConfig` the other agents reference |
+
+No Gemini key, no Vertex ADC, no `gemini-api-key` Secret needed. Switch back to cloud any time
+by setting `localModel.enabled=false` (and `vertexAI.enabled=true` or providing a Gemini key).
+
+> **Swapping the model later:** `--set localModel.model=<other>` (or edit the live `Installer`
+> CR) re-renders the autopilot's ModelConfigs and the fleet picks up the new model on the next
+> reconcile. To use `gemma4`, configure your Ollama/llama-server with the jinja chat-template
+> kwarg noted above, then `--set localModel.model=gemma4`.
 
 ## Private (authenticated) registries
 

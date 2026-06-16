@@ -116,6 +116,21 @@ vertexAI:
   projectID: neon-481711
   location: us-central1
 
+# Local LLM (Ollama) — OPT-IN, off by default (vertexAI above stays the default). When enabled,
+# the whole agent fleet runs on ONE local, no-cloud model instead of Gemini/Vertex:
+#   - the model OWNER (krateo-autopilot, modelOwner:true) renders its gemini-flash/gemini-pro
+#     ModelConfigs as provider Ollama pointing at `host`, with the model id from `model`;
+#   - every other agent (installer-agent + the 9 specialists) is pointed at the owner's
+#     `refName` ModelConfig (create:false) — so no per-agent-chart change is needed.
+# Point `host` at an in-cluster Ollama Service. Use a TOOL-CALLING-capable model (the agents are
+# tool-heavy — k8s_patch_resource, helm_*): qwen3.6 is recommended; gemma4 works but is fragile;
+# gemma <=3 cannot tool-call. See QUICKSTART "Run the agent layer on a local model (Ollama)".
+localModel:
+  enabled: false
+  host: ""                 # e.g. http://ollama.ollama.svc.cluster.local:11434
+  model: qwen3.6
+  refName: gemini-flash    # the owner-created ModelConfig the other agents reference
+
 # ---------------------------------------------------------------------------
 # Per-component spec overrides, keyed by component name. Each entry is deep-merged
 # into that component's rendered Composition spec (Pass B). The installer-computed
@@ -428,10 +443,13 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.11"
+    version: "0.1.12"
     deps:
       - kagent
       - krateo-installer-agent
     tier: observability
     feature: observabilityAgents
     vertexAI: true
+    # The autopilot owns the shared gemini-flash/gemini-pro ModelConfigs the whole fleet
+    # references; with localModel.enabled it renders them as Ollama (the others just point here).
+    modelOwner: true
