@@ -27,7 +27,20 @@
 {{- if and (eq $crd "true") (eq $deps "true") }}
 {{- $spec := dict }}
 {{- if and $c.expose $isLB }}
+{{- if $c.serviceValuesPath }}
+{{- /* Component whose Service is NOT at the chart's top-level `service` (e.g. kagent's UI
+       lives at kagentapp.ui.service). Build the nested dict inside-out from the dotted
+       serviceValuesPath and merge it, so the exposure layer flips the right Service to
+       exposure.type while the component chart keeps its default (ClusterIP). */}}
+{{- $nested := dict "type" $top.Values.exposure.type }}
+{{- $parts := splitList "." $c.serviceValuesPath }}
+{{- range $i := until (len $parts) }}
+{{- $nested = dict (index $parts (sub (len $parts) (add $i 1))) $nested }}
+{{- end }}
+{{- $_ := mergeOverwrite $spec $nested }}
+{{- else }}
 {{- $_ := set $spec "service" (dict "type" $top.Values.exposure.type) }}
+{{- end }}
 {{- end }}
 {{- if $c.consumer }}
 {{- $cfg := dict }}
