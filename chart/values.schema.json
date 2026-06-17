@@ -3846,7 +3846,7 @@
         },
         "kagent-crds": {
           "title": "kagent-crds values",
-          "description": "Overrides for the kagent-crds Composition (chart 0.1.1), deep-merged into its spec.",
+          "description": "Overrides for the kagent-crds Composition (chart 0.1.2), deep-merged into its spec.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -3876,7 +3876,7 @@
         },
         "kagent": {
           "title": "kagent values",
-          "description": "Overrides for the kagent Composition (chart 0.1.2), deep-merged into its spec.",
+          "description": "Overrides for the kagent Composition (chart 0.1.3), deep-merged into its spec.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
