@@ -115,7 +115,11 @@ hitlApproval: true
 vertexAI:
   enabled: true
   projectID: neon-481711
-  location: us-central1
+  # `global` is Google's recommended endpoint for Gemini 2.5 — it routes across regions instead of
+  # pinning one regional Dynamic Shared Quota pool, giving the best availability / lowest 429 rate
+  # for the agent fan-out. Override per-install with --set vertexAI.location=<region> if you need
+  # regional data residency.
+  location: global
 
 # Local LLM (Ollama) — OPT-IN, off by default (vertexAI above stays the default). When enabled,
 # the whole agent fleet runs on ONE local, no-cloud model instead of Gemini/Vertex:
@@ -445,7 +449,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.18"
+    version: "0.1.19"
     deps:
       - kagent
       - krateo-installer-agent
