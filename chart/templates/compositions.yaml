@@ -75,9 +75,18 @@
 {{- else if and $c.vertexAI $top.Values.vertexAI.enabled }}
 {{- $_ := set $spec "vertexAI" (dict "enabled" true "projectID" $top.Values.vertexAI.projectID "location" $top.Values.vertexAI.location) }}
 {{- end }}
-{{- /* HITL approval gate for the autopilot's mutating k8s tools (vertexAI:true == the autopilot). */}}
+{{- /* HITL approval gate. It applies ONLY to the user-facing orchestrator (modelOwner == the
+       autopilot): when a mutating tool needs approval, the interrupt surfaces in the user's chat.
+       Delegated subagents (every other vertexAI:true agent — installer-agent + the specialists) are
+       invoked over A2A as tools of the orchestrator, and kagent does NOT bubble a subagent's
+       tool-approval interrupt up to the user — so a gate on them DEADLOCKS the delegated flow
+       (the subagent waits forever for an approval the user can't give). Force it OFF for them. */}}
 {{- if $c.vertexAI }}
+{{- if $c.modelOwner }}
 {{- $_ := set $spec "hitlApproval" $top.Values.hitlApproval }}
+{{- else }}
+{{- $_ := set $spec "hitlApproval" false }}
+{{- end }}
 {{- end }}
 {{- /* componentValues: per-component spec overrides, deep-merged into the rendered spec. The
        installer-computed wiring above (service/config/vertexAI/hitlApproval) stays AUTHORITATIVE
