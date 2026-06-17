@@ -337,7 +337,7 @@ components:
     feature: observabilityAgents
   - name: kagent
     kind: Kagent
-    version: "0.1.1"
+    version: "0.1.2"
     deps:
       - kagent-crds
     tier: observability
