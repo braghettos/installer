@@ -1,9 +1,9 @@
 dependencies:
 - name: krateo-core-provider
   repository: oci://ghcr.io/braghettos/krateo
-  version: 0.36.7
+  version: 0.36.12
 - name: cert-manager
   repository: https://charts.jetstack.io
   version: v1.20.2
-digest: sha256:949f468573e5338ee62a099fffec8b6a7cd5e323479f9cc3ec264e097f06004e
-generated: "2026-06-18T00:31:25.918429+02:00"
+digest: sha256:3285a07487609738da6f9dbd7c1a339fb36ff1efb5450e2edb4abe260580e737
+generated: "2026-06-18T00:39:31.709042+02:00"
