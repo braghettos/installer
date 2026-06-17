@@ -5005,7 +5005,7 @@
               }
             }
           },
-          "description": "Overrides for the krateo-autopilot Composition (chart 0.1.19), deep-merged into its spec."
+          "description": "Overrides for the krateo-autopilot Composition (chart 0.1.20), deep-merged into its spec."
         }
       }
     },
