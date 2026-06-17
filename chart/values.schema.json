@@ -3904,6 +3904,29 @@
             }
           }
         },
+        "fetch-mcp-server": {
+          "title": "fetch-mcp-server values",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "image": {
+              "type": "string"
+            },
+            "imagePullPolicy": {
+              "type": "string"
+            },
+            "port": {
+              "type": "integer"
+            },
+            "resources": {
+              "type": "object"
+            }
+          },
+          "description": "Overrides for the fetch-mcp-server Composition (chart 0.1.0), deep-merged into its spec."
+        },
         "krateo-installer-agent": {
           "title": "krateo-installer-agent values",
           "type": "object",
@@ -4701,7 +4724,15 @@
                 }
               }
             },
-            "github": {
+            "resources": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "clusterReads": {
               "type": "object",
               "additionalProperties": false,
               "properties": {
@@ -4712,17 +4743,9 @@
                   "type": "string"
                 }
               }
-            },
-            "resources": {
-              "type": "object",
-              "additionalProperties": true
-            },
-            "global": {
-              "type": "object",
-              "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-docs-agent Composition (chart 0.1.0), deep-merged into its spec."
+          "description": "Overrides for the krateo-docs-agent Composition (chart 0.1.1), deep-merged into its spec."
         },
         "krateo-ansible-to-operator-agent": {
           "title": "krateo-ansible-to-operator-agent values",
