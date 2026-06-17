@@ -4103,7 +4103,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the authn-agent Composition (chart 0.1.3), deep-merged into its spec."
+          "description": "Overrides for the authn-agent Composition (chart 0.1.4), deep-merged into its spec."
         },
         "snowplow-agent": {
           "title": "krateo-snowplow-agent values",
@@ -4207,7 +4207,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the snowplow-agent Composition (chart 0.1.3), deep-merged into its spec."
+          "description": "Overrides for the snowplow-agent Composition (chart 0.1.4), deep-merged into its spec."
         },
         "frontend-agent": {
           "title": "krateo-frontend-agent values",
@@ -4310,7 +4310,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the frontend-agent Composition (chart 0.1.2), deep-merged into its spec."
+          "description": "Overrides for the frontend-agent Composition (chart 0.1.3), deep-merged into its spec."
         },
         "clickstack-agent": {
           "title": "krateo-clickstack-agent values",
@@ -4516,7 +4516,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the core-provider-agent Composition (chart 0.1.4), deep-merged into its spec."
+          "description": "Overrides for the core-provider-agent Composition (chart 0.1.5), deep-merged into its spec."
         },
         "krateo-code-analysis-agent": {
           "title": "krateo-code-analysis-agent values",

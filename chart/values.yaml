@@ -368,7 +368,7 @@ components:
   - name: authn-agent
     kind: KrateoAuthnAgent
     chart: krateo-authn-agent
-    version: "0.1.3"
+    version: "0.1.4"
     deps:
       - kagent
     tier: observability
@@ -377,7 +377,7 @@ components:
   - name: snowplow-agent
     kind: KrateoSnowplowAgent
     chart: krateo-snowplow-agent
-    version: "0.1.3"
+    version: "0.1.4"
     deps:
       - kagent
     tier: observability
@@ -386,7 +386,7 @@ components:
   - name: frontend-agent
     kind: KrateoFrontendAgent
     chart: krateo-frontend-agent
-    version: "0.1.2"
+    version: "0.1.3"
     deps:
       - kagent
     tier: observability
@@ -404,7 +404,7 @@ components:
   - name: core-provider-agent
     kind: KrateoCoreProviderAgent
     chart: krateo-core-provider-agent
-    version: "0.1.4"
+    version: "0.1.5"
     deps:
       - kagent
     tier: observability
