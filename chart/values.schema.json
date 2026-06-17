@@ -3904,6 +3904,103 @@
             }
           }
         },
+        "krateo-installer-agent": {
+          "title": "krateo-installer-agent values",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "namespace": {
+              "type": "string",
+              "description": "Namespace where the agent + its RBAC/ModelConfig are installed."
+            },
+            "modelConfig": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "ModelConfig the agent uses \u2014 referenced by name, or created here (create=true) so this agent's model/provider is configured independently.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "create": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "Anthropic",
+                    "OpenAI",
+                    "AzureOpenAI",
+                    "Ollama",
+                    "Gemini",
+                    "GeminiVertexAI",
+                    "AnthropicVertexAI",
+                    "Bedrock",
+                    "SAPAICore"
+                  ]
+                },
+                "model": {
+                  "type": "string"
+                },
+                "vertexAI": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projectID": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "apiKeySecret": {
+                  "type": "string"
+                },
+                "apiKeySecretKey": {
+                  "type": "string"
+                }
+              }
+            },
+            "hitlApproval": {
+              "type": "boolean",
+              "description": "HITL approval gate on the mutating k8s tools the agent uses to edit the Installer CR."
+            },
+            "prompts": {
+              "type": "object",
+              "description": "Prompt language selecting files/prompts-<language>.yaml for the agent systemMessage.",
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "type": "string"
+                }
+              }
+            },
+            "rbac": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Narrow Role/RoleBinding granting patch on installers.composition.krateo.io.",
+              "properties": {
+                "create": {
+                  "type": "boolean"
+                },
+                "serviceAccountName": {
+                  "type": "string"
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Agent pod resource requests/limits."
+            },
+            "global": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Helm global values (injected by the composition runtime)."
+            }
+          },
+          "description": "Overrides for the krateo-installer-agent Composition (chart 0.1.2), deep-merged into its spec."
+        },
         "authn-agent": {
           "title": "krateo-authn-agent values",
           "type": "object",
@@ -4006,7 +4103,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the authn-agent Composition (chart 0.1.2), deep-merged into its spec."
+          "description": "Overrides for the authn-agent Composition (chart 0.1.3), deep-merged into its spec."
         },
         "snowplow-agent": {
           "title": "krateo-snowplow-agent values",
@@ -4316,7 +4413,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the clickstack-agent Composition (chart 0.1.2), deep-merged into its spec."
+          "description": "Overrides for the clickstack-agent Composition (chart 0.1.3), deep-merged into its spec."
         },
         "core-provider-agent": {
           "title": "krateo-core-provider-agent values",
@@ -4419,7 +4516,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the core-provider-agent Composition (chart 0.1.3), deep-merged into its spec."
+          "description": "Overrides for the core-provider-agent Composition (chart 0.1.4), deep-merged into its spec."
         },
         "krateo-code-analysis-agent": {
           "title": "krateo-code-analysis-agent values",
