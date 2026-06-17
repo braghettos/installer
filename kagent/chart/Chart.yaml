@@ -9,7 +9,7 @@ type: application
 # Pinned literally (NOT CHART_VERSION): this agent chart shares the installer repo, whose git
 # tag is the umbrella's version — so the agent versions independently. The installer references
 # krateo-installer-agent at this version; bump it here when the agent changes.
-version: 0.1.8
+version: 0.1.9
 # appVersion + the SOURCE_REF in `sources` are STAMPED to the release tag by release-oci on every
 # tag (appVersion := <tag>, s/SOURCE_REF/<tag>/), so the published agent advertises the exact
 # installer release it ships with and its `sources` point at that released ref — which the agent

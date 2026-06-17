@@ -373,7 +373,7 @@ components:
     feature: observabilityAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.8"
+    version: "0.1.9"
     deps:
       - kagent
     tier: observability
