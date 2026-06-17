@@ -53,6 +53,16 @@ spec:
             - helm_upgrade
             - helm_repo_add
             - helm_repo_update
+{{- if .Values.fetch.enabled }}
+      # Tokenless doc grounding: GET the version-pinned raw docs/llms.txt URL (public, no auth/token).
+      - type: McpServer
+        mcpServer:
+          name: {{ .Values.fetch.mcpServer }}
+          kind: MCPServer
+          apiGroup: kagent.dev
+          toolNames:
+            - fetch
+{{- end }}
     a2aConfig:
       skills:
         - id: provision-platform

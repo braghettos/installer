@@ -1,1 +1,4 @@
-{{ .Files.Get (printf "files/prompts-%s.yaml" .Values.prompts.language) }}
+{{- /* Stamp the deployed UMBRELLA tag into the prompt's raw-doc URL: appVersion is set to the
+       installer repo's release tag (= the umbrella version) at package time, and docs/llms.txt lives
+       in krateo-installer @ that tag — so the agent fetches version-correct docs, tokenlessly. */ -}}
+{{ .Files.Get (printf "files/prompts-%s.yaml" .Values.prompts.language) | replace "__DOC_TAG__" .Chart.AppVersion }}

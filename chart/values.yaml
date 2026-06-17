@@ -167,7 +167,6 @@ componentValues:
       - name: krateo-clickstack-agent
       - name: krateo-core-provider-agent
       - name: krateo-code-analysis-agent
-      - name: krateo-docs-agent
       - name: krateo-ansible-to-operator-agent
       - name: krateo-tf-provider-to-operator-agent
       - name: krateo-tf-to-helm-agent
@@ -374,7 +373,7 @@ components:
     feature: observabilityAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.7"
+    version: "0.1.8"
     deps:
       - kagent
     tier: observability
@@ -385,7 +384,7 @@ components:
   - name: authn-agent
     kind: KrateoAuthnAgent
     chart: krateo-authn-agent
-    version: "0.1.5"
+    version: "0.1.6"
     deps:
       - kagent
     tier: observability
@@ -394,7 +393,7 @@ components:
   - name: snowplow-agent
     kind: KrateoSnowplowAgent
     chart: krateo-snowplow-agent
-    version: "0.1.5"
+    version: "0.1.6"
     deps:
       - kagent
     tier: observability
@@ -403,7 +402,7 @@ components:
   - name: frontend-agent
     kind: KrateoFrontendAgent
     chart: krateo-frontend-agent
-    version: "0.1.4"
+    version: "0.1.5"
     deps:
       - kagent
     tier: observability
@@ -412,7 +411,7 @@ components:
   - name: clickstack-agent
     kind: KrateoClickstackAgent
     chart: krateo-clickstack-agent
-    version: "0.1.4"
+    version: "0.1.5"
     deps:
       - kagent
     tier: observability
@@ -421,7 +420,7 @@ components:
   - name: core-provider-agent
     kind: KrateoCoreProviderAgent
     chart: krateo-core-provider-agent
-    version: "0.1.6"
+    version: "0.1.7"
     deps:
       - kagent
     tier: observability
@@ -431,16 +430,6 @@ components:
   - name: krateo-code-analysis-agent
     kind: KrateoCodeAnalysisAgent
     version: "0.1.3"
-    deps:
-      - kagent
-    tier: observability
-    feature: specialistAgents
-    vertexAI: true
-  # Answers overall-platform / general Krateo questions from a baked platform overview + read-only
-  # cluster inspection. Tokenless — no github MCP, no PAT (component agents own their domain docs).
-  - name: krateo-docs-agent
-    kind: KrateoDocsAgent
-    version: "0.1.1"
     deps:
       - kagent
     tier: observability
@@ -472,7 +461,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.22"
+    version: "0.1.23"
     deps:
       - kagent
       - krateo-installer-agent
