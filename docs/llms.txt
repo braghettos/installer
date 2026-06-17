@@ -1,0 +1,67 @@
+# Krateo PlatformOps Installer
+
+> The **compose-of-compositions umbrella** that installs the entire Krateo PlatformOps platform
+> from one `helm install`: it self-bootstraps the composition engine, registers itself as an
+> `Installer` composition, and self-reconciles every component in dependency order (no prerequisite
+> scripts, no post-install patching). This repo also ships the `krateo-installer-agent` (under
+> `kagent/`), the federated specialist that provisions and evolves the platform by editing the
+> `Installer` CR. This `llms.txt` is the agent-navigable index over the repo's EXISTING human docs;
+> it does not duplicate them — read the linked file for detail.
+
+## How to use (agents)
+
+The installer-agent grounds in the **installer umbrella's** docs at the **deployed umbrella
+version** — NOT the agent's own `kagent/chart` version (`0.1.x`). Resolve the umbrella version off
+the cluster, then fetch these docs at the matching git tag:
+
+- Deployed umbrella version = the `installer` Composition's
+  `CompositionDefinition.spec.chart.version` (the `installer` umbrella chart version, e.g. `0.2.x`);
+  equivalently the Composition's apiVersion `composition.krateo.io/v<maj>-<min>-<patch>`. Read it
+  via the k8s tools.
+- Then read these files via the github tools at that ref, e.g.
+  `get_file_contents("krateo-installer", "docs/llms.txt", ref=<umbrella-version>)`, and open the
+  specific page you need at the same `ref`.
+- If a fact isn't in these docs, read the source at that tag (`chart/templates/*`,
+  `chart/values.yaml`, `chart/values.schema.json`) — don't guess.
+
+## Engine & architecture
+
+- [ARCHITECTURE.md](../ARCHITECTURE.md): deep dive into how the umbrella installs and runs the
+  platform — the layers, the self-bootstrap + self-reconcile machinery (hands-off auto-heal, cdc
+  resync), per-component CompositionDefinition lifecycle, the core-provider engine internals, the
+  agent runtime, and the ModelConfig surface.
+- [README.md](../README.md): the two render modes (bootstrap vs composition), Pass A
+  (`definitions.yaml`) / Pass B (`compositions.yaml`) gating, and the three-hook teardown.
+
+## Install & operate
+
+- [QUICKSTART.md](../QUICKSTART.md): install the full platform from one `helm install`; exposure
+  (NodePort / LoadBalancer / Ingress), kind specifics, feature flags, and provisioning by patching
+  the `Installer` CR.
+
+## Releasing & chart shape
+
+- [RELEASE-RUNBOOK.md](../RELEASE-RUNBOOK.md): how to cut releases across the installer ecosystem —
+  the single consolidated registry `oci://ghcr.io/braghettos/krateo`, tag-driven versioning, and
+  how the installer pins each component.
+- [CHART-STANDARD.md](../CHART-STANDARD.md): the `Chart.yaml` shape every Krateo chart must follow
+  (app / crds / agent), and the load-bearing `sources` → braghettos-fork rule.
+
+## The installer-agent (`kagent/`)
+
+- [kagent/README.md](../kagent/README.md): what the `krateo-installer-agent` is — a federated
+  specialist routed to by the `krateo-autopilot` orchestrator (not a standalone entry point).
+- [kagent/ADDING-AN-AGENT.md](../kagent/ADDING-AN-AGENT.md): how to add a kagent `Agent` the
+  autopilot routes to — spawned vs orchestrated, and the `extraAgents` registration.
+- [kagent/AGENT-DRIVEN-PROVISIONING.md](../kagent/AGENT-DRIVEN-PROVISIONING.md): the pattern and
+  procedure for provisioning/evolving the platform by editing the `Installer` CR (the agent's
+  primary job) rather than running privileged installs.
+- [kagent/AUTOPILOT-DESIGN.md](../kagent/AUTOPILOT-DESIGN.md): the `krateo-autopilot` multi-agent
+  design — orchestrator + specialists, shared tools/telemetry, the closed remediation loop.
+
+## Optional
+
+- The umbrella chart source under [`chart/`](../chart) (`templates/self-bootstrap.yaml`,
+  `definitions.yaml`, `compositions.yaml`, the teardown hooks, helpers `inst.apiVersion`/`inst.lbip`)
+  and the agent chart under [`kagent/chart/`](../kagent/chart) — read directly at the deployed tag
+  for exact fields, defaults, and render gates beyond what these docs cover.
