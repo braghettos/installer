@@ -60,6 +60,16 @@
       "type": "boolean",
       "description": "HITL approval gate on the mutating k8s tools the agent uses to edit the Installer CR."
     },
+    "prompts": {
+      "type": "object",
+      "description": "Prompt language selecting files/prompts-<language>.yaml for the agent systemMessage.",
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "type": "string"
+        }
+      }
+    },
     "rbac": {
       "type": "object",
       "additionalProperties": false,

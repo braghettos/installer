@@ -18,6 +18,10 @@ modelConfig:
   apiKeySecret: ""                  # used when the provider needs a key (Gemini/Anthropic/OpenAI)
   apiKeySecretKey: ""
 
+# Prompt language for the agent's systemMessage (selects files/prompts-<language>.yaml).
+prompts:
+  language: eng
+
 # Human-in-the-loop gate on the mutating tools (k8s_patch_resource, k8s_apply_manifest) the
 # agent uses to edit the Installer CR. true = pause for approval (safe); false = autonomous.
 hitlApproval: true
