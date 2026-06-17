@@ -31,7 +31,11 @@ hitlApproval: true
 # cluster-admin — the agent provisions only by editing one CR, validated by the apiserver.
 rbac:
   create: true
-  serviceAccountName: kagent
+  # The ServiceAccount the Installer-CR patch runs AS. kagent >=0.9 propagates the AGENT's own
+  # identity to the tool call (not the shared tool-server SA), so the patch executes as the agent's
+  # ServiceAccount — which kagent names after the Agent: `krateo-installer-agent`. Bind the
+  # installer-driver Role to THAT, or every k8s_patch_resource on the Installer CR is denied.
+  serviceAccountName: krateo-installer-agent
 
 resources:
   requests:
