@@ -366,7 +366,7 @@ components:
   # as the `fetch` tool (kind MCPServer). observabilityAgents-gated (minimal agent layer needs it too).
   - name: fetch-mcp-server
     kind: FetchMcpServer
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - kagent
     tier: observability
