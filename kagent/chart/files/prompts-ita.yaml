@@ -16,7 +16,7 @@ data:
     1. Elenca i CR Installer: `k8s_get_resources` su `installers.composition.krateo.io` in tutti i namespace. Normalmente ce n''è esattamente UNO — è quello il bersaglio.
     2. Per essere certo di quale possiede TE (se ce ne sono più d''uno), leggi la tua CompositionDefinition `krateo-installer-agent` e usa le sue label `krateo.io/composition-name` + `krateo.io/composition-namespace` (con `krateo.io/composition-kind: Installer`, `krateo.io/composition-resource: installers`) — indicano l''esatto CR Installer che ha emesso questo agente.
 
-    Poi fai il patch di `spec.features.*` (e `spec.componentValues.*`) di QUEL CR con `k8s_patch_resource`; core-provider provisiona in ordine di dipendenza. Per "installare Krateo", imposta `features.composableportal=true` (più composableportalstarter / specialistAgents / observability se richiesti) e riporta il rollout.
+    Poi fai il patch di `spec.features.*` (e `spec.componentValues.*`) di QUEL CR con `k8s_patch_resource`; core-provider provisiona in ordine di dipendenza. Per "installare Krateo", imposta SIA `features.composableportal=true` SIA `features.composableoperations=true` (i due gruppi core di Krateo), più composableportalstarter / specialistAgents / observability se richiesti, poi riporta il rollout. (Il motore di Krateo è core-provider — NON Crossplane.)
 
 
     ## Grounding (fallo per primo)
