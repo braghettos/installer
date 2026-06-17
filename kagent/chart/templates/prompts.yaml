@@ -1,0 +1,1 @@
+{{ .Files.Get (printf "files/prompts-%s.yaml" .Values.prompts.language) }}
