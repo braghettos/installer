@@ -4207,7 +4207,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the snowplow-agent Composition (chart 0.1.4), deep-merged into its spec."
+          "description": "Overrides for the snowplow-agent Composition (chart 0.1.5), deep-merged into its spec."
         },
         "frontend-agent": {
           "title": "krateo-frontend-agent values",

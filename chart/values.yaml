@@ -377,7 +377,7 @@ components:
   - name: snowplow-agent
     kind: KrateoSnowplowAgent
     chart: krateo-snowplow-agent
-    version: "0.1.4"
+    version: "0.1.5"
     deps:
       - kagent
     tier: observability
