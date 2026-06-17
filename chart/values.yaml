@@ -362,6 +362,16 @@ components:
   # to /krateo/krateo-installer-agent and registered on the autopilot orchestrator via
   # componentValues.krateo-autopilot.extraAgents (below). It provisions/evolves the platform by
   # editing the Installer CR — narrow RBAC, see kagent/AGENT-DRIVEN-PROVISIONING.md.
+  # Tokenless HTTP fetch MCP (mcp/fetch via kmcp): GETs public raw.githubusercontent.com doc URLs ->
+  # markdown, so every agent reads its version-pinned docs/llms.txt with no token. Wired into agents
+  # as the `fetch` tool (kind MCPServer). observabilityAgents-gated (minimal agent layer needs it too).
+  - name: fetch-mcp-server
+    kind: FetchMcpServer
+    version: "0.1.0"
+    deps:
+      - kagent
+    tier: observability
+    feature: observabilityAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
     version: "0.1.7"
