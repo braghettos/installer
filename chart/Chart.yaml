@@ -31,21 +31,18 @@ dependencies:
     version: "0.36.7"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
-  # observability operators (ClickStack 3.0.0 prerequisites). cert-manager must be Ready
-  # before the ClickHouse operator (webhook cert) — see bootstrap notes / Phase 5.
+  # cert-manager stays a bootstrap subchart — it is load-bearing for browser-facing TLS
+  # (e.g. the kagent UI ingress's Let's Encrypt cert), independent of the observability stack.
   - name: cert-manager
     version: "v1.20.2"
     repository: https://charts.jetstack.io
     condition: bootstrap.certManager.enabled
-  - name: clickhouse-operator-helm
-    version: "0.0.5"
-    repository: oci://ghcr.io/clickhouse
-    condition: bootstrap.clickhouseOperator.enabled
-  - name: community-operator
-    version: "0.13.0"
-    repository: https://mongodb.github.io/helm-charts
-    condition: bootstrap.mongodbOperator.enabled
-  # kagent (agentic platform) is NO LONGER a bootstrap subchart — it is installed as two
+  # The ClickHouse + MongoDB observability operators are NO LONGER bootstrap subcharts. They
+  # install as `observability`-gated compositions (clickhouse-operator, mongodb-operator in
+  # values.yaml components, wrapped from braghettos/krateo-clickstack-operators-chart), so
+  # enabling observability at runtime brings the operators up FIRST (krateo-clickstack deps on
+  # them) — closing the gap where a lean/agent-only bootstrap could never add them.
+  # kagent (agentic platform) is likewise NOT a bootstrap subchart — it is installed as two
   # compositions (kagent-crds -> kagent, see values.yaml components), wrapping the unforked
   # upstream charts. CRD establishment is handled by composition dependency ordering instead
   # of a crds/ pre-install, which also makes teardown clean (helm-templates/-owned CRDs).

@@ -36,12 +36,8 @@ bootstrap:
     # The engine subchart version is pinned in Chart.yaml (krateo-core-provider: 0.36.7, app
     # core-provider 2.0.2 — de-webhooked, needs k8s >= 1.36); this flag only toggles installing it.
     enabled: true
-  # ClickStack 3.0.0 operator prerequisites (disable any already present on the cluster).
+  # cert-manager — load-bearing for browser-facing TLS (e.g. the kagent UI ingress).
   certManager:
-    enabled: true
-  clickhouseOperator:
-    enabled: true
-  mongodbOperator:
     enabled: true
   kagent:
     enabled: true
@@ -50,17 +46,13 @@ bootstrap:
 cert-manager:
   crds:
     enabled: true     # install cert-manager CRDs with the operator
-clickhouse-operator-helm:
-  # No admission webhook / cert-manager Certificates — so the umbrella renders no
-  # cert-manager CRs at install (the operator still reconciles ClickHouseCluster).
-  certManager:
-    enable: false
-  webhook:
-    enable: false
-# community-operator / kagent-crds take no overrides by default (omit = chart defaults).
-# NOTE: kagent is no longer configured here as a bootstrap subchart. It is installed as two
-# compositions — `kagent-crds` then `kagent` (see the components list). The sample-agent
-# disabling now lives in the kagent wrapper chart's own default values (braghettos/kagent).
+# NOTE: the ClickHouse + MongoDB observability operators are no longer bootstrap subcharts —
+# they are installed as `observability`-gated compositions (clickhouse-operator,
+# mongodb-operator in `components`, wrapped from braghettos/krateo-clickstack-operators-chart),
+# so enabling observability at runtime brings them up first. The webhook/cert-manager-disabled
+# passthrough now lives in the clickhouse-operator wrapper chart's own default values.
+# kagent is likewise installed as two compositions — `kagent-crds` then `kagent` (see the
+# components list); the sample-agent disabling lives in the kagent wrapper chart's defaults.
 
 # Namespaces the umbrella manages. The observability stack (ClickStack, collectors,
 # MCP, agents) now runs entirely in `krateo` — there is no separate clickhouse
@@ -285,11 +277,34 @@ components:
   # http-handlers ConfigMap, the otel-clickhouse-credentials Secret, and a HyperDX
   # LoadBalancer Service. Everything runs in namespaces.krateo (no clickhouse-system
   # split), so the collectors read the credentials Secret directly — no replica needed.
+  # Observability data-layer OPERATORS — composition wrappers over the upstream ClickHouse +
+  # MongoDB operators (braghettos/krateo-clickstack-operators-chart). They are no longer
+  # bootstrap subcharts: as `observability`-gated components they install with the feature, so
+  # enabling observability at runtime brings the operators up FIRST (krateo-clickstack depends
+  # on them) — then the data layer, then the stack. CRDs ship templated, so core-provider
+  # applies them on render and teardown is clean.
+  - name: clickhouse-operator
+    kind: ClickhouseOperator
+    version: "0.1.0"
+    tier: observability
+    feature: observability
+  - name: mongodb-operator
+    kind: MongodbOperator
+    version: "0.1.0"
+    tier: observability
+    feature: observability
   - name: krateo-clickstack
     kind: KrateoClickstack
     version: "0.1.5"
     tier: observability
     feature: observability
+    # Operators first: the clickhouse.com + mongodbcommunity CRDs must be served and the
+    # controllers running before clickstack creates its ClickHouseCluster/KeeperCluster/
+    # MongoDBCommunity CRs (Pass B depsReady gate). This also makes teardown drain clickstack
+    # (and its data-layer CRs) BEFORE the operators, so finalizers clear.
+    deps:
+      - clickhouse-operator
+      - mongodb-operator
   # otel-collector-* and krateo-sse-proxy live in the krateo-clickstack-chart repo
   # (grouped with the clickstack chart) and publish to the consolidated registry
   # ociRepo = oci://ghcr.io/braghettos/krateo, like every other component.

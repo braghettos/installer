@@ -49,21 +49,19 @@
         "clickhouseOperator": {
           "type": "object",
           "additionalProperties": false,
+          "title": "DEPRECATED — no-op",
+          "description": "Deprecated/no-op: the ClickHouse operator is now an observability-gated composition (clickhouse-operator), no longer a bootstrap subchart. Kept for backward-compatibility of existing Installer CRs; gates nothing.",
           "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true
-            }
+            "enabled": { "type": "boolean" }
           }
         },
         "mongodbOperator": {
           "type": "object",
           "additionalProperties": false,
+          "title": "DEPRECATED — no-op",
+          "description": "Deprecated/no-op: the MongoDB operator is now an observability-gated composition (mongodb-operator), no longer a bootstrap subchart. Kept for backward-compatibility of existing Installer CRs; gates nothing.",
           "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true
-            }
+            "enabled": { "type": "boolean" }
           }
         },
         "kagent": {
@@ -92,16 +90,6 @@
       "type": "object",
       "title": "cert-manager subchart values",
       "description": "Passthrough to the bootstrap cert-manager subchart."
-    },
-    "clickhouse-operator-helm": {
-      "type": "object",
-      "title": "clickhouse-operator subchart values",
-      "description": "Passthrough to the bootstrap ClickHouse operator subchart."
-    },
-    "community-operator": {
-      "type": "object",
-      "title": "mongodb community-operator subchart values",
-      "description": "Passthrough to the bootstrap MongoDB community-operator subchart."
     },
     "kagent-crds": {
       "type": "object",
