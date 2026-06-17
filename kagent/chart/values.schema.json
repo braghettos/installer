@@ -92,6 +92,18 @@
       "type": "object",
       "additionalProperties": true,
       "description": "Helm global values (injected by the composition runtime)."
+    },
+    "fetch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mcpServer": {
+          "type": "string"
+        }
+      }
     }
   }
 }
