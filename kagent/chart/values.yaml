@@ -1,11 +1,13 @@
 namespace: krateo-system
 
-# ModelConfig the agent uses. Per the agents standard, prefer REFERENCING the autopilot's
-# ModelConfig by name (set create=false, name=<an autopilot ModelConfig>). create=true also
-# ships a GeminiVertexAI (ADC) ModelConfig here, for the standalone "spawn only the agent" case.
+# ModelConfig the agent uses. Per the agents standard (§8 C3/C4), REFERENCE the autopilot's
+# canonical ModelConfig by name (gemini-pro for this heavy/reasoning agent) with create=false —
+# autopilot is the modelOwner and always ships alongside. Flip create=true ONLY for the truly
+# standalone "spawn only the agent, no autopilot" demo, in which case it self-creates gemini-pro
+# under the same canonical name (so the reference resolves identically).
 modelConfig:
-  name: vertex-gemini
-  create: true
+  name: gemini-pro
+  create: false
   provider: GeminiVertexAI          # GeminiVertexAI (ADC) | Gemini (API key) | Anthropic | OpenAI
   model: gemini-2.5-pro
   # GeminiVertexAI via Application Default Credentials (no API key). projectID/location are
