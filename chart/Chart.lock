@@ -1,18 +1,9 @@
 dependencies:
-- name: krateo-core-provider-crd
-  repository: oci://ghcr.io/braghettos/krateo
-  version: 0.35.12
 - name: krateo-core-provider
   repository: oci://ghcr.io/braghettos/krateo
-  version: 0.35.12
+  version: 0.36.12
 - name: cert-manager
   repository: https://charts.jetstack.io
   version: v1.20.2
-- name: clickhouse-operator-helm
-  repository: oci://ghcr.io/clickhouse
-  version: 0.0.5
-- name: community-operator
-  repository: https://mongodb.github.io/helm-charts
-  version: 0.13.0
-digest: sha256:a8c8c1d0b12c655c805a49f27d93999ae8a43023c4190b7c8f8ee0a09946b04b
-generated: "2026-06-15T14:19:12.706111+02:00"
+digest: sha256:3285a07487609738da6f9dbd7c1a339fb36ff1efb5450e2edb4abe260580e737
+generated: "2026-06-18T00:39:31.709042+02:00"
