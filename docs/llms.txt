@@ -38,6 +38,10 @@ the cluster, then fetch these docs at the matching git tag:
 - [QUICKSTART.md](../QUICKSTART.md): install the full platform from one `helm install`; exposure
   (NodePort / LoadBalancer / Ingress), kind specifics, feature flags, and provisioning by patching
   the `Installer` CR.
+- [INSTALL-WORKFLOW.md](INSTALL-WORKFLOW.md): the end-to-end installation workflow — the two render
+  modes, the self-bootstrap hook, the Pass A / Pass B dependency engine (feature + crdExists +
+  depsReady gates), the dependency layering (observability operators install first), teardown
+  ordering, and the install profiles.
 
 ## Releasing & chart shape
 
