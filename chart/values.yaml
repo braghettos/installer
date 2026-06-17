@@ -100,9 +100,13 @@ secrets:
   geminiApiKey: gemini-api-key          # required when observabilityAgents=true AND vertexAI.enabled=false
   githubMcpPat: github-mcp-pat          # only if self-hosting GitHub MCP
 
-# HITL approval gate for the autopilot's mutating Kubernetes tools. true (default)=
+# HITL approval gate for the autopilot's mutating Kubernetes tools. true=
 # pause for human approval before any cluster change; false=autonomous remediation.
-hitlApproval: true
+# TEMPORARILY false: kagent <=0.9.8 crashes the chat SSE stream on the ask_user
+# (HITL) interrupt — KAgentTaskResponse validation fails with an empty `kind`
+# on task resume (kagent-dev/kagent#2037, fixed by #2038, not yet in a release).
+# Re-enable once kagent is upgraded to a build containing #2038.
+hitlApproval: false
 
 # Gemini Vertex AI for the autopilot agents (functional LLM, no API key).
 # When enabled, the krateo-autopilot ModelConfigs use provider GeminiVertexAI with
