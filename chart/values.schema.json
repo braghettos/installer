@@ -4110,7 +4110,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the snowplow-agent Composition (chart 0.1.2), deep-merged into its spec."
+          "description": "Overrides for the snowplow-agent Composition (chart 0.1.3), deep-merged into its spec."
         },
         "frontend-agent": {
           "title": "krateo-frontend-agent values",
@@ -4522,7 +4522,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-code-analysis-agent Composition (chart 0.1.1), deep-merged into its spec."
+          "description": "Overrides for the krateo-code-analysis-agent Composition (chart 0.1.2), deep-merged into its spec."
         },
         "krateo-ansible-to-operator-agent": {
           "title": "krateo-ansible-to-operator-agent values",
@@ -4625,7 +4625,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-ansible-to-operator-agent Composition (chart 0.1.1), deep-merged into its spec."
+          "description": "Overrides for the krateo-ansible-to-operator-agent Composition (chart 0.1.2), deep-merged into its spec."
         },
         "krateo-tf-provider-to-operator-agent": {
           "title": "krateo-tf-provider-to-operator-agent values",
@@ -4728,7 +4728,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-tf-provider-to-operator-agent Composition (chart 0.1.1), deep-merged into its spec."
+          "description": "Overrides for the krateo-tf-provider-to-operator-agent Composition (chart 0.1.2), deep-merged into its spec."
         },
         "krateo-tf-to-helm-agent": {
           "title": "krateo-tf-to-helm-agent values",
@@ -4831,7 +4831,7 @@
               "additionalProperties": true
             }
           },
-          "description": "Overrides for the krateo-tf-to-helm-agent Composition (chart 0.1.1), deep-merged into its spec."
+          "description": "Overrides for the krateo-tf-to-helm-agent Composition (chart 0.1.2), deep-merged into its spec."
         },
         "krateo-autopilot": {
           "title": "krateo-autopilot values",
