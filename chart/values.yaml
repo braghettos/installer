@@ -87,7 +87,7 @@ exposure:
 features:
   composableportal: true          # authn -> snowplow -> frontend -> portal
   composableportalstarter: true   # portal (composable-portal-starter)
-  composableoperations: true      # core-provider
+  composableoperations: true      # engine-present MARKER: core-provider is always-on via bootstrap (gates no component here)
   oasgenprovider: true            # oasgen-provider
   observability: true             # clickstack/otel/agents group
   observabilityAgents: true       # MINIMAL agent layer: kagent + krateo-installer-agent + krateo-autopilot
@@ -357,7 +357,7 @@ components:
   # editing the Installer CR — narrow RBAC, see kagent/AGENT-DRIVEN-PROVISIONING.md.
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.5"
+    version: "0.1.6"
     deps:
       - kagent
     tier: observability
@@ -445,7 +445,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.16"
+    version: "0.1.18"
     deps:
       - kagent
       - krateo-installer-agent
