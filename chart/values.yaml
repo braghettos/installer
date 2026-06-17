@@ -445,7 +445,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.15"
+    version: "0.1.16"
     deps:
       - kagent
       - krateo-installer-agent
