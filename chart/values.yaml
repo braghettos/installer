@@ -426,11 +426,11 @@ components:
     tier: observability
     feature: specialistAgents
     vertexAI: true
-  # Keeps the autopilot's grounding (docs/llms.txt) current from upstream docs, via a PR.
-  # Needs the github MCP server running (githubMcp=true + a write-scoped github-mcp-pat secret).
+  # Answers overall-platform / general Krateo questions from a baked platform overview + read-only
+  # cluster inspection. Tokenless — no github MCP, no PAT (component agents own their domain docs).
   - name: krateo-docs-agent
     kind: KrateoDocsAgent
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - kagent
     tier: observability
