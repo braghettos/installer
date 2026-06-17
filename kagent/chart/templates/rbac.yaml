@@ -1,6 +1,7 @@
 {{- if .Values.rbac.create }}
 # Narrow authority: the agent provisions/evolves the platform ONLY by editing the Installer CR.
-# Bound to the ServiceAccount the kagent tool-server runs as (it executes k8s_patch_resource).
+# Bound to the agent's OWN ServiceAccount: kagent >=0.9 runs the tool call as the agent's identity,
+# not the shared tool-server SA (see values rbac.serviceAccountName).
 # Not cluster-admin — every change is an ordinary, apiserver-validated `kubectl patch`.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

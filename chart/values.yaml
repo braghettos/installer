@@ -363,7 +363,7 @@ components:
   # editing the Installer CR — narrow RBAC, see kagent/AGENT-DRIVEN-PROVISIONING.md.
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.6"
+    version: "0.1.7"
     deps:
       - kagent
     tier: observability
@@ -451,7 +451,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.20"
+    version: "0.1.21"
     deps:
       - kagent
       - krateo-installer-agent
