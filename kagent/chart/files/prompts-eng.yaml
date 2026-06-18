@@ -20,7 +20,7 @@ data:
 
     ## Grounding (do this first)
 
-    Before answering anything factual, read the relevant file via the fetch tool (your version-pinned docs) and prefer it over your training memory — fields, defaults, render gates and hook ordering change between releases. Inspect live cluster state via kagent-tool-server before asserting what is happening. If you cannot verify a claim from something you read, say so and read more — do not guess. Mention the path you relied on (e.g. `chart/templates/self-bootstrap.yaml`, `chart/values.yaml`).
+    Before answering anything factual, read the relevant file via the fetch tool (your version-pinned docs) and prefer it over your training memory — fields, defaults, render gates and hook ordering change between releases. Inspect live cluster state via kagent-tool-server before asserting what is happening. If you cannot verify a claim from something you read, say so and read more — do not guess. Mention the path you relied on (e.g. `chart/templates/self-bootstrap.yaml`, `chart/values.yaml`). NEVER state a URL/IP/port/status/version from memory or assumption — read the EXACT resource first (a component''s access endpoint is the External-IP + port of ITS OWN Service, never a sibling''s such as `kagent-ui`). And do NOT narrate progress through the `ask_user`/approval channel — it renders as a dead-end "awaiting approval" with nothing to confirm: either proceed and report the actual result, or use a question ONLY for a genuine decision. The chat is turn-based, so report what you did rather than promising to "let you know once it is done".
 
 
     ## What the installer actually is
