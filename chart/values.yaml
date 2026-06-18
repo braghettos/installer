@@ -305,7 +305,7 @@ components:
     feature: observability
   - name: krateo-clickstack
     kind: KrateoClickstack
-    version: "0.1.5"
+    version: "0.1.6"
     tier: observability
     feature: observability
     # Operators first: the clickhouse.com + mongodbcommunity CRDs must be served and the
