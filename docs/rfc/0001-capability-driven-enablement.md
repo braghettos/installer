@@ -93,10 +93,10 @@ components that nothing depends on — `fetch-mcp-server`, `clickhouse-mcp-serve
 
 | Capability | Roots | Closure (what gets provisioned) |
 |---|---|---|
-| `portal` | `portal` | portal, frontend, authn, snowplow, + their `-crd`s |
+| `portal` | `portal`, + the portal agents `authn-agent`/`snowplow-agent`/`frontend-agent` | portal, frontend, authn, snowplow, + their `-crd`s, + the portal agents (which hard-dep those components) |
 | `agents` | `krateo-autopilot`, `fetch-mcp-server` | kagent-crds, kagent, krateo-installer-agent, krateo-autopilot, fetch-mcp-server |
-| `specialists` | the 9 specialist/codegen `*-agent`s | + kagent (already via closure) |
-| `observability` | `otel-collector-daemonset`, `krateo-sse-proxy`, `clickhouse-mcp-server` | clickhouse-operator, mongodb-operator, krateo-clickstack, otel-collector-deployment, otel-collector-daemonset, krateo-sse-proxy, clickhouse-mcp-server |
+| `codegen` | the 4 backing-less codegen agents + `core-provider-agent` | + kagent (already via closure); no other backing |
+| `observability` | `otel-collector-daemonset`, `krateo-sse-proxy`, `clickhouse-mcp-server`, `clickstack-agent` | clickhouse-operator, mongodb-operator, krateo-clickstack, otel-collector-deployment, otel-collector-daemonset, krateo-sse-proxy, clickhouse-mcp-server, clickstack-agent |
 | `oasgen` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
 | `podRestartAlert` | `hyperdx-provider` | hyperdx-provider **+ oasgen-provider (+crd)** ← closure auto-fixes the 2.1 mismatch |
 | `githubMcp` | (the GitHub RemoteMCPServer config) | thin; no chart component today |
@@ -127,7 +127,7 @@ spec:
 | `composableportalstarter` | `portal` (merged) |
 | `composableoperations` | *(dropped — engine marker, no-op)* |
 | `observabilityAgents` | `agents` |
-| `specialistAgents` | `specialists` |
+| `specialistAgents` | `codegen` (+ portal agents follow `portal`, `clickstack-agent` follows `observability`) |
 | `observability` | `observability` |
 | `oasgenprovider` | `oasgen` |
 | `podRestartAlert` | `podRestartAlert` |
@@ -135,32 +135,63 @@ spec:
 
 If `spec.capabilities` is set it wins; otherwise the shim derives capabilities from
 `spec.features`. This lets existing CRs and the autopilot/installer-agent keep working
-unchanged.
+unchanged **for the valid combinations**.
+
+**Intentional non-parity for invalid combos.** Because the portal/observability specialist
+agents now hard-require their backing (§5), a legacy CR with `specialistAgents: true` but
+`observability: false` / `composableportal: false` — a combination that was *already
+broken* (agents with absent deps) — does **not** round-trip to the old render. The new
+model instead pulls in the backing the agents require. This is the bug class being fixed,
+not a regression; render-parity (§6.1) is therefore asserted only over the **valid**
+profiles (agent-only, portal, full-platform), and the migration notes call out that
+the now-corrected combos change behavior on next reconcile.
 
 ## 5. Correctness prerequisites
 
 Closure is only correct if the dep graph is **complete**. A migration pre-step must audit
-and fix incomplete deps, starting with the known one:
+and fix incomplete deps.
 
-- `clickstack-agent` → add dep on `clickhouse-mcp-server` (so selecting `specialists`
-  without `observability` either pulls the data layer or the agent is correctly excluded —
-  decision below).
+**Decision (2026-06-19): specialist agents hard-require their backing component.** An agent
+that manages a component cannot exist without it — so each agent declares a hard `dep` on
+what it manages, and closure pulls that backing stack in. This makes "a specialist agent
+running with nothing to manage" unrepresentable (the same principle as the rest of the
+RFC), at the cost that selecting an agent transitively provisions its backing capability.
 
-Open design choice (see §8): should a specialist agent **require** its backing capability
-(hard dep → closure pulls it in), or be **independently installable** but inert? Today
-agents dep only on `kagent`, implying "independently installable." If we keep that, the
-clickstack-agent needs documentation that it is inert without `observability`, rather than
-a hard dep.
+Today every agent deps only on `[kagent]`; Phase 0 adds the backing deps:
+
+| Agent | Add dep → | Backing pulled in by closure |
+|---|---|---|
+| `authn-agent` | `authn` | portal-auth stack |
+| `snowplow-agent` | `snowplow` | snowplow stack |
+| `frontend-agent` | `frontend` | frontend (+ authn, snowplow) |
+| `clickstack-agent` | `clickhouse-mcp-server` | the **entire `observability`** closure |
+| `core-provider-agent` | *(none)* | core-provider is always-on via bootstrap — no gate |
+| `krateo-code-analysis-agent` | *(none)* | codegen: no backing component (reads GitHub) |
+| `krateo-ansible-to-operator-agent` | *(none)* | codegen |
+| `krateo-tf-provider-to-operator-agent` | *(none)* | codegen |
+| `krateo-tf-to-helm-agent` | *(none)* | codegen |
+
+**Consequence to weigh (feeds §8 Q2):** under hard-require, enabling the `specialists`
+capability drags in `portal` **and** `observability` via `clickstack-agent`/the portal
+agents. That is logically correct but coarse. It strengthens the case for either (a) moving
+`clickstack-agent` into the `observability` capability (it requires the full obs stack
+anyway), and binding each portal agent to `portal`, rather than (b) a monolithic
+`specialists` capability that silently implies the whole platform. The codegen agents,
+having no backing, remain freely selectable and are the natural members of a standalone
+`codegen`/`specialists` capability.
 
 ## 6. Churn safety
 
 The installer reconciles a stateful platform; a gating refactor must not perturb running
 components. Required guarantees:
 
-1. **Render parity.** For every legacy `features` combination in use (at minimum the
-   agent-only and full-platform profiles), `helm template` output under the new model must
-   be **byte-identical** (modulo the removed `feature:` field and dead
-   `composableoperations`) to the current output. A golden-file test enforces this.
+1. **Render parity (valid profiles only).** For every **valid** legacy `features`
+   combination in use (at minimum agent-only, portal, full-platform), `helm template`
+   output under the new model must be **byte-identical** (modulo the removed `feature:`
+   field and dead `composableoperations`) to the current output. A golden-file test
+   enforces this. Previously-**invalid** combinations (e.g. `specialistAgents` without the
+   backing capability) are intentionally *not* preserved — see §4.4; the closure corrects
+   them by pulling in the required backing.
 2. **No-op on no change.** Same inputs → same `CompositionDefinition` / `Composition`
    manifests → cdc observes no diff → no restart. Tie into #56.
 3. **Deterministic ordering.** Closure output is sorted by the existing
@@ -184,10 +215,15 @@ Each phase is independently shippable and reversible.
 
 ## 8. Open questions
 
-1. **Agent ↔ backing-capability coupling** (§5): hard dep, or independently-installable-but-inert?
-2. **Granularity of `specialists`**: one capability, or split `platform-specialists`
-   (authn/snowplow/frontend/clickstack/core-provider agents) vs `codegen`
-   (tf/ansible/helm)? The codegen agents have no backing component.
+1. ~~Agent ↔ backing-capability coupling~~ — **RESOLVED (2026-06-19): hard require.** Each
+   specialist agent declares a hard `dep` on its backing component; closure pulls the
+   backing stack in (§5).
+2. **Granularity of `specialists`** (now sharper given Q1=hard-require): a monolithic
+   `specialists` capability would, via the agents' hard deps, silently pull in `portal` +
+   `observability`. Recommend instead binding each agent to the capability it backs —
+   `clickstack-agent` → `observability`; portal agents (`authn`/`snowplow`/`frontend`) →
+   `portal`; `core-provider-agent` → always-on; and a standalone `codegen` capability for
+   the four backing-less codegen agents. Confirm this split.
 3. **Profiles on top?** A future `spec.profile: agent-only | portal | full` could expand
    to a capability set (RFC 0002). Out of scope here.
 4. **`composableoperations`**: confirmed safe to drop, or keep as a no-op marker some
