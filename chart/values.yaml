@@ -454,7 +454,7 @@ components:
   # Cross-cutting codegen agents (not component-tied) — shipped from braghettos/krateo-codegen-agents.
   - name: krateo-code-analysis-agent
     kind: KrateoCodeAnalysisAgent
-    version: "0.1.3"
+    version: "0.1.4"
     deps:
       - kagent
     tier: observability
@@ -462,7 +462,7 @@ components:
     vertexAI: true
   - name: krateo-ansible-to-operator-agent
     kind: KrateoAnsibleToOperatorAgent
-    version: "0.1.3"
+    version: "0.1.4"
     deps:
       - kagent
     tier: observability
@@ -470,7 +470,7 @@ components:
     vertexAI: true
   - name: krateo-tf-provider-to-operator-agent
     kind: KrateoTfProviderToOperatorAgent
-    version: "0.1.3"
+    version: "0.1.4"
     deps:
       - kagent
     tier: observability
@@ -478,7 +478,7 @@ components:
     vertexAI: true
   - name: krateo-tf-to-helm-agent
     kind: KrateoTfToHelmAgent
-    version: "0.1.3"
+    version: "0.1.4"
     deps:
       - kagent
     tier: observability
