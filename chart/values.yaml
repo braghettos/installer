@@ -357,7 +357,7 @@ components:
     deps:
       - krateo-clickstack
     tier: observability
-    feature: specialistAgents
+    feature: observability
   # kagent agentic platform as two compositions (wrapping unforked upstream charts):
   #   kagent-crds installs the kagent.dev/kmcp CRDs (helm-templates/-owned -> clean teardown);
   #   kagent (the operator) depends on it, so the CRDs are established before its CRs render.
