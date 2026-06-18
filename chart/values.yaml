@@ -33,9 +33,19 @@ installDefinitions: true
 # already exists; the subchart would be redundant).
 bootstrap:
   coreProvider:
-    # The engine subchart version is pinned in Chart.yaml (krateo-core-provider: 0.36.7, app
-    # core-provider 2.0.2 — de-webhooked, needs k8s >= 1.36); this flag only toggles installing it.
-    enabled: true
+    # The engine subchart version is pinned in Chart.yaml (krateo-core-provider, app core-provider
+    # 2.0.x — de-webhooked, needs k8s >= 1.36); this flag only toggles installing it.
+    #
+    # COMPOSITION-SAFE DEFAULT (false). This flag is the SOLE bootstrap-vs-composition mode switch
+    # (self-bootstrap.yaml / bootstrap-teardown.yaml / post-delete-cleanup.yaml render when true;
+    # definitions.yaml / compositions.yaml / secret.yaml / ordered-teardown.yaml render when false).
+    # core-provider re-renders this chart in COMPOSITION mode using the Installer CR spec as values;
+    # if that spec ever loses its `bootstrap` key (e.g. an agent edit that doesn't preserve the full
+    # spec), a `true` default would silently fall back to BOOTSTRAP mode and wedge the install on
+    # chart-inspector RBAC ownership conflicts. Defaulting to FALSE makes a missing key safe.
+    # The REAL one-shot bootstrap `helm install` MUST opt in explicitly:
+    #   helm install installer oci://ghcr.io/braghettos/krateo/installer --set bootstrap.coreProvider.enabled=true ...
+    enabled: false
   # cert-manager — load-bearing for browser-facing TLS (e.g. the kagent UI ingress).
   certManager:
     enabled: true
@@ -388,7 +398,7 @@ components:
     feature: observabilityAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.9"
+    version: "0.1.10"
     deps:
       - kagent
     tier: observability

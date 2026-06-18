@@ -55,7 +55,7 @@ flowchart TD
 ## Phase by phase
 
 ### 1 — `helm install` (bootstrap mode)
-`bootstrap.coreProvider.enabled=true` (default). The umbrella installs its subchart dependencies —
+`bootstrap.coreProvider.enabled=true` — **set this explicitly on the install** (`--set bootstrap.coreProvider.enabled=true`); the chart **defaults it to `false` (composition-safe)** so that a composition-mode re-render whose CR spec is missing the `bootstrap` key can never fall back to bootstrap mode and wedge the install. The umbrella installs its subchart dependencies —
 the composition engine **core-provider** (+ its CRDs) and **cert-manager** — and renders
 `self-bootstrap.yaml` only. `definitions.yaml` / `compositions.yaml` / `secret.yaml` do **not**
 render here, so the bootstrap release never double-owns them.
