@@ -73,10 +73,13 @@ the layers live in separate charts/compositions.
 frontend            → krateo-sse-proxy            (NEW — the bell path)
 krateo-sse-proxy    → krateo-events               (was: krateo-clickstack)
 otel-collector-*    → krateo-events               (was: krateo-clickstack)
-clickhouse-mcp-server → krateo-events             (was: krateo-clickstack)
 krateo-clickstack   → krateo-events, mongodb-operator   (product reads the shared CH)
 krateo-events       → clickhouse-operator
 ```
+
+`clickhouse-mcp-server` is **agent tooling** (RFC 0001: `agents-specialist`), not platform — it
+*reads* `krateo-events` at runtime when present but does **not** hard-dep it (decoupled, degrades
+gracefully). So it is **not** an install edge here and never drags the platform into the agents addon.
 
 Resulting closures (RFC 0001 §4.3): `portal` pulls `… → sse-proxy → krateo-events →
 clickhouse-operator` (+ collectors); `observability` pulls `krateo-clickstack (HyperDX/Mongo)
