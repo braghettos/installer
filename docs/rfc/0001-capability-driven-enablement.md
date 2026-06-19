@@ -320,7 +320,12 @@ components. Required guarantees:
    Pure cleanup once Phase 1 proves parity.
 4. **Phase 3 — surface `capabilities`** in `values.schema.json`, docs (`INSTALL-WORKFLOW.md`,
    `llms.txt`), and the installer-agent/autopilot prompts (they currently patch
-   `spec.features.*`; teach them `spec.capabilities.*`, keep features as fallback).
+   `spec.features.*`; teach them `spec.capabilities.*`/`spec.profile`, keep features as
+   fallback). **Also reframe the autopilot prompt's install routing:** the lean `autopilot`
+   profile has no installer-agent, so first-time provisioning is *selecting the `open`/
+   `enterprise` profile*, not delegating to installer-agent; the installer-agent (present in
+   `enterprise`) is for *evolving* an installed platform. On the `autopilot` profile the
+   autopilot should say so rather than route an install to an absent agent.
 
 Each phase is independently shippable and reversible.
 
