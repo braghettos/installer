@@ -93,16 +93,23 @@ components that nothing depends on — `fetch-mcp-server`, `clickhouse-mcp-serve
 
 | Capability | Roots | Closure (what gets provisioned) |
 |---|---|---|
-| `portal` | `portal`, + the portal agents `authn-agent`/`snowplow-agent`/`frontend-agent` | portal, frontend, authn, snowplow, + their `-crd`s, + the portal agents (which hard-dep those components) |
+| `portal` | `portal`, + portal agents `authn-agent`/`snowplow-agent`/`frontend-agent` | portal, frontend, authn, snowplow, + their `-crd`s, + the portal agents; **+ the events pipeline for the bell** (see §5.2): `krateo-sse-proxy` → `krateo-events` (ClickHouse/Keeper) ← `otel-collector-{deployment,daemonset}`, + `clickhouse-operator` |
 | `agents` | `krateo-autopilot`, `fetch-mcp-server` | kagent-crds, kagent, krateo-installer-agent, krateo-autopilot, fetch-mcp-server |
 | `codegen` | the 4 backing-less codegen agents + `core-provider-agent` | + kagent (already via closure); no other backing |
-| `observability` | `otel-collector-daemonset`, `krateo-sse-proxy`, `clickhouse-mcp-server`, `clickstack-agent` | clickhouse-operator, mongodb-operator, krateo-clickstack, otel-collector-deployment, otel-collector-daemonset, krateo-sse-proxy, clickhouse-mcp-server, clickstack-agent |
+| `observability` | `krateo-clickstack` (HyperDX/Mongo product), `clickhouse-mcp-server`, `clickstack-agent` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, clickhouse-mcp-server, clickstack-agent, **+ `krateo-events` (the shared ClickHouse substrate) + clickhouse-operator** — already up if `portal` is on |
 | `oasgen` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
 | `podRestartAlert` | `hyperdx-provider` | hyperdx-provider **+ oasgen-provider (+crd)** ← closure auto-fixes the 2.1 mismatch |
 | `githubMcp` | (the GitHub RemoteMCPServer config) | thin; no chart component today |
 
-Note how `podRestartAlert`'s closure pulls in `oasgen-provider` automatically — the latent
-mismatch in 2.1 simply cannot occur under this model.
+Two things to note:
+- `podRestartAlert`'s closure pulls in `oasgen-provider` automatically — the latent mismatch
+  in 2.1 simply cannot occur under this model.
+- **`krateo-events` (the decomposed ClickHouse data layer, §5.2) is a shared substrate**:
+  `portal` pulls it in for the bell, `observability` pulls it in for HyperDX/the agent. Whoever
+  is enabled first brings it up; the other just attaches. The portal no longer drags in
+  HyperDX/Mongo, and observability no longer re-provisions ClickHouse. This assumes the
+  ClickStack decomposition in §5.2 (RFC 0002); pre-decomposition, `krateo-clickstack` is the
+  monolith and `portal` would have to pull the whole thing.
 
 ### 4.4 CR API
 
@@ -215,6 +222,41 @@ roster correctly shrinks to `[krateo-installer-agent]` — an intended behavior 
 old all-10 list was the over-advertisement bug), so agent-only is parity-exempt for the
 autopilot's `extraAgents` value.
 
+### 5.2 ClickStack decomposition (prerequisite — RFC 0002)
+
+A second dep-graph completeness gap, of a different kind: the **portal's events bell**
+(`frontend` → browser → `krateo-sse-proxy` → ClickHouse ← `otel-collector-*`) is not in the
+graph at all. `frontend` deps `[frontend-crd, authn, snowplow]` — *not* `krateo-sse-proxy` —
+even though `sse-proxy` is a browser-facing component (it's in the `exposure` list, port
+8080, configKeys `EVENTS_API_BASE_URL` / `EVENTS_PUSH_API_BASE_URL`) that the bell calls. So
+a portal-only install comes up **Ready with a dead bell** (verified on krateo-bell: portal
+Ready, `observability: false`, no sse-proxy backend).
+
+The blocker to fixing it cleanly: `krateo-clickstack` is a **monolith** — one chart
+(appVersion 3.0.0) bundling **ClickHouse + Keeper + OTel gateway + HyperDX + MongoDB**,
+deps on *both* operators. So "the portal needs ClickHouse" today means "the portal needs the
+entire observability product."
+
+**Decision (2026-06-19): decompose `krateo-clickstack`** so ClickHouse becomes a shared data
+substrate, separate from the HyperDX/Mongo product:
+
+| New component | Contains | Role | deps |
+|---|---|---|---|
+| `krateo-events` *(new)* | ClickHouse + Keeper + OTel gateway | the events/telemetry **data layer** | `clickhouse-operator` |
+| `krateo-clickstack` *(slimmed)* | HyperDX + MongoDB | the observability **product** (dashboards) | `mongodb-operator`, `krateo-events` |
+
+New / corrected edges: `frontend` → `krateo-sse-proxy`; `krateo-sse-proxy` → `krateo-events`;
+`otel-collector-*` → `krateo-events`; `clickhouse-mcp-server` → `krateo-events`;
+`krateo-clickstack` (product) → `krateo-events`. `krateo-events` is then pulled in by
+**either** `portal` (bell) **or** `observability` (HyperDX/agent) via closure, brought up
+once and shared. The portal gets a working bell without HyperDX/Mongo; observability layers
+the product on top without re-provisioning ClickHouse.
+
+This is a chart-level refactor in `braghettos/krateo-clickstack-chart` (split + a shared
+ClickHouse connection config) plus installer rewiring, and is a **prerequisite to Phase 0**.
+It is specified separately in **RFC 0002**; RFC 0001's map (§4.3) reflects the
+post-decomposition target.
+
 ## 6. Churn safety
 
 The installer reconciles a stateful platform; a gating refactor must not perturb running
@@ -235,6 +277,11 @@ components. Required guarantees:
 
 ## 7. Rollout plan
 
+0. **Phase −1 — ClickStack decomposition** (RFC 0002, prerequisite): split `krateo-clickstack`
+   into `krateo-events` (ClickHouse data layer) + the slimmed HyperDX/Mongo product, and add
+   the `frontend → sse-proxy → krateo-events` edges (§5.2). Chart work in
+   `krateo-clickstack-chart` + installer rewiring. Must land before Phase 0 so the dep graph
+   the closure walks is complete.
 1. **Phase 0 — dep-graph completeness audit** (small, independent): fix `clickstack-agent`
    and any other incomplete deps; ship as a normal installer patch. De-risks everything.
 2. **Phase 1 — closure engine, behind the shim:** add `capabilities` + `closure()` helper;
