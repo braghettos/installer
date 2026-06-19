@@ -31,7 +31,7 @@ Three real mismatches exist in the current chart, all the same shape — a compo
 |---|---|---|---|
 | `clickhouse-mcp-server` | ~~`specialistAgents`~~ → `observability` (fixed in 0.2.124) | `krateo-clickstack` (`observability`) | Enabling specialist agents without observability scheduled it with no ClickHouse backend. |
 | `hyperdx-provider` | `podRestartAlert` | `oasgen-provider` (`oasgenprovider`) | Enabling `podRestartAlert` without `oasgenprovider` leaves its dep unsatisfiable. |
-| `clickstack-agent` | `specialistAgents` | `[kagent]` only | Dep graph is **incomplete** — the agent is non-functional without the observability data layer / `clickhouse-mcp-server`, but nothing records that. |
+| `clickstack-agent` | `specialistAgents` | `[kagent]` only | **Fuzzy boundary** — gated `specialistAgents`, but only *useful* with the observability data layer; the toggles can't express "works better with" vs "requires". (Resolved differently from the rows above: agents are an intentional decoupled addon that degrades gracefully — §5 — so this is by-design, not a dep to add.) |
 
 The model even encodes feature→feature requirements **in prose**:
 `specialistAgents # ... (need observabilityAgents)`. A comment is not a constraint.
@@ -321,8 +321,8 @@ Each phase is independently shippable and reversible.
    is **derived from the enabled closure** rather than hand-listed (§5.1).
 2. ~~Fold vs separate / granularity of `specialists`~~ — **RESOLVED (2026-06-19): separate —
    agents are an addon.** Not folded into the data capabilities; deployable on any data plane
-   or alone (§4.3). Sub-tiers of the addon (core = autopilot+installer-agent; +specialists;
-   +codegen) are an open refinement (§8.5), but the addon is orthogonal to the data planes.
+   or alone (§4.3). The addon is graduated into core/specialist/codegen tiers (§8 Q5), but
+   every tier is orthogonal to the data planes.
 3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with **`open`** = the
    platform (portal + oasgen-provider + observability, **no agents**), **`enterprise`** = open
    + autopilot + the agent fleet, plus the lean **`autopilot`** bootstrap (autopilot + kagent). No `portal-only`
@@ -335,8 +335,8 @@ Each phase is independently shippable and reversible.
 5. ~~Agent-addon sub-tiers~~ — **RESOLVED (2026-06-19): graduated.** `agents` (core =
    kagent + autopilot + installer-agent + fetch-mcp = the `autopilot` profile),
    `agents-specialist` (the 5 platform agents), `agents-codegen` (the 4 codegen agents);
-   the two specialist tiers dep `agents` core, never a data component (§4.3). Base installs
-   all three.
+   the two specialist tiers dep `agents` core, never a data component (§4.3). `enterprise`
+   installs all three tiers; `open` installs none; `autopilot` installs only the core.
 
 ## 9. Alternatives considered
 
@@ -346,5 +346,6 @@ Each phase is independently shippable and reversible.
 - **C — profiles only.** Replace the boolean map with one `profile` enum. Simplest UX,
   fewest invalid states, but loses à-la-carte control and still needs a component→profile
   mapping.
-- **D — hybrid (capabilities + profiles).** Best UX + correctness, most work. Natural
-  follow-on (RFC 0002) once A lands.
+- **D — hybrid (capabilities + profiles).** Best UX + correctness — **this is what the RFC
+  adopts**: closure over capabilities (§4.2) with `open`/`enterprise`/`autopilot` profiles as
+  presets (§4.3a). (RFC 0002 is a different concern — the ClickStack chart decomposition, §5.2.)
