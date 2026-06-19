@@ -95,9 +95,9 @@ components that nothing depends on — `fetch-mcp-server`, `clickhouse-mcp-serve
 |---|---|---|
 | `portal` (data + UI plane) | `portal` | authn, snowplow, frontend, portal (+crds) **+ the bell/events pipeline** (§5.2): `krateo-sse-proxy` → `krateo-events` (ClickHouse/Keeper) ← `otel-collector-{deployment,daemonset}`, + `clickhouse-operator`. **"clickhouse" is part of `portal`.** No agents. |
 | `oasgen-provider` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
-| `observability` (product) | `krateo-clickstack`, `clickhouse-mcp-server`, `hyperdx-provider` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, clickhouse-mcp-server, hyperdx-provider, **+ shared `krateo-events` + clickhouse-operator** (already up if `portal` is on) |
-| **`agents`** (addon core — decoupled) | kagent + orchestrator | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot. **No component deps** — deployable on any data plane or alone. This is the **`autopilot`** profile (autopilot + kagent). |
-| **`agents-specialist`** (addon) | the 5 platform specialist agents | authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent; deps `agents` (for kagent + the orchestrator that routes to them) |
+| `observability` (product) | `krateo-clickstack`, `hyperdx-provider` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, hyperdx-provider, **+ shared `krateo-events` + clickhouse-operator** (already up if `portal` is on). **No MCP servers** — those are agent tooling. |
+| **`agents`** (addon core — decoupled) | kagent + orchestrator + its MCP tool | kagent-crds, kagent, **fetch-mcp-server** (the autopilot's fetch tool), krateo-installer-agent, krateo-autopilot. **No component deps** — deployable on any data plane or alone. This is the **`autopilot`** profile. |
+| **`agents-specialist`** (addon) | the 5 platform specialist agents + their MCP tool | authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent, **clickhouse-mcp-server** (the clickstack-agent's telemetry tool); deps `agents` (for kagent + the orchestrator) |
 | **`agents-codegen`** (addon) | the 4 codegen agents | krateo-code-analysis-agent, krateo-ansible-to-operator-agent, krateo-tf-provider-to-operator-agent, krateo-tf-to-helm-agent; deps `agents` |
 | `githubMcp` | (the GitHub RemoteMCPServer config) | thin; no chart component today |
 
@@ -129,9 +129,9 @@ spec:
 |---|---|---|
 | **portal** | ✅ | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal, krateo-sse-proxy, krateo-events, clickhouse-operator, otel-collector-deployment, otel-collector-daemonset |
 | **oasgen-provider** | ✅ | oasgen-provider-crd, oasgen-provider |
-| **observability** | ✅ | krateo-clickstack (HyperDX+Mongo), mongodb-operator, hyperdx-provider, clickhouse-mcp-server |
+| **observability** | ✅ | krateo-clickstack (HyperDX+Mongo), mongodb-operator, hyperdx-provider (+ shared krateo-events). **No MCP servers.** |
 | **agents** (core) | ❌ addon | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot |
-| **agents-specialist** | ❌ addon | authn/snowplow/frontend/clickstack/core-provider agents |
+| **agents-specialist** | ❌ addon | authn/snowplow/frontend/clickstack/core-provider agents, **clickhouse-mcp-server** |
 | **agents-codegen** | ❌ addon | krateo-code-analysis / ansible-to-operator / tf-provider-to-operator / tf-to-helm agents |
 | **githubMcp** | ❌ opt-in | GitHub RemoteMCPServer (needs a PAT) |
 
@@ -144,8 +144,9 @@ Profiles are just capability sets:
   `krateo-installer-agent` the autopilot delegates installs to, via its dep). No data plane;
   you talk to the autopilot and install the rest from there. *(Formerly "agent-only".)*
 
-**Excluded from `open`:** the **agent fleet** (all three agent tiers — an addon) and
-**`githubMcp`** (opt-in, credential-gated). Orthogonal config/mode dimensions are not part of
+**Excluded from `open`:** the **agent fleet** (all three agent tiers — an addon), the **MCP
+servers** (`fetch-mcp-server`, `clickhouse-mcp-server` — agent tooling), and **`githubMcp`**
+(opt-in, credential-gated). Orthogonal config/mode dimensions are not part of
 any profile: LLM backend (`vertexAI` vs `localModel`/Ollama), `exposure.type`, `hitlApproval`,
 `bootstrap.*`/`cert-manager`, `registryAuth`, and required secrets.
 
@@ -201,8 +202,15 @@ nothing to manage and says so. So we do **not** add agent→component edges; the
 is its own overlay capability that can be deployed on top of any data plane, or alone.
 
 (The earlier "hard-require" answer assumed agents were bound to their component; they aren't,
-so that direction is dropped. The only component-coupled non-agent is `clickhouse-mcp-server`
-— a *tool* that reads ClickHouse, so it keeps a real data dep on `krateo-events`, §5.2.)
+so that direction is dropped.)
+
+**MCP servers are agent tooling, never platform.** `fetch-mcp-server` (the autopilot's fetch
+tool) lives in the `agents` core; `clickhouse-mcp-server` (the clickstack-agent's telemetry
+tool) lives in `agents-specialist`. So **`open` installs neither agents nor MCP servers** —
+both are part of the agents addon (`enterprise`). The clickhouse MCP server reads the ClickHouse
+data layer (`krateo-events`) at runtime when present — but in `enterprise` (= `open` + agents)
+the `open` platform already provides it, and absent it the tool degrades like the agent it
+serves. So the agent+MCP addon is **fully decoupled** — no component-coupled exceptions.
 
 The genuine dep-graph fixes Phase 0 still owns are the **data-plane** edges, not agent edges:
 the `frontend → krateo-sse-proxy → krateo-events` bell path (§5.2) and any other real
@@ -259,11 +267,13 @@ substrate, separate from the HyperDX/Mongo product:
 | `krateo-events` *(new)* | ClickHouse + Keeper + OTel gateway | the events/telemetry **data layer** | `clickhouse-operator` |
 | `krateo-clickstack` *(slimmed)* | HyperDX + MongoDB | the observability **product** (dashboards) | `mongodb-operator`, `krateo-events` |
 
-New / corrected edges: `frontend` → `krateo-sse-proxy`; `krateo-sse-proxy` → `krateo-events`;
-`otel-collector-*` → `krateo-events`; `clickhouse-mcp-server` → `krateo-events`;
-`krateo-clickstack` (product) → `krateo-events`. `krateo-events` is then pulled in by
-**either** `portal` (bell) **or** `observability` (HyperDX/agent) via closure, brought up
-once and shared. The portal gets a working bell without HyperDX/Mongo; observability layers
+New / corrected **install** edges: `frontend` → `krateo-sse-proxy`; `krateo-sse-proxy` →
+`krateo-events`; `otel-collector-*` → `krateo-events`; `krateo-clickstack` (product) →
+`krateo-events`. (`clickhouse-mcp-server` *reads* `krateo-events` at runtime but does **not**
+hard-dep it — it's decoupled agent tooling that degrades when ClickHouse is absent, §5; so
+`agents-specialist` never drags the platform in.) `krateo-events` is pulled in by **either**
+`portal` (bell) **or** `observability` (HyperDX/the product) via closure, brought up once and
+shared. The portal gets a working bell without HyperDX/Mongo; observability layers
 the product on top without re-provisioning ClickHouse.
 
 This is a chart-level refactor in `braghettos/krateo-clickstack-chart` (split + a shared
