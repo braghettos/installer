@@ -96,7 +96,9 @@ components that nothing depends on — `fetch-mcp-server`, `clickhouse-mcp-serve
 | `portal` (data + UI plane) | `portal` | authn, snowplow, frontend, portal (+crds) **+ the bell/events pipeline** (§5.2): `krateo-sse-proxy` → `krateo-events` (ClickHouse/Keeper) ← `otel-collector-{deployment,daemonset}`, + `clickhouse-operator`. **"clickhouse" is part of `portal`.** No agents. |
 | `oasgen-provider` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
 | `observability` (product) | `krateo-clickstack`, `clickhouse-mcp-server`, `hyperdx-provider` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, clickhouse-mcp-server, hyperdx-provider, **+ shared `krateo-events` + clickhouse-operator** (already up if `portal` is on) |
-| **`agents` (addon — decoupled)** | the agent fleet | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot, + the 5 platform specialists + 4 codegen agents. **No component deps** — deployable on any data plane or alone. Sub-tiers optional (see §4.5). |
+| **`agents`** (addon core — decoupled) | kagent + orchestrator | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot. **No component deps** — deployable on any data plane or alone. This is the `agent-only` install. |
+| **`agents-specialist`** (addon) | the 5 platform specialist agents | authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent; deps `agents` (for kagent + the orchestrator that routes to them) |
+| **`agents-codegen`** (addon) | the 4 codegen agents | krateo-code-analysis-agent, krateo-ansible-to-operator-agent, krateo-tf-provider-to-operator-agent, krateo-tf-to-helm-agent; deps `agents` |
 | `githubMcp` | (the GitHub RemoteMCPServer config) | thin; no chart component today |
 
 Notes:
@@ -137,13 +139,15 @@ New, primary:
 
 ```yaml
 spec:
+  # profile: base        # optional preset — expands to all capabilities (§4.3a)
   capabilities:
-    portal: true
-    agents: true
-    observability: false
-    specialists: false
-    oasgen: false
-    podRestartAlert: false
+    portal: true             # data + UI plane (incl. clickhouse/events for the bell)
+    oasgen-provider: false
+    observability: false     # HyperDX/Mongo product over the shared ClickHouse
+    agents: true             # addon core: kagent + autopilot + installer-agent
+    agents-specialist: false # the 5 platform specialist agents
+    agents-codegen: false    # the 4 codegen agents
+    githubMcp: false
 ```
 
 `spec.features` is **retained as a deprecated compatibility shim**, mapped at render time:
@@ -153,8 +157,8 @@ spec:
 | `composableportal` | `portal` |
 | `composableportalstarter` | `portal` (merged) |
 | `composableoperations` | *(dropped — engine marker, no-op)* |
-| `observabilityAgents` | `agents` (base tier) |
-| `specialistAgents` | `agents` (specialist + codegen tiers) |
+| `observabilityAgents` | `agents` (core tier) |
+| `specialistAgents` | `agents-specialist` + `agents-codegen` |
 | `observability` | `observability` |
 | `oasgenprovider` | `oasgen-provider` |
 | `podRestartAlert` | `observability` (the HyperDX/podRestartAlert pipeline) |
@@ -305,11 +309,16 @@ Each phase is independently shippable and reversible.
    +codegen) are an open refinement (§8.5), but the addon is orthogonal to the data planes.
 3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with a **`base`** profile
    (all capabilities) plus lean subsets (agent-only, portal-only) — see §4.3a.
-4. **`composableoperations`**: confirmed safe to drop, or keep as a no-op marker some
-   external consumer reads?
-5. **Agent-addon sub-tiers:** is `agents` one capability (whole fleet) or graduated
-   (`agents-core` = kagent+autopilot+installer-agent; `agents-specialist`; `agents-codegen`)?
-   The base profile installs the whole fleet either way; this only affects lean installs.
+4. ~~`composableoperations`~~ — **RESOLVED (2026-06-19): drop.** It gates no component
+   (core-provider is always-on via bootstrap), so it is not a capability. Removed from the
+   toggle/capability surface; if an "engine present" signal is ever needed it is exposed as
+   read-only **status**, not a settable feature. (The autopilot prompt's "base = composableportal
+   + composableoperations + composableportalstarter" line collapses to the `portal` capability.)
+5. ~~Agent-addon sub-tiers~~ — **RESOLVED (2026-06-19): graduated.** `agents` (core =
+   kagent + autopilot + installer-agent + fetch-mcp = the `agent-only` install),
+   `agents-specialist` (the 5 platform agents), `agents-codegen` (the 4 codegen agents);
+   the two specialist tiers dep `agents` core, never a data component (§4.3). Base installs
+   all three.
 
 ## 9. Alternatives considered
 
