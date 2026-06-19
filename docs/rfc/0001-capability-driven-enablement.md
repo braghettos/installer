@@ -93,23 +93,43 @@ components that nothing depends on — `fetch-mcp-server`, `clickhouse-mcp-serve
 
 | Capability | Roots | Closure (what gets provisioned) |
 |---|---|---|
-| `portal` | `portal`, + portal agents `authn-agent`/`snowplow-agent`/`frontend-agent` | portal, frontend, authn, snowplow, + their `-crd`s, + the portal agents; **+ the events pipeline for the bell** (see §5.2): `krateo-sse-proxy` → `krateo-events` (ClickHouse/Keeper) ← `otel-collector-{deployment,daemonset}`, + `clickhouse-operator` |
-| `agents` | `krateo-autopilot`, `fetch-mcp-server` | kagent-crds, kagent, krateo-installer-agent, krateo-autopilot, fetch-mcp-server |
-| `codegen` | the 4 backing-less codegen agents + `core-provider-agent` | + kagent (already via closure); no other backing |
-| `observability` | `krateo-clickstack` (HyperDX/Mongo product), `clickhouse-mcp-server`, `clickstack-agent` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, clickhouse-mcp-server, clickstack-agent, **+ `krateo-events` (the shared ClickHouse substrate) + clickhouse-operator** — already up if `portal` is on |
-| `oasgen` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
-| `podRestartAlert` | `hyperdx-provider` | hyperdx-provider **+ oasgen-provider (+crd)** ← closure auto-fixes the 2.1 mismatch |
+| `portal` (data + UI plane) | `portal` | authn, snowplow, frontend, portal (+crds) **+ the bell/events pipeline** (§5.2): `krateo-sse-proxy` → `krateo-events` (ClickHouse/Keeper) ← `otel-collector-{deployment,daemonset}`, + `clickhouse-operator`. **"clickhouse" is part of `portal`.** No agents. |
+| `oasgen-provider` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
+| `observability` (product) | `krateo-clickstack`, `clickhouse-mcp-server`, `hyperdx-provider` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, clickhouse-mcp-server, hyperdx-provider, **+ shared `krateo-events` + clickhouse-operator** (already up if `portal` is on) |
+| **`agents` (addon — decoupled)** | the agent fleet | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot, + the 5 platform specialists + 4 codegen agents. **No component deps** — deployable on any data plane or alone. Sub-tiers optional (see §4.5). |
 | `githubMcp` | (the GitHub RemoteMCPServer config) | thin; no chart component today |
 
-Two things to note:
-- `podRestartAlert`'s closure pulls in `oasgen-provider` automatically — the latent mismatch
-  in 2.1 simply cannot occur under this model.
+Notes:
+- **Agents are an overlay, not folded into the data capabilities.** Enabling `portal` does
+  *not* install the portal agents; enabling `agents` does not install the portal. They are
+  orthogonal (this resolves §8 Q2 = *separate / addon*).
 - **`krateo-events` (the decomposed ClickHouse data layer, §5.2) is a shared substrate**:
-  `portal` pulls it in for the bell, `observability` pulls it in for HyperDX/the agent. Whoever
-  is enabled first brings it up; the other just attaches. The portal no longer drags in
-  HyperDX/Mongo, and observability no longer re-provisions ClickHouse. This assumes the
-  ClickStack decomposition in §5.2 (RFC 0002); pre-decomposition, `krateo-clickstack` is the
-  monolith and `portal` would have to pull the whole thing.
+  `portal` pulls it in for the bell, `observability` pulls it in for HyperDX/the tool. Whoever
+  is enabled first brings it up; the other attaches. Assumes the ClickStack decomposition
+  (§5.2 / RFC 0002); pre-decomposition `krateo-clickstack` is the monolith and `portal` would
+  have to pull the whole thing.
+
+### 4.3a Base profile (all components)
+
+A named **base profile** turns on every capability — the full Krateo platform:
+
+```yaml
+spec:
+  profile: base        # expands to all capabilities below
+  # equivalent explicit form:
+  # capabilities: { portal: true, oasgen-provider: true, observability: true, agents: true }
+```
+
+| Group | Components |
+|---|---|
+| **portal** | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal, krateo-sse-proxy, krateo-events, clickhouse-operator, otel-collector-deployment, otel-collector-daemonset |
+| **oasgen-provider** | oasgen-provider-crd, oasgen-provider |
+| **observability** | krateo-clickstack (HyperDX+Mongo), mongodb-operator, hyperdx-provider, clickhouse-mcp-server |
+| **agents** (addon) | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot, authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent, krateo-code-analysis-agent, krateo-ansible-to-operator-agent, krateo-tf-provider-to-operator-agent, krateo-tf-to-helm-agent |
+
+Lean profiles are just subsets — e.g. **agent-only** = `{ agents: true }` (kagent + autopilot +
+installer-agent + the fleet, no data plane); **portal-only** = `{ portal: true }` (headless,
+working bell, no agents).
 
 ### 4.4 CR API
 
@@ -133,75 +153,49 @@ spec:
 | `composableportal` | `portal` |
 | `composableportalstarter` | `portal` (merged) |
 | `composableoperations` | *(dropped — engine marker, no-op)* |
-| `observabilityAgents` | `agents` |
-| `specialistAgents` | `codegen` (+ portal agents follow `portal`, `clickstack-agent` follows `observability`) |
+| `observabilityAgents` | `agents` (base tier) |
+| `specialistAgents` | `agents` (specialist + codegen tiers) |
 | `observability` | `observability` |
-| `oasgenprovider` | `oasgen` |
-| `podRestartAlert` | `podRestartAlert` |
+| `oasgenprovider` | `oasgen-provider` |
+| `podRestartAlert` | `observability` (the HyperDX/podRestartAlert pipeline) |
 | `githubMcp` | `githubMcp` |
 
-If `spec.capabilities` is set it wins; otherwise the shim derives capabilities from
-`spec.features`. This lets existing CRs and the autopilot/installer-agent keep working
-unchanged **for the valid combinations**.
-
-**Intentional non-parity for invalid combos.** Because the portal/observability specialist
-agents now hard-require their backing (§5), a legacy CR with `specialistAgents: true` but
-`observability: false` / `composableportal: false` — a combination that was *already
-broken* (agents with absent deps) — does **not** round-trip to the old render. The new
-model instead pulls in the backing the agents require. This is the bug class being fixed,
-not a regression; render-parity (§6.1) is therefore asserted only over the **valid**
-profiles (agent-only, portal, full-platform), and the migration notes call out that
-the now-corrected combos change behavior on next reconcile.
+If `spec.capabilities` (or `spec.profile`) is set it wins; otherwise the shim derives
+capabilities from `spec.features`. Because agents are a **decoupled addon** (§5), legacy
+combinations that ran agents without their data plane — `specialistAgents: true` with
+`observability: false` — map cleanly to `agents` without backing and behave exactly as
+before. So unlike a hard-require model, the addon model **preserves render-parity** for these
+combinations; there are no "intentionally broken" legacy combos to exempt (the one genuine
+behavior change is the autopilot roster shrinking on lean installs — §5.1).
 
 ## 5. Correctness prerequisites
 
 Closure is only correct if the dep graph is **complete**. A migration pre-step must audit
 and fix incomplete deps.
 
-**Decision (2026-06-19): specialist agents hard-require their backing component.** An agent
-that manages a component cannot exist without it — so each agent declares a hard `dep` on
-what it manages, and closure pulls that backing stack in. This makes "a specialist agent
-running with nothing to manage" unrepresentable (the same principle as the rest of the
-RFC), at the cost that selecting an agent transitively provisions its backing capability.
+**Decision (2026-06-19, supersedes the earlier "hard-require"): agents are a decoupled
+addon — they are NOT tied to their component.** This matches the installer as-built: every
+agent deps only on `[kagent]` (the autopilot also on `krateo-installer-agent`); none deps on
+the component it speaks for. An agent runs fine with its component absent — it simply has
+nothing to manage and says so. So we do **not** add agent→component edges; the agent fleet
+is its own overlay capability that can be deployed on top of any data plane, or alone.
 
-Today every agent deps only on `[kagent]`; Phase 0 adds the backing deps:
+(The earlier "hard-require" answer assumed agents were bound to their component; they aren't,
+so that direction is dropped. The only component-coupled non-agent is `clickhouse-mcp-server`
+— a *tool* that reads ClickHouse, so it keeps a real data dep on `krateo-events`, §5.2.)
 
-| Agent | Add dep → | Backing pulled in by closure |
-|---|---|---|
-| `authn-agent` | `authn` | portal-auth stack |
-| `snowplow-agent` | `snowplow` | snowplow stack |
-| `frontend-agent` | `frontend` | frontend (+ authn, snowplow) |
-| `clickstack-agent` | `clickhouse-mcp-server` | the **entire `observability`** closure |
-| `core-provider-agent` | *(none)* | core-provider is always-on via bootstrap — no gate |
-| `krateo-code-analysis-agent` | *(none)* | codegen: no backing component (reads GitHub) |
-| `krateo-ansible-to-operator-agent` | *(none)* | codegen |
-| `krateo-tf-provider-to-operator-agent` | *(none)* | codegen |
-| `krateo-tf-to-helm-agent` | *(none)* | codegen |
+The genuine dep-graph fixes Phase 0 still owns are the **data-plane** edges, not agent edges:
+the `frontend → krateo-sse-proxy → krateo-events` bell path (§5.2) and any other real
+data/control dependency currently missing.
 
-**Consequence to weigh (feeds §8 Q2):** under hard-require, enabling the `specialists`
-capability drags in `portal` **and** `observability` via `clickstack-agent`/the portal
-agents. That is logically correct but coarse. It strengthens the case for either (a) moving
-`clickstack-agent` into the `observability` capability (it requires the full obs stack
-anyway), and binding each portal agent to `portal`, rather than (b) a monolithic
-`specialists` capability that silently implies the whole platform. The codegen agents,
-having no backing, remain freely selectable and are the natural members of a standalone
-`codegen`/`specialists` capability.
+### 5.1 Orchestrator roster (autopilot) — derived `extraAgents`
 
-### 5.1 Orchestrator roster (autopilot) — directional hard-require + derived `extraAgents`
-
-The autopilot is the orchestrator, and it is the point where hard-require **stops**.
-Hard-require is **directional**:
-
-- *specialist agent → its backing component* — **yes** (§5): the agent needs the thing it
-  manages.
-- *orchestrator → its sub-agents* — **no**. If `krateo-autopilot` hard-required its roster,
-  enabling the base `agents` capability would pull in all 9 specialists, hence
-  `portal` + `observability` + `codegen` → the **entire platform**, destroying the
-  agent-only / minimal install. So `krateo-autopilot` keeps deps `[kagent,
-  krateo-installer-agent]` only and stays the root of the base `agents` capability. It
-  routes to whatever specialists are present and degrades gracefully when one is absent
-  (the intent-classification + verify-before-assert prompt already lets it answer "that
-  agent isn't installed").
+The autopilot orchestrates the rest of the fleet but **does not hard-dep its roster** — it
+keeps deps `[kagent, krateo-installer-agent]` only (consistent with the agents-as-addon
+model, §5). It routes to whatever sub-agents are present and degrades gracefully when one is
+absent (the intent-classification + verify-before-assert prompt already lets it answer "that
+agent isn't installed"). So which specialists exist is a property of the **enabled set**, not
+of the autopilot's deps — which is exactly why the roster must be *derived*, not hand-listed.
 
 **The roster is itself a third drift source.** Today the autopilot's sub-agent list is a
 hand-maintained static array — `componentValues.krateo-autopilot.extraAgents` — that
@@ -262,13 +256,13 @@ post-decomposition target.
 The installer reconciles a stateful platform; a gating refactor must not perturb running
 components. Required guarantees:
 
-1. **Render parity (valid profiles only).** For every **valid** legacy `features`
-   combination in use (at minimum agent-only, portal, full-platform), `helm template`
-   output under the new model must be **byte-identical** (modulo the removed `feature:`
-   field and dead `composableoperations`) to the current output. A golden-file test
-   enforces this. Previously-**invalid** combinations (e.g. `specialistAgents` without the
-   backing capability) are intentionally *not* preserved — see §4.4; the closure corrects
-   them by pulling in the required backing.
+1. **Render parity.** For every legacy `features` combination in use (at minimum agent-only,
+   portal, full-platform/base), `helm template` output under the new model must be
+   **byte-identical** (modulo the removed `feature:` field, the dead `composableoperations`,
+   and the autopilot `extraAgents` roster which is now derived — §5.1, agent-only roster
+   shrinks by design) to the current output. A golden-file test enforces this. Because agents
+   are a decoupled addon (§5), the legacy agents-without-backing combinations map cleanly and
+   are preserved — there are no intentionally-broken combos to exempt (cf. §4.4).
 2. **No-op on no change.** Same inputs → same `CompositionDefinition` / `Composition`
    manifests → cdc observes no diff → no restart. Tie into #56.
 3. **Deterministic ordering.** Closure output is sorted by the existing
@@ -299,23 +293,23 @@ Each phase is independently shippable and reversible.
 
 ## 8. Open questions
 
-1. ~~Agent ↔ backing-capability coupling~~ — **RESOLVED (2026-06-19): hard require.** Each
-   specialist agent declares a hard `dep` on its backing component; closure pulls the
-   backing stack in (§5).
-1a. ~~Orchestrator roster~~ — **RESOLVED (2026-06-19):** hard-require is directional — it
-   does **not** apply to `krateo-autopilot → sub-agents` (that would drag the whole platform
-   into the base `agents` capability). The autopilot stays the base-`agents` root, and its
-   `extraAgents` roster is **derived from the enabled closure** rather than hand-listed (§5.1).
-2. **Granularity of `specialists`** (now sharper given Q1=hard-require): a monolithic
-   `specialists` capability would, via the agents' hard deps, silently pull in `portal` +
-   `observability`. Recommend instead binding each agent to the capability it backs —
-   `clickstack-agent` → `observability`; portal agents (`authn`/`snowplow`/`frontend`) →
-   `portal`; `core-provider-agent` → always-on; and a standalone `codegen` capability for
-   the four backing-less codegen agents. Confirm this split.
-3. **Profiles on top?** A future `spec.profile: agent-only | portal | full` could expand
-   to a capability set (RFC 0002). Out of scope here.
+1. ~~Agent ↔ backing-capability coupling~~ — **RESOLVED (2026-06-19): agents are a decoupled
+   addon**, not tied to their component (matches the installer — every agent deps only on
+   `kagent`). No agent→component edges; the agent fleet is its own overlay capability (§5).
+   *(Supersedes the earlier "hard-require" answer, which assumed a coupling that doesn't exist.)*
+1a. ~~Orchestrator roster~~ — **RESOLVED (2026-06-19):** the autopilot's `extraAgents` roster
+   is **derived from the enabled closure** rather than hand-listed (§5.1).
+2. ~~Fold vs separate / granularity of `specialists`~~ — **RESOLVED (2026-06-19): separate —
+   agents are an addon.** Not folded into the data capabilities; deployable on any data plane
+   or alone (§4.3). Sub-tiers of the addon (base = autopilot+installer-agent; +specialists;
+   +codegen) are an open refinement (§8.5), but the addon is orthogonal to the data planes.
+3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with a **`base`** profile
+   (all capabilities) plus lean subsets (agent-only, portal-only) — see §4.3a.
 4. **`composableoperations`**: confirmed safe to drop, or keep as a no-op marker some
    external consumer reads?
+5. **Agent-addon sub-tiers:** is `agents` one capability (whole fleet) or graduated
+   (`agents-core` = kagent+autopilot+installer-agent; `agents-specialist`; `agents-codegen`)?
+   The base profile installs the whole fleet either way; this only affects lean installs.
 
 ## 9. Alternatives considered
 
