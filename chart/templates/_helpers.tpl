@@ -76,7 +76,12 @@
 {{- $apiv := include "inst.apiVersion" (list $ver) -}}
 {{- $o := lookup $apiv $kind $top.Values.namespaces.krateo $name -}}
 {{- if $o -}}
-{{- range ($o.status.conditions | default list) -}}
+{{/* nil-guard: a freshly-created dep CR can exist with .status still nil (controller hasn't
+     written it yet). $o.status.conditions would then panic ("nil pointer evaluating
+     interface {}.conditions") and chart-inspector returns 500, wedging the umbrella mid-chain.
+     Coalesce .status to an empty dict so a status-less dep cleanly reads as not-ready. */}}
+{{- $st := $o.status | default dict -}}
+{{- range ($st.conditions | default list) -}}
 {{- if and (eq .type "Ready") (eq (.status | toString) "True") -}}{{- $r = "true" -}}{{- end -}}
 {{- end -}}
 {{- end -}}
@@ -105,7 +110,8 @@
 {{- $top := index . 0 -}}{{- $sub := index . 1 -}}{{- $ip := "" -}}
 {{- range (lookup "v1" "Service" $top.Values.namespaces.krateo "").items -}}
 {{- if and (eq (.spec.type | toString) "LoadBalancer") (contains $sub .metadata.name) -}}
-{{- range (.status.loadBalancer.ingress | default list) -}}{{- if .ip -}}{{- $ip = .ip -}}{{- end -}}{{- end -}}
+{{- $lb := (.status | default dict).loadBalancer | default dict -}}
+{{- range ($lb.ingress | default list) -}}{{- if .ip -}}{{- $ip = .ip -}}{{- end -}}{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- $ip -}}
