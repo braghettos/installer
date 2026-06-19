@@ -96,8 +96,8 @@ components that nothing depends on — `fetch-mcp-server`, `clickhouse-mcp-serve
 | `portal` (data + UI plane) | `portal` | authn, snowplow, frontend, portal (+crds) **+ the bell/events pipeline** (§5.2): `krateo-sse-proxy` → `krateo-events` (ClickHouse/Keeper) ← `otel-collector-{deployment,daemonset}`, + `clickhouse-operator`. **"clickhouse" is part of `portal`.** No agents. |
 | `oasgen-provider` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
 | `observability` (product) | `krateo-clickstack`, `hyperdx-provider` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, hyperdx-provider, **+ shared `krateo-events` + clickhouse-operator** (already up if `portal` is on). **No MCP servers** — those are agent tooling. |
-| **`agents`** (addon core — decoupled) | kagent + orchestrator + its MCP tool | kagent-crds, kagent, **fetch-mcp-server** (the autopilot's fetch tool), krateo-installer-agent, krateo-autopilot. **No component deps** — deployable on any data plane or alone. This is the **`autopilot`** profile. |
-| **`agents-specialist`** (addon) | the 5 platform specialist agents + their MCP tool | authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent, **clickhouse-mcp-server** (the clickstack-agent's telemetry tool); deps `agents` (for kagent + the orchestrator) |
+| **`agents`** (addon core — decoupled) | kagent + orchestrator + its MCP tool | kagent-crds, kagent, **fetch-mcp-server** (the autopilot's fetch/doc-grounding tool), krateo-autopilot. **No component deps, and the autopilot does NOT hard-dep installer-agent** — deployable on any data plane or alone. This is the **`autopilot`** profile. |
+| **`agents-specialist`** (addon) | installer-agent + the 5 platform specialist agents + their MCP tool | **krateo-installer-agent**, authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent, **clickhouse-mcp-server** (the clickstack-agent's telemetry tool); deps `agents` (for kagent + the orchestrator) |
 | **`agents-codegen`** (addon) | the 4 codegen agents | krateo-code-analysis-agent, krateo-ansible-to-operator-agent, krateo-tf-provider-to-operator-agent, krateo-tf-to-helm-agent; deps `agents` |
 | `githubMcp` | (the GitHub RemoteMCPServer config) | thin; no chart component today |
 
@@ -130,8 +130,8 @@ spec:
 | **portal** | ✅ | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal, krateo-sse-proxy, krateo-events, clickhouse-operator, otel-collector-deployment, otel-collector-daemonset |
 | **oasgen-provider** | ✅ | oasgen-provider-crd, oasgen-provider |
 | **observability** | ✅ | krateo-clickstack (HyperDX+Mongo), mongodb-operator, hyperdx-provider (+ shared krateo-events). **No MCP servers.** |
-| **agents** (core) | ❌ addon | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot |
-| **agents-specialist** | ❌ addon | authn/snowplow/frontend/clickstack/core-provider agents, **clickhouse-mcp-server** |
+| **agents** (core) | ❌ addon | kagent-crds, kagent, fetch-mcp-server, krateo-autopilot |
+| **agents-specialist** | ❌ addon | **krateo-installer-agent**, authn/snowplow/frontend/clickstack/core-provider agents, clickhouse-mcp-server |
 | **agents-codegen** | ❌ addon | krateo-code-analysis / ansible-to-operator / tf-provider-to-operator / tf-to-helm agents |
 | **githubMcp** | ❌ opt-in | GitHub RemoteMCPServer (needs a PAT) |
 
@@ -140,9 +140,10 @@ Profiles are just capability sets:
   is **atomic**: there is **no `portal-only`** (nor observability-only / oasgen-only) — the data
   planes come as a unit.
 - **enterprise** = open + **autopilot** + the agent fleet — `{ …open, agents, agents-specialist, agents-codegen }` (the `agents` core *is* the autopilot + kagent, then the specialist + codegen tiers on top)
-- **autopilot** = the lean bootstrap — **krateo-autopilot + kagent** (and the
-  `krateo-installer-agent` the autopilot delegates installs to, via its dep). No data plane;
-  you talk to the autopilot and install the rest from there. *(Formerly "agent-only".)*
+- **autopilot** = the lean bootstrap — **krateo-autopilot + kagent + fetch-mcp** (its
+  doc-grounding tool). No data plane, **no installer-agent** (that's `agents-specialist` /
+  enterprise); you talk to the autopilot, and provisioning the platform means going
+  `enterprise`. *(Formerly "agent-only".)*
 
 **Excluded from `open`:** the **agent fleet** (all three agent tiers — an addon), the **MCP
 servers** (`fetch-mcp-server`, `clickhouse-mcp-server` — agent tooling), and **`githubMcp`**
@@ -161,7 +162,7 @@ spec:
     portal: true             # data + UI plane (incl. clickhouse/events for the bell)
     oasgen-provider: false
     observability: false     # HyperDX/Mongo product over the shared ClickHouse
-    agents: true             # addon core: kagent + autopilot + installer-agent
+    agents: true             # addon core: kagent + autopilot + fetch-mcp (the `autopilot` profile)
     agents-specialist: false # the 5 platform specialist agents
     agents-codegen: false    # the 4 codegen agents
     githubMcp: false
@@ -174,7 +175,7 @@ spec:
 | `composableportal` | `portal` |
 | `composableportalstarter` | `portal` (merged) |
 | `composableoperations` | *(dropped — engine marker, no-op)* |
-| `observabilityAgents` | `agents` (core tier) |
+| `observabilityAgents` | `agents` (core) **+ `agents-specialist`** (legacy bundled `installer-agent`, now in the specialist tier) |
 | `specialistAgents` | `agents-specialist` + `agents-codegen` |
 | `observability` | `observability` |
 | `oasgenprovider` | `oasgen-provider` |
@@ -196,8 +197,9 @@ and fix incomplete deps.
 
 **Decision (2026-06-19, supersedes the earlier "hard-require"): agents are a decoupled
 addon — they are NOT tied to their component.** This matches the installer as-built: every
-agent deps only on `[kagent]` (the autopilot also on `krateo-installer-agent`); none deps on
-the component it speaks for. An agent runs fine with its component absent — it simply has
+agent deps only on `[kagent]`; none deps on the component it speaks for. (The autopilot's
+current `krateo-installer-agent` dep is **dropped** — installer-agent is `agents-specialist`,
+and the autopilot routes to it when present rather than requiring it.) An agent runs fine with its component absent — it simply has
 nothing to manage and says so. So we do **not** add agent→component edges; the agent fleet
 is its own overlay capability that can be deployed on top of any data plane, or alone.
 
@@ -219,8 +221,8 @@ data/control dependency currently missing.
 ### 5.1 Orchestrator roster (autopilot) — derived `extraAgents`
 
 The autopilot orchestrates the rest of the fleet but **does not hard-dep its roster** — it
-keeps deps `[kagent, krateo-installer-agent]` only (consistent with the agents-as-addon
-model, §5). It routes to whatever sub-agents are present and degrades gracefully when one is
+keeps deps `[kagent]` only (consistent with the agents-as-addon model, §5; the
+`installer-agent` dep is dropped — it's `agents-specialist`). It routes to whatever sub-agents are present and degrades gracefully when one is
 absent (the intent-classification + verify-before-assert prompt already lets it answer "that
 agent isn't installed"). So which specialists exist is a property of the **enabled set**, not
 of the autopilot's deps — which is exactly why the roster must be *derived*, not hand-listed.
@@ -240,9 +242,10 @@ applies the RFC's "single source of truth" principle to orchestration and ties o
 
 This interacts with render-parity (§6.1): on the **enterprise** profile the derived roster equals
 today's static list (all 10), so output is unchanged; on the **`autopilot`** profile the
-roster correctly shrinks to `[krateo-installer-agent]` — an intended behavior change (the
-old all-10 list was the over-advertisement bug), so `autopilot` is parity-exempt for the
-autopilot's `extraAgents` value.
+roster correctly shrinks to **`[]`** (no sub-agents present — installer-agent and the
+specialists are `agents-specialist`/enterprise) — an intended behavior change (the old all-10
+list was the over-advertisement bug), so `autopilot` is parity-exempt for the autopilot's
+`extraAgents` value.
 
 ### 5.2 ClickStack decomposition (prerequisite — RFC 0002)
 
@@ -343,8 +346,9 @@ Each phase is independently shippable and reversible.
    read-only **status**, not a settable feature. (The autopilot prompt's "base = composableportal
    + composableoperations + composableportalstarter" line collapses to the `portal` capability.)
 5. ~~Agent-addon sub-tiers~~ — **RESOLVED (2026-06-19): graduated.** `agents` (core =
-   kagent + autopilot + installer-agent + fetch-mcp = the `autopilot` profile),
-   `agents-specialist` (the 5 platform agents), `agents-codegen` (the 4 codegen agents);
+   kagent + autopilot + fetch-mcp = the `autopilot` profile),
+   `agents-specialist` (installer-agent + the 5 platform agents + clickhouse-mcp),
+   `agents-codegen` (the 4 codegen agents);
    the two specialist tiers dep `agents` core, never a data component (§4.3). `enterprise`
    installs all three tiers; `open` installs none; `autopilot` installs only the core.
 
