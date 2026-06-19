@@ -28,7 +28,7 @@ sources:
 dependencies:
   # composition engine controller (its CRDs are pre-applied separately; see above)
   - name: krateo-core-provider
-    version: "0.36.16"
+    version: "0.36.17"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # cert-manager stays a bootstrap subchart — it is load-bearing for browser-facing TLS
