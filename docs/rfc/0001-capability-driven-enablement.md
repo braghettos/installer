@@ -180,6 +180,41 @@ anyway), and binding each portal agent to `portal`, rather than (b) a monolithic
 having no backing, remain freely selectable and are the natural members of a standalone
 `codegen`/`specialists` capability.
 
+### 5.1 Orchestrator roster (autopilot) — directional hard-require + derived `extraAgents`
+
+The autopilot is the orchestrator, and it is the point where hard-require **stops**.
+Hard-require is **directional**:
+
+- *specialist agent → its backing component* — **yes** (§5): the agent needs the thing it
+  manages.
+- *orchestrator → its sub-agents* — **no**. If `krateo-autopilot` hard-required its roster,
+  enabling the base `agents` capability would pull in all 9 specialists, hence
+  `portal` + `observability` + `codegen` → the **entire platform**, destroying the
+  agent-only / minimal install. So `krateo-autopilot` keeps deps `[kagent,
+  krateo-installer-agent]` only and stays the root of the base `agents` capability. It
+  routes to whatever specialists are present and degrades gracefully when one is absent
+  (the intent-classification + verify-before-assert prompt already lets it answer "that
+  agent isn't installed").
+
+**The roster is itself a third drift source.** Today the autopilot's sub-agent list is a
+hand-maintained static array — `componentValues.krateo-autopilot.extraAgents` — that
+advertises **all 10 sub-agents regardless of which are installed**. On an agent-only
+install it still claims it can route to authn/snowplow/clickstack/etc. agents that are not
+present: the same `feature:`-style drift, one layer up.
+
+**Decision (2026-06-19): derive `extraAgents` from the enabled closure.** The installer
+projects the autopilot roster as exactly the installer/specialist agents present in
+`enabled` (§4.2). The routing table then has a single source of truth — the dep graph —
+advertises precisely what is installed, and shrinks automatically on lean installs. This
+applies the RFC's "single source of truth" principle to orchestration and ties off the
+`autopilot-agent-orchestration-boundary` loose end (the static roster was that piece).
+
+This interacts with render-parity (§6.1): on the **full-platform** profile the derived
+roster equals today's static list (all 10), so output is unchanged; on **agent-only** the
+roster correctly shrinks to `[krateo-installer-agent]` — an intended behavior change (the
+old all-10 list was the over-advertisement bug), so agent-only is parity-exempt for the
+autopilot's `extraAgents` value.
+
 ## 6. Churn safety
 
 The installer reconciles a stateful platform; a gating refactor must not perturb running
@@ -203,8 +238,10 @@ components. Required guarantees:
 1. **Phase 0 — dep-graph completeness audit** (small, independent): fix `clickstack-agent`
    and any other incomplete deps; ship as a normal installer patch. De-risks everything.
 2. **Phase 1 — closure engine, behind the shim:** add `capabilities` + `closure()` helper;
-   `feature:` still present but unused; `spec.features` maps through the shim. Gated by the
-   render-parity golden test. No behavior change.
+   `feature:` still present but unused; `spec.features` maps through the shim; **project
+   `componentValues.krateo-autopilot.extraAgents` from the enabled closure** (§5.1) instead
+   of the static list. Gated by the render-parity golden test (full-platform unchanged;
+   agent-only roster shrinks per §5.1). No behavior change on valid full profiles.
 3. **Phase 2 — drop `feature:`** from `components[]` and delete `composableoperations`.
    Pure cleanup once Phase 1 proves parity.
 4. **Phase 3 — surface `capabilities`** in `values.schema.json`, docs (`INSTALL-WORKFLOW.md`,
@@ -218,6 +255,10 @@ Each phase is independently shippable and reversible.
 1. ~~Agent ↔ backing-capability coupling~~ — **RESOLVED (2026-06-19): hard require.** Each
    specialist agent declares a hard `dep` on its backing component; closure pulls the
    backing stack in (§5).
+1a. ~~Orchestrator roster~~ — **RESOLVED (2026-06-19):** hard-require is directional — it
+   does **not** apply to `krateo-autopilot → sub-agents` (that would drag the whole platform
+   into the base `agents` capability). The autopilot stays the base-`agents` root, and its
+   `extraAgents` roster is **derived from the enabled closure** rather than hand-listed (§5.1).
 2. **Granularity of `specialists`** (now sharper given Q1=hard-require): a monolithic
    `specialists` capability would, via the agents' hard deps, silently pull in `portal` +
    `observability`. Recommend instead binding each agent to the capability it backs —
