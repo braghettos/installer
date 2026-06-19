@@ -111,20 +111,21 @@ Notes:
   (§5.2 / RFC 0002); pre-decomposition `krateo-clickstack` is the monolith and `portal` would
   have to pull the whole thing.
 
-### 4.3a Base profile (the platform — **agents NOT included**)
+### 4.3a Profiles — `open` (platform) and `enterprise` (platform + agents)
 
-The **base profile is the platform itself: the data/UI planes, without the agent fleet.**
-Agents are a decoupled addon (§5) layered on top — so `base` deliberately leaves them off.
+The **`open` profile is the platform itself: the data/UI planes, without the agent fleet.**
+Agents are a decoupled addon (§5) layered on top — so `open` deliberately leaves them off;
+**`enterprise`** = `open` + the agent fleet.
 
 ```yaml
 spec:
-  profile: base        # = portal + oasgen-provider + observability (NO agents)
+  profile: open        # = portal + oasgen-provider + observability (NO agents)
   # equivalent explicit form:
   # capabilities: { portal: true, oasgen-provider: true, observability: true }
   # add agents on top:  agents: true, agents-specialist: true, agents-codegen: true
 ```
 
-| Group | In `base`? | Components |
+| Group | In `open`? | Components |
 |---|---|---|
 | **portal** | ✅ | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal, krateo-sse-proxy, krateo-events, clickhouse-operator, otel-collector-deployment, otel-collector-daemonset |
 | **oasgen-provider** | ✅ | oasgen-provider-crd, oasgen-provider |
@@ -135,15 +136,15 @@ spec:
 | **githubMcp** | ❌ opt-in | GitHub RemoteMCPServer (needs a PAT) |
 
 Profiles are just capability sets:
-- **base** = platform, no agents — `{ portal, oasgen-provider, observability }`. The platform
+- **open** = platform, no agents — `{ portal, oasgen-provider, observability }`. The platform
   is **atomic**: there is **no `portal-only`** (nor observability-only / oasgen-only) — the data
   planes come as a unit.
-- **full** = base + the agent fleet — `{ …base, agents, agents-specialist, agents-codegen }`
+- **enterprise** = open + the agent fleet — `{ …open, agents, agents-specialist, agents-codegen }`
 - **autopilot** = the lean bootstrap — **krateo-autopilot + kagent** (and the
   `krateo-installer-agent` the autopilot delegates installs to, via its dep). No data plane;
   you talk to the autopilot and install the rest from there. *(Formerly "agent-only".)*
 
-**Excluded from `base`:** the **agent fleet** (all three agent tiers — an addon) and
+**Excluded from `open`:** the **agent fleet** (all three agent tiers — an addon) and
 **`githubMcp`** (opt-in, credential-gated). Orthogonal config/mode dimensions are not part of
 any profile: LLM backend (`vertexAI` vs `localModel`/Ollama), `exposure.type`, `hitlApproval`,
 `bootstrap.*`/`cert-manager`, `registryAuth`, and required secrets.
@@ -154,7 +155,7 @@ New, primary:
 
 ```yaml
 spec:
-  # profile: base        # optional preset — platform only: portal+oasgen-provider+observability, NO agents (§4.3a)
+  # profile: open        # optional preset — platform only: portal+oasgen-provider+observability, NO agents (§4.3a). enterprise = open + agents
   capabilities:
     portal: true             # data + UI plane (incl. clickhouse/events for the bell)
     oasgen-provider: false
@@ -229,7 +230,7 @@ advertises precisely what is installed, and shrinks automatically on lean instal
 applies the RFC's "single source of truth" principle to orchestration and ties off the
 `autopilot-agent-orchestration-boundary` loose end (the static roster was that piece).
 
-This interacts with render-parity (§6.1): on the **full** profile the derived roster equals
+This interacts with render-parity (§6.1): on the **enterprise** profile the derived roster equals
 today's static list (all 10), so output is unchanged; on the **`autopilot`** profile the
 roster correctly shrinks to `[krateo-installer-agent]` — an intended behavior change (the
 old all-10 list was the over-advertisement bug), so `autopilot` is parity-exempt for the
@@ -276,7 +277,7 @@ The installer reconciles a stateful platform; a gating refactor must not perturb
 components. Required guarantees:
 
 1. **Render parity.** For every legacy `features` combination in use (at minimum `autopilot`,
-   `base`, `full`), `helm template` output under the new model must be
+   `open`, `enterprise`), `helm template` output under the new model must be
    **byte-identical** (modulo the removed `feature:` field, the dead `composableoperations`,
    and the autopilot `extraAgents` roster which is now derived — §5.1, the `autopilot`-profile
    roster shrinks by design) to the current output. A golden-file test enforces this. Because agents
@@ -300,8 +301,8 @@ components. Required guarantees:
 2. **Phase 1 — closure engine, behind the shim:** add `capabilities` + `closure()` helper;
    `feature:` still present but unused; `spec.features` maps through the shim; **project
    `componentValues.krateo-autopilot.extraAgents` from the enabled closure** (§5.1) instead
-   of the static list. Gated by the render-parity golden test (`full` unchanged;
-   `autopilot`-profile roster shrinks per §5.1). No behavior change on valid full profiles.
+   of the static list. Gated by the render-parity golden test (`enterprise` unchanged;
+   `autopilot`-profile roster shrinks per §5.1). No behavior change on valid profiles.
 3. **Phase 2 — drop `feature:`** from `components[]` and delete `composableoperations`.
    Pure cleanup once Phase 1 proves parity.
 4. **Phase 3 — surface `capabilities`** in `values.schema.json`, docs (`INSTALL-WORKFLOW.md`,
@@ -320,11 +321,11 @@ Each phase is independently shippable and reversible.
    is **derived from the enabled closure** rather than hand-listed (§5.1).
 2. ~~Fold vs separate / granularity of `specialists`~~ — **RESOLVED (2026-06-19): separate —
    agents are an addon.** Not folded into the data capabilities; deployable on any data plane
-   or alone (§4.3). Sub-tiers of the addon (base = autopilot+installer-agent; +specialists;
+   or alone (§4.3). Sub-tiers of the addon (core = autopilot+installer-agent; +specialists;
    +codegen) are an open refinement (§8.5), but the addon is orthogonal to the data planes.
-3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with **`base`** = the
-   platform (portal + oasgen-provider + observability, **no agents**), `full` = base + the
-   agent fleet, plus the lean **`autopilot`** bootstrap (autopilot + kagent). No `portal-only`
+3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with **`open`** = the
+   platform (portal + oasgen-provider + observability, **no agents**), **`enterprise`** = open
+   + the agent fleet, plus the lean **`autopilot`** bootstrap (autopilot + kagent). No `portal-only`
    — the platform is atomic. See §4.3a.
 4. ~~`composableoperations`~~ — **RESOLVED (2026-06-19): drop.** It gates no component
    (core-provider is always-on via bootstrap), so it is not a capability. Removed from the
