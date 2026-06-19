@@ -161,17 +161,14 @@ componentValues:
     kagentapp:
       fullnameOverride: kagent
   krateo-autopilot:
-    extraAgents:
-      - name: krateo-installer-agent
-      - name: krateo-authn-agent
-      - name: krateo-snowplow-agent
-      - name: krateo-frontend-agent
-      - name: krateo-clickstack-agent
-      - name: krateo-core-provider-agent
-      - name: krateo-code-analysis-agent
-      - name: krateo-ansible-to-operator-agent
-      - name: krateo-tf-provider-to-operator-agent
-      - name: krateo-tf-to-helm-agent
+    # STANDALONE BY DEFAULT: the autopilot ships as a self-contained Krateo PlatformOps
+    # assistant — it answers questions + reports status and DEFERS mutations. It does NOT
+    # auto-orchestrate the agent fleet. To opt into A2A orchestration, list the specialist
+    # agents to attach here (each must also be deployed — e.g. enable specialistAgents), e.g.:
+    #   extraAgents:
+    #     - name: krateo-installer-agent
+    #     - name: krateo-core-provider-agent
+    extraAgents: []
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True
@@ -486,10 +483,9 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.25"
+    version: "0.1.27"
     deps:
       - kagent
-      - krateo-installer-agent
     tier: observability
     feature: observabilityAgents
     vertexAI: true
