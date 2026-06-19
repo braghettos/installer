@@ -111,27 +111,39 @@ Notes:
   (§5.2 / RFC 0002); pre-decomposition `krateo-clickstack` is the monolith and `portal` would
   have to pull the whole thing.
 
-### 4.3a Base profile (all components)
+### 4.3a Base profile (the platform — **agents NOT included**)
 
-A named **base profile** turns on every capability — the full Krateo platform:
+The **base profile is the platform itself: the data/UI planes, without the agent fleet.**
+Agents are a decoupled addon (§5) layered on top — so `base` deliberately leaves them off.
 
 ```yaml
 spec:
-  profile: base        # expands to all capabilities below
+  profile: base        # = portal + oasgen-provider + observability (NO agents)
   # equivalent explicit form:
-  # capabilities: { portal: true, oasgen-provider: true, observability: true, agents: true }
+  # capabilities: { portal: true, oasgen-provider: true, observability: true }
+  # add agents on top:  agents: true, agents-specialist: true, agents-codegen: true
 ```
 
-| Group | Components |
-|---|---|
-| **portal** | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal, krateo-sse-proxy, krateo-events, clickhouse-operator, otel-collector-deployment, otel-collector-daemonset |
-| **oasgen-provider** | oasgen-provider-crd, oasgen-provider |
-| **observability** | krateo-clickstack (HyperDX+Mongo), mongodb-operator, hyperdx-provider, clickhouse-mcp-server |
-| **agents** (addon) | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot, authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent, krateo-code-analysis-agent, krateo-ansible-to-operator-agent, krateo-tf-provider-to-operator-agent, krateo-tf-to-helm-agent |
+| Group | In `base`? | Components |
+|---|---|---|
+| **portal** | ✅ | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal, krateo-sse-proxy, krateo-events, clickhouse-operator, otel-collector-deployment, otel-collector-daemonset |
+| **oasgen-provider** | ✅ | oasgen-provider-crd, oasgen-provider |
+| **observability** | ✅ | krateo-clickstack (HyperDX+Mongo), mongodb-operator, hyperdx-provider, clickhouse-mcp-server |
+| **agents** (core) | ❌ addon | kagent-crds, kagent, fetch-mcp-server, krateo-installer-agent, krateo-autopilot |
+| **agents-specialist** | ❌ addon | authn/snowplow/frontend/clickstack/core-provider agents |
+| **agents-codegen** | ❌ addon | krateo-code-analysis / ansible-to-operator / tf-provider-to-operator / tf-to-helm agents |
+| **githubMcp** | ❌ opt-in | GitHub RemoteMCPServer (needs a PAT) |
 
-Lean profiles are just subsets — e.g. **agent-only** = `{ agents: true }` (kagent + autopilot +
-installer-agent + the fleet, no data plane); **portal-only** = `{ portal: true }` (headless,
-working bell, no agents).
+Profiles are just capability sets:
+- **base** = platform, no agents — `{ portal, oasgen-provider, observability }`
+- **full** = base + the agent fleet — `{ …base, agents, agents-specialist, agents-codegen }`
+- **agent-only** = `{ agents }` (kagent + autopilot + installer-agent, no data plane)
+- **portal-only** = `{ portal }` (headless, working bell, no agents)
+
+**Excluded from `base`:** the **agent fleet** (all three agent tiers — an addon) and
+**`githubMcp`** (opt-in, credential-gated). Orthogonal config/mode dimensions are not part of
+any profile: LLM backend (`vertexAI` vs `localModel`/Ollama), `exposure.type`, `hitlApproval`,
+`bootstrap.*`/`cert-manager`, `registryAuth`, and required secrets.
 
 ### 4.4 CR API
 
@@ -139,7 +151,7 @@ New, primary:
 
 ```yaml
 spec:
-  # profile: base        # optional preset — expands to all capabilities (§4.3a)
+  # profile: base        # optional preset — platform only: portal+oasgen-provider+observability, NO agents (§4.3a)
   capabilities:
     portal: true             # data + UI plane (incl. clickhouse/events for the bell)
     oasgen-provider: false
@@ -307,8 +319,9 @@ Each phase is independently shippable and reversible.
    agents are an addon.** Not folded into the data capabilities; deployable on any data plane
    or alone (§4.3). Sub-tiers of the addon (base = autopilot+installer-agent; +specialists;
    +codegen) are an open refinement (§8.5), but the addon is orthogonal to the data planes.
-3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with a **`base`** profile
-   (all capabilities) plus lean subsets (agent-only, portal-only) — see §4.3a.
+3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with **`base`** = the
+   platform (portal + oasgen-provider + observability, **no agents**), `full` = base + the
+   agent fleet, plus lean subsets (agent-only, portal-only) — see §4.3a.
 4. ~~`composableoperations`~~ — **RESOLVED (2026-06-19): drop.** It gates no component
    (core-provider is always-on via bootstrap), so it is not a capability. Removed from the
    toggle/capability surface; if an "engine present" signal is ever needed it is exposed as
