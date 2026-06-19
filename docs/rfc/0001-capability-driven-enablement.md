@@ -115,7 +115,7 @@ Notes:
 
 The **`open` profile is the platform itself: the data/UI planes, without the agent fleet.**
 Agents are a decoupled addon (§5) layered on top — so `open` deliberately leaves them off;
-**`enterprise`** = `open` + the agent fleet.
+**`enterprise`** = `open` + the **autopilot** (`agents` core) + the specialist/codegen agent fleet.
 
 ```yaml
 spec:
@@ -139,7 +139,7 @@ Profiles are just capability sets:
 - **open** = platform, no agents — `{ portal, oasgen-provider, observability }`. The platform
   is **atomic**: there is **no `portal-only`** (nor observability-only / oasgen-only) — the data
   planes come as a unit.
-- **enterprise** = open + the agent fleet — `{ …open, agents, agents-specialist, agents-codegen }`
+- **enterprise** = open + **autopilot** + the agent fleet — `{ …open, agents, agents-specialist, agents-codegen }` (the `agents` core *is* the autopilot + kagent, then the specialist + codegen tiers on top)
 - **autopilot** = the lean bootstrap — **krateo-autopilot + kagent** (and the
   `krateo-installer-agent` the autopilot delegates installs to, via its dep). No data plane;
   you talk to the autopilot and install the rest from there. *(Formerly "agent-only".)*
@@ -155,7 +155,7 @@ New, primary:
 
 ```yaml
 spec:
-  # profile: open        # optional preset — platform only: portal+oasgen-provider+observability, NO agents (§4.3a). enterprise = open + agents
+  # profile: open        # optional preset — platform only: portal+oasgen-provider+observability, NO agents (§4.3a). enterprise = open + autopilot + agent fleet
   capabilities:
     portal: true             # data + UI plane (incl. clickhouse/events for the bell)
     oasgen-provider: false
@@ -325,7 +325,7 @@ Each phase is independently shippable and reversible.
    +codegen) are an open refinement (§8.5), but the addon is orthogonal to the data planes.
 3. ~~Profiles on top?~~ — **ADOPTED (2026-06-19):** `spec.profile` with **`open`** = the
    platform (portal + oasgen-provider + observability, **no agents**), **`enterprise`** = open
-   + the agent fleet, plus the lean **`autopilot`** bootstrap (autopilot + kagent). No `portal-only`
+   + autopilot + the agent fleet, plus the lean **`autopilot`** bootstrap (autopilot + kagent). No `portal-only`
    — the platform is atomic. See §4.3a.
 4. ~~`composableoperations`~~ — **RESOLVED (2026-06-19): drop.** It gates no component
    (core-provider is always-on via bootstrap), so it is not a capability. Removed from the
