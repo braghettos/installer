@@ -29,9 +29,9 @@
 {{- end -}}
 
 {{/* Is a feature flag enabled? args: (list $ "featureName"); empty featureName => true.
-     Krateo CORE platform modules (the engine + the composable portal: authn/snowplow/
-     frontend/portal) install REGARDLESS of their flag — they are not optional. Only the
-     add-on features (observability, oasgen, githubMcp, podRestartAlert) are gated. */}}
+     Final feature set: coreProvider (engine marker, gates nothing), coreAgents (base agent layer),
+     portal (the non-agent platform: authn/snowplow/frontend/portal + portal-starter + the
+     observability stack), oasgenprovider, specialistAgents. Every component gates on its flag. */}}
 {{/* No feature is force-enabled: every component gates on its feature flag, so a minimal
      "agent-only" install (just the autopilot + installer-agent) can disable the platform and let
      the agent provision it later by editing the Installer CR. Defaults in values.yaml are all true,
