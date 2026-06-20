@@ -153,10 +153,13 @@ subjects:
        ONE entry of the live Installer composition — Helm replaces list overrides wholesale,
        so a partial `components` would prune the omitted components; shipping the whole list
        makes in-place single-version edits safe.
-       TRADE-OFF (intentional, reverses 0.2.31): the CR is now the SOURCE OF TRUTH for the
-       component set + versions. A `helm upgrade` to a newer installer chart no longer
-       auto-propagates component version/set changes (the baked list shadows the chart's
-       values.yaml) — re-apply the CR (or edit it) to pick up chart-side component changes. */}}
+       SOURCE OF TRUTH: the CR holds the live component set + versions (and runtime spec.features
+       the installer-agent toggles). A `helm upgrade` to a newer installer chart DOES now
+       auto-propagate component version/set/config changes: the post-upgrade hook merge-patches
+       ONLY `components` + `componentValues` from this chart onto the live CR (see
+       components-patch.json + the post-upgrade branch), so chart-side pins reach the cluster
+       while spec.features and other runtime edits are preserved (not clobbered by a full
+       re-apply). Single-entry in-place CR edits remain safe (whole list shipped). */}}
 {{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" "components" "componentValues" "registryAuth" }}
 {{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "certManager" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
 apiVersion: v1
@@ -173,6 +176,13 @@ data:
       namespace: {{ .Values.namespaces.krateo }}
     spec:
 {{ $spec | toYaml | indent 6 }}
+  # Surgical upgrade patch: ONLY the chart-managed component pins (versions/repos/deps) and
+  # componentValues — NOT spec.features or any other runtime/user-edited field. Applied as an
+  # RFC-7386 merge patch on `helm upgrade` (see the post-upgrade branch below) so chart-side
+  # component version/set/config bumps propagate WITHOUT clobbering what the installer-agent (or
+  # a user) changed at runtime. The `components` list is replaced wholesale; `componentValues`
+  # deep-merges, so chart-set keys win and any user-only componentValues keys are preserved.
+  components-patch.json: {{ dict "spec" (dict "components" .Values.components "componentValues" .Values.componentValues) | toJson | quote }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -180,7 +190,11 @@ metadata:
   name: installer-self-bootstrap
   namespace: {{ .Values.namespaces.krateo }}
   annotations:
-    "helm.sh/hook": post-install
+    # post-upgrade too: on a chart bump, re-apply ONLY the chart-managed component pins +
+    # componentValues (surgical merge patch) so component version/set/config changes propagate,
+    # while spec.features and other runtime edits are preserved. (Reverses the old "CR fully
+    # shadows the chart" freeze without reintroducing the clobber it was avoiding.)
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
@@ -203,12 +217,23 @@ spec:
           args:
             - |
               set -e
+              NS={{ .Values.namespaces.krateo }}
               echo "waiting for the generated Installer CRD..."
               until kubectl get crd installers.composition.krateo.io >/dev/null 2>&1; do sleep 5; done
               # wait until the CRD actually serves this chart's version
-              until kubectl get installers.composition.krateo.io -n {{ .Values.namespaces.krateo }} >/dev/null 2>&1; do sleep 5; done
-              echo "applying Installer CR — core-provider's cdc self-reconciles the rollout"
-              kubectl apply -f /cr/installer.yaml
+              until kubectl get installers.composition.krateo.io -n "$NS" >/dev/null 2>&1; do sleep 5; done
+              if kubectl get installers.composition.krateo.io installer -n "$NS" >/dev/null 2>&1; then
+                # UPGRADE: the CR already exists and is the source of truth for runtime state
+                # (spec.features the installer-agent toggles, user overrides). Re-applying the
+                # whole CR would clobber that, so patch ONLY the chart-managed component pins +
+                # componentValues. core-provider then re-renders the umbrella at the new versions.
+                echo "Installer CR exists — surgical upgrade: patching chart-managed components + componentValues"
+                kubectl patch installers.composition.krateo.io installer -n "$NS" \
+                  --type merge --patch-file /cr/components-patch.json
+              else
+                echo "applying Installer CR — core-provider's cdc self-reconciles the rollout"
+                kubectl apply -f /cr/installer.yaml
+              fi
               # Auto-heal the Installer CR's FIRST reconcile: the cdc occasionally loses the
               # race between setting the crossplane `external-create-pending` annotation and
               # confirming the create (it reports `external-create-failed` then refuses to
