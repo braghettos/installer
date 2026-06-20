@@ -183,7 +183,7 @@
           "default": true,
           "description": "The non-agent platform: authn/snowplow/frontend/portal + portal-starter + the observability stack (operators, krateo-observability, otel collectors, sse-proxy the portal's events bell consumes)."
         },
-        "oasgenprovider": {
+        "oasgenProvider": {
           "type": "boolean",
           "default": true,
           "description": "Deploy oasgen-provider (generates operators from OpenAPI specs)."
