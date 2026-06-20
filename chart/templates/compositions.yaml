@@ -21,10 +21,21 @@
 {{- $top := . }}
 {{- $isLB := or (eq .Values.exposure.type "LoadBalancer") (eq .Values.exposure.type "NodePort") }}
 {{- range $c := .Values.components }}
-{{- if eq (include "inst.featureEnabled" (list $top $c.feature)) "true" }}
+{{- $featOn := eq (include "inst.featureEnabled" (list $top $c.feature)) "true" }}
 {{- $crd  := include "inst.crdExists" (list $c.kind $c.version) }}
+{{- $render := "" }}
+{{- if $featOn }}
+{{/* install / steady-state: emit once the CRD is served and all deps are Ready (forward dep order). */}}
 {{- $deps := include "inst.depsReady" (list $top $c.deps $top.Values.components) }}
-{{- if and (eq $crd "true") (eq $deps "true") }}
+{{- if and (eq $crd "true") (eq $deps "true") }}{{- $render = "true" }}{{- end }}
+{{- else }}
+{{/* feature OFF -> reverse-dependency DRAIN: keep rendering (alive) until every component that
+     deps on this one is gone, so teardown is leaves-first and never deletes this component (or the
+     CRDs its release ships) out from under a still-present dependent. Dropped from the render — and
+     thus deleted by the cdc — only once inst.dependentsGone reports clear. */}}
+{{- if and (eq $crd "true") (ne (include "inst.dependentsGone" (list $top $c.name $top.Values.components)) "true") }}{{- $render = "true" }}{{- end }}
+{{- end }}
+{{- if eq $render "true" }}
 {{- $spec := dict }}
 {{- if and $c.expose $isLB }}
 {{- if $c.serviceValuesPath }}
@@ -122,7 +133,6 @@ metadata:
     app.kubernetes.io/managed-by: krateo-installer
     krateo.io/tier: {{ $c.tier }}
 spec: {{- $spec | toYaml | nindent 2 }}
-{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
