@@ -168,41 +168,29 @@
       "title": "Feature flags",
       "additionalProperties": false,
       "properties": {
-        "composableportal": {
+        "coreProvider": {
           "type": "boolean",
-          "default": true
+          "default": true,
+          "description": "Engine-present marker (core-provider is always-on via bootstrap). Gates no component."
         },
-        "composableportalstarter": {
+        "coreAgents": {
           "type": "boolean",
-          "default": true
+          "default": true,
+          "description": "Base agent layer: kagent + fetch-mcp + krateo-autopilot + krateo-installer-agent."
         },
-        "composableoperations": {
+        "portal": {
           "type": "boolean",
-          "default": true
+          "default": true,
+          "description": "The non-agent platform: authn/snowplow/frontend/portal + portal-starter + the observability stack (operators, krateo-observability, otel collectors, sse-proxy the portal's events bell consumes)."
         },
         "oasgenprovider": {
           "type": "boolean",
-          "default": true
-        },
-        "observability": {
-          "type": "boolean",
-          "default": true
-        },
-        "observabilityAgents": {
-          "type": "boolean",
-          "default": true
-        },
-        "githubMcp": {
-          "type": "boolean",
-          "default": false
-        },
-        "podRestartAlert": {
-          "type": "boolean",
-          "default": false
+          "default": true,
+          "description": "Deploy oasgen-provider (generates operators from OpenAPI specs)."
         },
         "specialistAgents": {
           "type": "boolean",
-          "description": "Deploy the 9 specialist/codegen agents + clickhouse-mcp (needs observabilityAgents). Set false for an agent-only install (just the autopilot + installer-agent)."
+          "description": "Deploy the 5 component specialist agents (authn/snowplow/frontend/clickstack/core-provider) + clickhouse-mcp (needs coreAgents)."
         }
       }
     },
@@ -219,10 +207,6 @@
         "gcloudCredentials": {
           "type": "string",
           "default": "gcloud-credentials"
-        },
-        "githubMcpPat": {
-          "type": "string",
-          "default": "github-mcp-pat"
         }
       }
     },

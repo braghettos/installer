@@ -6,10 +6,10 @@
 #     --set vertexAI.enabled=false          # on kind: use a Gemini API key Secret instead of ADC
 #
 # Then talk to krateo-autopilot ("install Krateo") -> it routes to krateo-installer-agent, which
-# patches the Installer CR (e.g. features.composableportal=true, specialistAgents=true, ...) and
+# patches the Installer CR (e.g. features.portal=true, specialistAgents=true, ...) and
 # core-provider provisions the full platform in dependency order.
 # Skip the observability operator prerequisites (cert-manager / ClickHouse / MongoDB) — they're only
-# needed once `observability` is turned on. The composition engine (core-provider) stays.
+# needed once `portal` is turned on (it now carries the observability stack). The engine (core-provider) stays.
 bootstrap:
   certManager:
     enabled: false
@@ -19,12 +19,8 @@ bootstrap:
     enabled: false
 
 features:
-  composableportal: false
-  composableportalstarter: false
-  composableoperations: false
+  coreProvider: true               # engine marker (core-provider is always-on via bootstrap)
+  coreAgents: true                 # the base agent layer: kagent + fetch-mcp + installer-agent + autopilot
+  portal: false                    # the agent turns the platform on (authn->...->portal + observability)
   oasgenprovider: false
-  observability: false
-  observabilityAgents: true        # the minimal agent layer: kagent + installer-agent + autopilot
-  specialistAgents: false          # not the 9 specialist/codegen agents yet
-  githubMcp: false
-  podRestartAlert: false
+  specialistAgents: false          # not the component specialist agents yet
