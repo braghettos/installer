@@ -122,6 +122,18 @@
 {{- $gone -}}
 {{- end -}}
 
+{{/* Does a component's OWN Composition CR currently exist? args: (list $ "Kind" "name" "version")
+     Guarded by inst.crdExists (an unserved Kind is a hard error in chart-inspector), like inst.ready.
+     Used by Pass A (definitions.yaml) to keep a CompositionDefinition registered while its component
+     is still present/draining — so the generated CRD OUTLIVES the Composition it serves and is never
+     GC'd out from under a still-draining component (the Pass-A counterpart to inst.dependentsGone). */}}
+{{- define "inst.compositionExists" -}}
+{{- $top := index . 0 -}}{{- $kind := index . 1 -}}{{- $name := index . 2 -}}{{- $ver := index . 3 -}}
+{{- if eq (include "inst.crdExists" (list $kind $ver)) "true" -}}
+{{- if (lookup (include "inst.apiVersion" (list $ver)) $kind $top.Values.namespaces.krateo $name) -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{/* External IP of a browser-facing component's LoadBalancer Service. args: (list $ "svcNameSubstring")
      The component's underlying Service is named after its Helm release (e.g. authn-<hash>), so we
      match on a stable substring and return the assigned ingress IP — "" until the cloud LB is ready.
