@@ -1,8 +1,21 @@
 # RFC 0002 — Decompose ClickStack (events data layer vs observability product)
 
-- **Status:** Draft / Proposed
+- **Status:** ❌ **REJECTED (2026-06-19)** — keep the monolith; rename instead.
 - **Author:** Diego Braga
 - **Date:** 2026-06-19
+
+> **Rejected.** Decomposition was blocked at build time: upstream `clickstack` 3.0.0 has
+> **no `hyperdx.enabled` gate** — HyperDX's Deployment renders unconditionally (only
+> `clickhouse.enabled` / `mongodb.enabled` are toggles). So a clean "events vs product"
+> split via two thin wrappers is impossible without **forking** the third-party chart (or
+> re-authoring the ClickHouse/Keeper operator CRs by hand). Decision: **keep ClickStack as
+> one monolith** (ClickHouse + Keeper + OTel gateway + HyperDX + MongoDB, HyperDX
+> always-on) and instead **rename the chart `krateo-clickstack` → `krateo-observability`**
+> for a clearer domain name (braghettos/krateo-clickstack-chart PR #18). The portal's events
+> bell gets its ClickHouse from this monolith, which lives in the `observability` capability
+> (part of the `open` profile). The one real fix that survives — the missing
+> `frontend → sse-proxy → <ClickHouse>` dep-graph edge — moves to RFC 0001 Phase 0.
+> The text below is retained for the record.
 - **Affects:** `braghettos/krateo-clickstack-chart` (chart split), `krateo-installer` (`components[]`
   rewiring), the `frontend → sse-proxy` wiring
 - **Prerequisite for:** RFC 0001 Phase 0 (the capability dep-closure needs a complete,

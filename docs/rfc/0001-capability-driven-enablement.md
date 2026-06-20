@@ -93,9 +93,9 @@ components that nothing depends on — `fetch-mcp-server`, `clickhouse-mcp-serve
 
 | Capability | Roots | Closure (what gets provisioned) |
 |---|---|---|
-| `portal` (data + UI plane) | `portal` | authn, snowplow, frontend, portal (+crds) **+ the bell/events pipeline** (§5.2): `krateo-sse-proxy` → `krateo-events` (ClickHouse/Keeper) ← `otel-collector-{deployment,daemonset}`, + `clickhouse-operator`. **"clickhouse" is part of `portal`.** No agents. |
+| `portal` (data + UI plane) | `portal` | authn, snowplow, frontend, portal (+crds). The events **bell** depends on `krateo-sse-proxy` (§5.2), which lives in `observability` — present in `open`. No agents. |
 | `oasgen-provider` | `oasgen-provider` | oasgen-provider-crd, oasgen-provider |
-| `observability` (product) | `krateo-clickstack`, `hyperdx-provider` | krateo-clickstack (HyperDX + Mongo), mongodb-operator, hyperdx-provider, **+ shared `krateo-events` + clickhouse-operator** (already up if `portal` is on). **No MCP servers** — those are agent tooling. |
+| `observability` (the ClickStack monolith + telemetry pipeline) | `krateo-observability`, `krateo-sse-proxy`, `otel-collector-daemonset`, `hyperdx-provider` | **`krateo-observability`** (the monolith: ClickHouse + Keeper + OTel gateway + HyperDX + MongoDB) + clickhouse-operator + mongodb-operator + `krateo-sse-proxy` + `otel-collector-{deployment,daemonset}` + hyperdx-provider. **No MCP servers** — those are agent tooling. |
 | **`agents`** (addon core — decoupled) | kagent + orchestrator + its MCP tool | kagent-crds, kagent, **fetch-mcp-server** (the autopilot's fetch/doc-grounding tool), krateo-autopilot. **No component deps, and the autopilot does NOT hard-dep installer-agent** — deployable on any data plane or alone. This is the **`autopilot`** profile. |
 | **`agents-specialist`** (addon) | installer-agent + the 5 platform specialist agents + their MCP tool | **krateo-installer-agent**, authn-agent, snowplow-agent, frontend-agent, clickstack-agent, core-provider-agent, **clickhouse-mcp-server** (the clickstack-agent's telemetry tool); deps `agents` (for kagent + the orchestrator) |
 | **`agents-codegen`** (addon) | the 4 codegen agents | krateo-code-analysis-agent, krateo-ansible-to-operator-agent, krateo-tf-provider-to-operator-agent, krateo-tf-to-helm-agent; deps `agents` |
@@ -105,11 +105,11 @@ Notes:
 - **Agents are an overlay, not folded into the data capabilities.** Enabling `portal` does
   *not* install the portal agents; enabling `agents` does not install the portal. They are
   orthogonal (this resolves §8 Q2 = *separate / addon*).
-- **`krateo-events` (the decomposed ClickHouse data layer, §5.2) is a shared substrate**:
-  `portal` pulls it in for the bell, `observability` pulls it in for HyperDX/the tool. Whoever
-  is enabled first brings it up; the other attaches. Assumes the ClickStack decomposition
-  (§5.2 / RFC 0002); pre-decomposition `krateo-clickstack` is the monolith and `portal` would
-  have to pull the whole thing.
+- **ClickStack stays a monolith, renamed `krateo-observability`** (§5.2; RFC 0002 rejected).
+  It is the `observability` capability, always present in `open`, so its ClickHouse backs the
+  portal bell directly — no separate events layer. The portal's bell has a cross-capability
+  dependency on `krateo-sse-proxy` (in `observability`); since the platform is atomic
+  (`open` = portal + oasgen-provider + observability), it's always satisfied.
 
 ### 4.3a Profiles — `open` (platform) and `enterprise` (platform + agents)
 
@@ -127,9 +127,9 @@ spec:
 
 | Group | In `open`? | Components |
 |---|---|---|
-| **portal** | ✅ | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal, krateo-sse-proxy, krateo-events, clickhouse-operator, otel-collector-deployment, otel-collector-daemonset |
+| **portal** | ✅ | authn-crd, snowplow-crd, frontend-crd, authn, snowplow, frontend, portal |
 | **oasgen-provider** | ✅ | oasgen-provider-crd, oasgen-provider |
-| **observability** | ✅ | krateo-clickstack (HyperDX+Mongo), mongodb-operator, hyperdx-provider (+ shared krateo-events). **No MCP servers.** |
+| **observability** | ✅ | **krateo-observability** (the monolith: ClickHouse + Keeper + OTel gateway + HyperDX + MongoDB), clickhouse-operator, mongodb-operator, krateo-sse-proxy, otel-collector-deployment, otel-collector-daemonset, hyperdx-provider. **No MCP servers.** |
 | **agents** (core) | ❌ addon | kagent-crds, kagent, fetch-mcp-server, krateo-autopilot |
 | **agents-specialist** | ❌ addon | **krateo-installer-agent**, authn/snowplow/frontend/clickstack/core-provider agents, clickhouse-mcp-server |
 | **agents-codegen** | ❌ addon | krateo-code-analysis / ansible-to-operator / tf-provider-to-operator / tf-to-helm agents |
@@ -209,13 +209,13 @@ so that direction is dropped.)
 **MCP servers are agent tooling, never platform.** `fetch-mcp-server` (the autopilot's fetch
 tool) lives in the `agents` core; `clickhouse-mcp-server` (the clickstack-agent's telemetry
 tool) lives in `agents-specialist`. So **`open` installs neither agents nor MCP servers** —
-both are part of the agents addon (`enterprise`). The clickhouse MCP server reads the ClickHouse
-data layer (`krateo-events`) at runtime when present — but in `enterprise` (= `open` + agents)
-the `open` platform already provides it, and absent it the tool degrades like the agent it
-serves. So the agent+MCP addon is **fully decoupled** — no component-coupled exceptions.
+both are part of the agents addon (`enterprise`). The clickhouse MCP server reads the
+`krateo-observability` ClickHouse at runtime when present — but in `enterprise` (= `open` +
+agents) the `open` platform already provides it, and absent it the tool degrades like the
+agent it serves. So the agent+MCP addon is **fully decoupled** — no component-coupled exceptions.
 
 The genuine dep-graph fixes Phase 0 still owns are the **data-plane** edges, not agent edges:
-the `frontend → krateo-sse-proxy → krateo-events` bell path (§5.2) and any other real
+the `frontend → krateo-sse-proxy → krateo-observability` bell path (§5.2) and any other real
 data/control dependency currently missing.
 
 ### 5.1 Orchestrator roster (autopilot) — derived `extraAgents`
@@ -247,42 +247,31 @@ specialists are `agents-specialist`/enterprise) — an intended behavior change 
 list was the over-advertisement bug), so `autopilot` is parity-exempt for the autopilot's
 `extraAgents` value.
 
-### 5.2 ClickStack decomposition (prerequisite — RFC 0002)
+### 5.2 The events-bell edge (ClickStack kept as a monolith, renamed `krateo-observability`)
 
 A second dep-graph completeness gap, of a different kind: the **portal's events bell**
 (`frontend` → browser → `krateo-sse-proxy` → ClickHouse ← `otel-collector-*`) is not in the
 graph at all. `frontend` deps `[frontend-crd, authn, snowplow]` — *not* `krateo-sse-proxy` —
 even though `sse-proxy` is a browser-facing component (it's in the `exposure` list, port
-8080, configKeys `EVENTS_API_BASE_URL` / `EVENTS_PUSH_API_BASE_URL`) that the bell calls. So
-a platform install with the events pipeline absent comes up **Ready with a dead bell**
-(verified on krateo-bell: portal Ready, `observability: false`, no sse-proxy backend).
+8080, configKeys `EVENTS_API_BASE_URL` / `EVENTS_PUSH_API_BASE_URL`) that the bell calls.
 
-The blocker to fixing it cleanly: `krateo-clickstack` is a **monolith** — one chart
-(appVersion 3.0.0) bundling **ClickHouse + Keeper + OTel gateway + HyperDX + MongoDB**,
-deps on *both* operators. So "the portal needs ClickHouse" today means "the portal needs the
-entire observability product."
+**RFC 0002 explored decomposing ClickStack** (a separate `krateo-events` ClickHouse layer vs
+the HyperDX/Mongo product) so the bell could have ClickHouse without the product. **It was
+rejected**: upstream `clickstack` 3.0.0 has **no `hyperdx.enabled` gate** (HyperDX always
+renders), so a clean split needs a fork of the third-party chart — not worth it.
 
-**Decision (2026-06-19): decompose `krateo-clickstack`** so ClickHouse becomes a shared data
-substrate, separate from the HyperDX/Mongo product:
+**Decision (2026-06-19): keep ClickStack as one monolith, renamed `krateo-clickstack` →
+`krateo-observability`** (ClickHouse + Keeper + OTel gateway + HyperDX + MongoDB, HyperDX
+always-on; braghettos/krateo-clickstack-chart PR #18). The monolith *is* the `observability`
+capability, which is part of the `open` profile — so its ClickHouse is always present in
+`open`, and the bell's pipeline (`krateo-sse-proxy` + `otel-collector-*`) lives in
+`observability` alongside it.
 
-| New component | Contains | Role | deps |
-|---|---|---|---|
-| `krateo-events` *(new)* | ClickHouse + Keeper + OTel gateway | the events/telemetry **data layer** | `clickhouse-operator` |
-| `krateo-clickstack` *(slimmed)* | HyperDX + MongoDB | the observability **product** (dashboards) | `mongodb-operator`, `krateo-events` |
-
-New / corrected **install** edges: `frontend` → `krateo-sse-proxy`; `krateo-sse-proxy` →
-`krateo-events`; `otel-collector-*` → `krateo-events`; `krateo-clickstack` (product) →
-`krateo-events`. (`clickhouse-mcp-server` *reads* `krateo-events` at runtime but does **not**
-hard-dep it — it's decoupled agent tooling that degrades when ClickHouse is absent, §5; so
-`agents-specialist` never drags the platform in.) `krateo-events` is pulled in by **either**
-`portal` (bell) **or** `observability` (HyperDX/the product) via closure, brought up once and
-shared. The portal gets a working bell without HyperDX/Mongo; observability layers
-the product on top without re-provisioning ClickHouse.
-
-This is a chart-level refactor in `braghettos/krateo-clickstack-chart` (split + a shared
-ClickHouse connection config) plus installer rewiring, and is a **prerequisite to Phase 0**.
-It is specified separately in **RFC 0002**; RFC 0001's map (§4.3) reflects the
-post-decomposition target.
+The one real fix that survives is the missing dep-graph edge — Phase 0 adds
+`frontend → krateo-sse-proxy` (so the bell's backend is recorded) and confirms
+`krateo-sse-proxy`/`otel-collector-*` → `krateo-observability` (the ClickHouse). No chart
+decomposition, no shared-substrate machinery; the monolith provides ClickHouse and the
+atomic `open` platform guarantees it's there.
 
 ## 6. Churn safety
 
@@ -304,13 +293,15 @@ components. Required guarantees:
 
 ## 7. Rollout plan
 
-0. **Phase −1 — ClickStack decomposition** (RFC 0002, prerequisite): split `krateo-clickstack`
-   into `krateo-events` (ClickHouse data layer) + the slimmed HyperDX/Mongo product, and add
-   the `frontend → sse-proxy → krateo-events` edges (§5.2). Chart work in
-   `krateo-clickstack-chart` + installer rewiring. Must land before Phase 0 so the dep graph
-   the closure walks is complete.
-1. **Phase 0 — dep-graph completeness audit** (small, independent): fix `clickstack-agent`
-   and any other incomplete deps; ship as a normal installer patch. De-risks everything.
+0. **Phase −1 — rename `krateo-clickstack` → `krateo-observability`** (RFC 0002 rejected — keep
+   the monolith). Chart rename (braghettos/krateo-clickstack-chart PR #18; render-verified
+   byte-identical, `fullnameOverride` preserved) + installer re-pin (component + Kind
+   `KrateoClickstack` → `KrateoObservability` + chart url). Migration-sensitive only when
+   observability is live (component/Kind rename = composition teardown+recreate of the stateful
+   ClickHouse); a no-op on krateo-bell today since observability is off.
+1. **Phase 0 — dep-graph completeness audit** (small, independent): add the
+   `frontend → krateo-sse-proxy` bell edge (§5.2), fix `clickstack-agent` and any other
+   incomplete deps; ship as a normal installer patch. De-risks everything.
 2. **Phase 1 — closure engine, behind the shim:** add `capabilities` + `closure()` helper;
    `feature:` still present but unused; `spec.features` maps through the shim; **project
    `componentValues.krateo-autopilot.extraAgents` from the enabled closure** (§5.1) instead
@@ -367,4 +358,5 @@ Each phase is independently shippable and reversible.
   mapping.
 - **D — hybrid (capabilities + profiles).** Best UX + correctness — **this is what the RFC
   adopts**: closure over capabilities (§4.2) with `open`/`enterprise`/`autopilot` profiles as
-  presets (§4.3a). (RFC 0002 is a different concern — the ClickStack chart decomposition, §5.2.)
+  presets (§4.3a). (RFC 0002 — the ClickStack decomposition — was rejected; ClickStack stays a
+  monolith renamed `krateo-observability`, §5.2.)
