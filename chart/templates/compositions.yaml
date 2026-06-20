@@ -132,6 +132,13 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: krateo-installer
     krateo.io/tier: {{ $c.tier }}
+    # Pin the cdc's Helm RELEASE name to the stable component name (instead of the default
+    # <name>-<hash(UID)>). The cdc honors a pre-set krateo.io/release-name label verbatim
+    # (SetReleaseName only fills it when absent). So when a component CR is deleted+recreated
+    # (e.g. a CRD-re-establishment flap on re-install), it keeps the SAME release name and helm
+    # ADOPTS the existing release instead of minting a new <name>-<newUID> that collides on the
+    # component's pinned (fullnameOverride) resources — no "cannot be imported / ownership" 500 churn.
+    krateo.io/release-name: {{ $c.name }}
 spec: {{- $spec | toYaml | nindent 2 }}
 {{- end }}
 {{- end }}
