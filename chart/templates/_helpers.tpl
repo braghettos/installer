@@ -101,6 +101,27 @@
 {{- $all -}}
 {{- end -}}
 
+{{/* Reverse-dependency TEARDOWN gate — the mirror of inst.depsReady. args: (list $ "componentName" $components)
+     Returns "true" if NO still-present Composition depends on <componentName> (so it is safe to stop
+     rendering it and let the cdc delete it). Returns "" while ANY dependent's Composition still exists,
+     so a feature-disabled component stays RENDERED (alive) until its dependents drain. This makes teardown
+     reverse-topological (leaves first): a component — and the CRDs its helm release ships — is never deleted
+     out from under a still-present dependent, so there are no orphaned CRs, no helm release stuck
+     "uninstalling", and no CompositionDefinition delete deadlock. Guarded by inst.crdExists before the typed
+     lookup (an unserved Kind is a hard error in chart-inspector), exactly like inst.ready. */}}
+{{- define "inst.dependentsGone" -}}
+{{- $top := index . 0 -}}{{- $name := index . 1 -}}{{- $comps := index . 2 -}}
+{{- $gone := "true" -}}
+{{- range $c := $comps -}}
+  {{- if has $name ($c.deps | default list) -}}
+    {{- if eq (include "inst.crdExists" (list $c.kind $c.version)) "true" -}}
+      {{- if (lookup (include "inst.apiVersion" (list $c.version)) $c.kind $top.Values.namespaces.krateo $c.name) -}}{{- $gone = "" -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $gone -}}
+{{- end -}}
+
 {{/* External IP of a browser-facing component's LoadBalancer Service. args: (list $ "svcNameSubstring")
      The component's underlying Service is named after its Helm release (e.g. authn-<hash>), so we
      match on a stable substring and return the assigned ingress IP — "" until the cloud LB is ready.
