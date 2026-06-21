@@ -210,7 +210,7 @@ components:
   - name: authn
     kind: KrateoAuthn
     chart: krateo-authn
-    version: "0.22.12"
+    version: "0.22.13"
     deps:
       - authn-crd
     tier: platform
@@ -223,7 +223,7 @@ components:
   - name: snowplow
     kind: KrateoSnowplow
     chart: krateo-snowplow
-    version: "1.0.17"
+    version: "1.0.20"
     deps:
       - snowplow-crd
     tier: platform
@@ -236,7 +236,7 @@ components:
   - name: frontend
     kind: KrateoFrontend
     chart: krateo-frontend
-    version: "1.0.20"
+    version: "1.0.21"
     deps:
       - frontend-crd
       - authn
