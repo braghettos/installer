@@ -5,7 +5,7 @@ agents it routes to, the tools/telemetry they share, how the closed remediation 
 triggered, and how the autopilot provisions/operates the platform through the `Installer` CR.
 
 > Implementation lives in the **`krateo-autopilot`** chart (a Krateo composition deployed by this
-> installer when `features.observabilityAgents=true`); kagent (operator + `kagent-tool-server`) is
+> installer when `features.coreAgents=true`); kagent (operator + `kagent-tool-server`) is
 > a sibling composition. This document is the architecture + roadmap for the next phase of work.
 >
 > **Standing convention:** how agents are packaged, versioned, federated (the `extraAgents` hook)
@@ -165,7 +165,7 @@ a **new capability the autopilot does not have today**.
 That new capability is [agent-driven provisioning](./AGENT-DRIVEN-PROVISIONING.md): instead of
 privileged installs, the autopilot **edits the `Installer` CR** (`spec.features` / `componentValues`
 / `registryAuth`) and core-provider reconciles it (Pass A/B, dependency-ordered — demonstrated: an
-`oasgenprovider` toggle provisioned the components in ~3 min). RBAC stays narrow (`patch` on
+`oasgenProvider` toggle provisioned the components in ~3 min). RBAC stays narrow (`patch` on
 `installers.composition.krateo.io`), the apiserver's strict schema validates every edit, and
 structural changes become declarative + audited rather than imperative `kubectl` mutations.
 
@@ -196,7 +196,7 @@ To satisfy "orchestrated by autopilot **and** included in the install", two coor
 
 - **Ship it with the install.** The `krateo-installer-agent` `Agent` (the installer-expert system
   prompt as its `systemMessage`, with `k8s_*`/`helm_*` tools) is deployed by the platform when
-  `features.observabilityAgents=true` (so kagent + the autopilot are present) — i.e. as a templated
+  `features.coreAgents=true` (so kagent + the autopilot are present) — i.e. as a templated
   resource the install emits, not a loose file. It reuses the autopilot's `ModelConfig` (Vertex ADC).
 - **Register it on the orchestrator.** The autopilot orchestrator must list it as a `type: Agent`
   tool so it's reachable only through routing. Since the orchestrator lives in the `krateo-autopilot`

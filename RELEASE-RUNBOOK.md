@@ -65,26 +65,29 @@ python3 hack/gen-componentvalues-schema.py chart
 # 3. Lint locally (CHART_VERSION must be a real semver for lint):
 #    (CI lints on PR; for a local check, substitute a dummy version first.)
 # 4. PR → merge → tag the installer release:
-git tag 0.2.88 && git push origin 0.2.88
-# release-oci publishes BOTH /krateo/installer:0.2.88 AND /krateo/krateo-installer-agent
+git tag 0.2.145 && git push origin 0.2.145
+# release-oci publishes BOTH /krateo/installer:0.2.145 AND /krateo/krateo-installer-agent
 # (the federated agent in kagent/chart/, in the same CI run).
-helm show values oci://ghcr.io/braghettos/krateo/installer --version 0.2.88 | grep -A3 '^localModel:'
+helm show values oci://ghcr.io/braghettos/krateo/installer --version 0.2.145 | grep -A3 '^localModel:'
 ```
 
 > **Provenance order for a coordinated change** (e.g. a new autopilot feature): release the
 > **component** first (Recipe A/B), confirm it at `/krateo`, *then* re-pin + release the installer.
-> Example from this repo's history: autopilot `0.1.12` was merged + tagged, then the installer
-> re-pinned it (`components[].version: 0.1.12`), regen'd the schema, and released `0.2.87`.
+> Example from this repo's history: autopilot `0.1.28` was merged + tagged, then the installer
+> re-pinned it (`components[].version: 0.1.28`), regen'd the schema, and released `0.2.145`.
 
 ## Live upgrade (in place, on a running cluster)
 
-`helm upgrade installer … --version <new>` bumps the seed `installer` CompositionDefinition; the
-self-reconcile picks up the new chart version. But the live **Installer CR is frozen** at the old
-component defaults and **new CR fields are pruned** unless you edit through the **version-qualified
-GVR** (`installers.v<new>.composition.krateo.io`). Full recipe + the nudges (CR re-apply, the
-version-qualified patch, stale-CRD-cache restart, helm-ownership re-point) are in the
-`installer-version-upgrade-nudges` project memory. For a clean validation, a fresh install of the
-new version is the lowest-risk path.
+`helm upgrade installer … --version <new> --set bootstrap.coreProvider.enabled=true` bumps the seed
+`installer` CompositionDefinition and re-runs the bootstrap Job. Upgrade propagation is now
+**automatic**: the post-upgrade Job merge-patches ONLY `components` + `componentValues` onto the
+live Installer CR (`components-patch.json`), so the new component pins land while `spec.features`
+and any runtime edits to the CR are **preserved** — no manual CR re-apply or version-qualified GVR
+patch is needed. (This supersedes the older "the CR fully shadows the chart / frozen at the old
+defaults / needs manual nudges" model.) The served CRD version follows the bumped chart version
+(`composition.krateo.io/v<new-with-dots-as-dashes>`); core-provider's served-version pruning drops
+the stale served version once no composition references it. For a clean validation, a fresh install
+of the new version is still the lowest-risk path.
 
 ## Verify before relying on a release
 

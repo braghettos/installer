@@ -11,7 +11,8 @@ Packaged as a dedicated agent **chart** under `chart/`, per the
 
 ## How it ships
 
-It is an **installer component** (gated on `features.observabilityAgents`): the umbrella emits its
+It is an **installer component** (part of the `features.coreAgents` base agent layer — kagent +
+fetch-mcp + krateo-autopilot + this agent): the umbrella emits its
 CompositionDefinition + Composition like any other component, and registers it on the orchestrator
 via `componentValues.krateo-autopilot.extraAgents: [{ name: krateo-installer-agent }]`. The
 autopilot then routes install/evolve/diagnose requests to it. No manual `kubectl apply` needed.
@@ -39,7 +40,7 @@ To run just the agent (the "spawn only the agent" demo) on a cluster with kagent
 
 ```bash
 helm install krateo-installer-agent oci://ghcr.io/braghettos/krateo/krateo-installer-agent \
-  --version 0.1.0 -n krateo-system \
+  --version 0.1.12 -n krateo-system \
   --set modelConfig.vertexAI.projectID=<your-gcp-project>
 ```
 

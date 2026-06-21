@@ -2,12 +2,13 @@
 
 Deep dive into how the umbrella installs and runs the platform: the layers, the self-bootstrap +
 self-reconcile machinery (with the hands-off auto-heal and the cdc resync), the per-component
-CompositionDefinition lifecycle, the core-provider `2.0.x` engine internals, the agent runtime, and
+CompositionDefinition lifecycle, the core-provider `2.x` engine internals, the agent runtime, and
 the ModelConfig surface. For the install commands see **[QUICKSTART.md](./QUICKSTART.md)**; for the
 two render modes + teardown see **[README.md](./README.md)**.
 
-Current pins: installer `0.2.87` · core-provider **`2.0.2`** (de-webhooked — `MutatingAdmissionPolicy`,
-requires **k8s ≥ 1.36**; chart `0.36.7`) · autopilot `0.1.12` · kagent app `0.9.7`.
+Current pins: installer `0.2.145` · core-provider chart `0.36.24` (engine appVersion **`2.3.3`** —
+de-webhooked, `MutatingAdmissionPolicy`, requires **k8s ≥ 1.36**; cdc `1.0.5` · chart-inspector
+`1.0.2`) · autopilot `0.1.28` · cert-manager `v1.20.2`.
 
 ---
 
@@ -19,8 +20,8 @@ trusted engine reacting to one declarative CR.
 ```mermaid
 flowchart TB
     subgraph helm["Helm (one install, privileged — bootstrap mode)"]
-        cp["core-provider 2.0.2 (de-webhooked)<br/>(+ chart-inspector, cdc image)"]
-        ops["bootstrap operators<br/>cert-manager · ClickHouse · MongoDB"]
+        cp["core-provider chart 0.36.24 (engine 2.3.3, de-webhooked)<br/>(+ chart-inspector 1.0.2, cdc 1.0.5)"]
+        cm["cert-manager v1.20.2<br/>(browser-facing TLS)"]
         sb["self-bootstrap Job<br/>(applies Installer CR + auto-heal)"]
         icd["installer CompositionDefinition"]
     end
@@ -28,9 +29,9 @@ flowchart TB
         cr["Installer CR<br/>(installers.composition.krateo.io)<br/>THE desired-state surface"]
     end
     subgraph comps["component compositions (gated, dependency-ordered)"]
-        plat["platform: authn → snowplow → frontend → portal"]
-        obs["observability: clickstack/otel/sse · oasgen → hyperdx"]
-        agents["agents: kagent-crds → kagent → installer-agent + autopilot (+ specialists)"]
+        plat["portal: authn → snowplow → frontend → portal<br/>+ observability: clickhouse/mongo operators → otel/sse"]
+        oas["oasgenProvider: oasgen-provider-crd → oasgen-provider"]
+        agents["coreAgents: kagent-crds → kagent → installer-agent + autopilot<br/>(+ specialistAgents)"]
     end
     work["workloads: Deployments, Services, CRDs, kagent Agents, ModelConfigs"]
 
@@ -61,7 +62,7 @@ sequenceDiagram
     participant K as component cdc + Helm
 
     U->>H: helm install installer … (bootstrap mode)
-    H->>CP: install core-provider + chart-inspector + operators
+    H->>CP: install core-provider + chart-inspector + cert-manager
     H->>CP: apply installer CompositionDefinition
     CP-->>CP: generate installers.composition.krateo.io CRD + spawn installers-cdc
     H->>J: post-install hook
@@ -86,7 +87,7 @@ Two failure modes this design defeats, both **without operator intervention**:
 | Symptom | Cause | Fix (where) |
 |---|---|---|
 | Installer CR stuck `Synced=False`, "cannot determine creation result" | crossplane create-pending race on first reconcile | self-bootstrap Job auto-heal loop (`self-bootstrap.yaml`) |
-| Rollout stalls — next dependency level never emitted | cdc's RESTMapper cached, doesn't see freshly-generated CRDs | cdc `1.0.2` `Reset()`s on a cache miss + `COMPOSITION_CONTROLLER_RESYNC_INTERVAL=60s` (core-provider chart) |
+| Rollout stalls — next dependency level never emitted | cdc's RESTMapper cached, doesn't see freshly-generated CRDs | cdc `1.0.5` `Reset()`s on a cache miss + `COMPOSITION_CONTROLLER_RESYNC_INTERVAL=60s` (core-provider chart) |
 
 ---
 
@@ -100,7 +101,7 @@ stateDiagram-v2
     direction TB
     [*] --> Defined: Pass A emits the component CompositionDefinition
     Defined --> CRDGen: core-provider reconciles the CD
-    CRDGen --> ControllerUp: CRD generated (composition.krateo.io/v<chartver>/<Kind>) + cdc Deployment spawned
+    CRDGen --> ControllerUp: CRD generated (served version composition.krateo.io/v<component-chartver> / <Kind>) + cdc Deployment spawned
 
     state "external-create race?" as race
     ControllerUp --> race
@@ -117,50 +118,74 @@ stateDiagram-v2
     Ready --> [*]
 ```
 
-- **Pass A gate:** the feature flag (`features.<flag>`) is enabled.
-- **Pass B gates** (`_helpers.tpl`): `inst.crdExists` (the generated CRD is served) **and**
-  `inst.depsReady` (every `deps` entry reports `Ready=True`). Both are live `lookup`s — which is why
-  advancement depends on the cdc re-discovering CRDs each resync.
+- **Pass A gate:** register the component CompositionDefinition if the feature flag
+  (`features.<flag>`) is enabled **OR** its Composition still exists (`inst.compositionExists`) — the
+  latter keeps the CD/CRD alive while a feature-disabled component drains.
+- **Pass B gates** (`_helpers.tpl`): when the feature is ON, emit the CR once
+  `inst.crdExists(kind,version)` (the exact served version exists) **and** `inst.depsReady` (every
+  `deps` entry reports `Ready=True`). Both are live `lookup`s — which is why advancement depends on the
+  cdc re-discovering CRDs each resync. When the feature is OFF, Pass B flips to a **reverse-dependency
+  drain**: it keeps rendering the CR while `crdExists AND NOT inst.dependentsGone` (leaves-first
+  teardown). Each emitted CR carries the label `krateo.io/release-name = <component>` so cdc reuses the
+  existing Helm release across delete+recreate.
 
 ---
 
-## 4. Engine internals — core-provider `2.0.x` (de-webhooked) + same-version disambiguation
+## 4. Engine internals — core-provider `2.x` (de-webhooked) + multi-version CRD model
 
-**De-webhooked (2.0.x).** Unlike the 1.x line (which ran a `/mutate` admission webhook + a
-conversion webhook backed by a CSR-issued serving cert), core-provider **2.0.x** uses a
-`MutatingAdmissionPolicy` (`admissionregistration.k8s.io/v1`, **GA in Kubernetes 1.36**) and
-`NoneConverter` CRDs — no webhook server, no CSR, no cert-manager dependency for the engine itself.
-**This is why the installer requires k8s ≥ 1.36.** (It also means GKE Autopilot's Warden, which
-blocks the `system:node` CSR the 1.x webhook needed, is no longer a blocker for the engine — though
-the full platform still wants Standard for other reasons.)
+**De-webhooked (2.x; engine appVersion `2.3.3`, chart `0.36.24`).** Unlike the 1.x line (which ran a
+`/mutate` admission webhook + a conversion webhook backed by a CSR-issued serving cert), core-provider
+**2.x** stamps the composition-version label through an in-apiserver `MutatingAdmissionPolicy` +
+`Binding` (`admissionregistration.k8s.io/v1`, **GA in Kubernetes 1.36**) — a CEL rule sets
+`labels["krateo.io/composition-version"] = request.requestKind.version` — and uses `NoneConverter`
+CRDs. No webhook server, no CSR, no `MutatingWebhookConfiguration`, no serving cert, no cert-manager
+dependency for the engine itself. **This is why the installer requires k8s ≥ 1.36** (the GA
+`MutatingAdmissionPolicy` must also exist in any remote target clusters). It also means GKE Autopilot's
+Warden, which blocks the `system:node` CSR the 1.x webhook needed, is no longer a blocker for the
+engine — though the full platform still wants Standard for other reasons.
 
-The agent layer ships **many components at the same chart version `0.1.0`** (kagent-crds, kagent,
-installer-agent, and 9 specialists). Each generates a CRD under the **same** apiVersion
-`composition.krateo.io/v0-1-0` but a **different Kind** (`KagentCrds`, `Kagent`,
-`KrateoInstallerAgent`, …). The old engine (`0.26.1`) couldn't tell them apart and stalled
-("too many definitions"); `1.0.x` resolves a CR → its CompositionDefinition by **version *and*
-kind** (carried forward into 2.0.x), and names each spawned controller by **resource + version**:
+**Multi-version CRD model.** Each component pins its **OWN** chart version, and the served CRD
+apiVersion is derived per-component as `composition.krateo.io/v<ver-with-dots-as-dashes>` (the
+`inst.apiVersion` helper; e.g. snowplow `1.0.17` → `v1-0-17`, frontend `1.0.20` → `v1-0-20`). There is
+**one served version per composition-version**, plus a permanent **"vacuum"** storage version — the
+stable storage version kept across all served versions. The old engine (`0.26.1`) couldn't tell apart
+multiple Kinds that *shared* one chart version and stalled ("too many definitions"); core-provider
+resolves a CR → its CompositionDefinition by **version *and* kind**, and names each spawned controller
+by **resource + version**:
 
 ```mermaid
 flowchart LR
-    subgraph v010["apiVersion composition.krateo.io/v0-1-0 (shared)"]
-        a["KagentCrds CR"] --> ca["kagentcrds-v0-1-0-controller"]
-        b["Kagent CR"] --> cb["kagents-v0-1-0-controller"]
-        c["KrateoInstallerAgent CR"] --> cc["krateoinstalleragents-v0-1-0-controller"]
+    subgraph perver["per-component served versions (composition.krateo.io)"]
+        a["KrateoSnowplow CR<br/>v1-0-17"] --> ca["snowplows-v1-0-17-controller"]
+        b["KrateoFrontend CR<br/>v1-0-20"] --> cb["frontends-v1-0-20-controller"]
+        c["KrateoAutopilot CR<br/>v0-1-28"] --> cc["krateoautopilots-v0-1-28-controller"]
     end
-    ca & cb & cc -->|"match CD by status.apiVersion + kind"| reg["core-provider CD registry"]
+    ca & cb & cc -->|"match CD by served version + kind"| reg["core-provider CD registry"]
 ```
 
-> Requirement, not optional: the installer **must** run core-provider **`1.0.x` or newer** (it pins
-> `2.0.2`). On `0.26.1` any namespace with >1 component at one chart version deadlocks ("too many
-> definitions"). cdc controllers are named `{resource}-{apiVersion}-controller` via the spawn-template
-> ConfigMap (`assets/cdc/configmap.yaml`).
+**Served-version pruning (#103).** core-provider drives pruning from `Observe`: once no composition
+references a stale served version, that version is removed from `spec.versions[]`. It first trims
+`status.storedVersions` before dropping a version (the apiserver forbids removing a still-stored
+version) — which is why the engine ClusterRole grants `customresourcedefinitions/status` as a SEPARATE
+`*` grant. Composition instances carry the label `krateo.io/composition-version` set to the served
+version they were written through.
+
+The helpers tolerate the transient where a `Kind` exists but the new served version lags after a
+version bump: `inst.crdExists` checks `spec.versions[].served` for the **exact** wanted v-name (treats
+not-yet-served as "not ready"), and all typed lookups (`inst.ready` / `inst.dependentsGone` /
+`inst.compositionExists`) short-circuit through `inst.crdExists` first — because a typed lookup of an
+unserved Kind is a hard 500 in chart-inspector.
+
+> Requirement, not optional: the installer **must** run core-provider **2.x** (it pins chart
+> `0.36.24`, engine `2.3.3`). On `0.26.1` any namespace with >1 component at one chart version
+> deadlocks ("too many definitions"). cdc controllers are named `{resource}-{served-version}-controller`
+> via the spawn-template ConfigMap (`assets/cdc/configmap.yaml`).
 
 ---
 
 ## 5. Agent runtime topology
 
-`observabilityAgents` brings up the minimal layer; `specialistAgents` adds the 9 component experts.
+`coreAgents` brings up the base agent layer; `specialistAgents` adds the 5 component experts.
 `krateo-autopilot` is the single orchestrator — every other agent is an **A2A sub-agent**, and tools
 come from **RemoteMCPServers**. The kagent operator reconciles each `Agent` CR into a Deployment.
 
@@ -181,9 +206,9 @@ flowchart TB
         ia["krateo-installer-agent<br/>(patches the Installer CR)"]
         k8s["k8s-agent"]
         helm["helm-agent"]
-        spec["9 specialists<br/>(specialistAgents)"]
+        spec["5 specialists<br/>(specialistAgents)"]
     end
-    extmcp["RemoteMCPServers<br/>github-mcp-server · clickhouse-mcp-server"]
+    extmcp["MCP servers<br/>fetch-mcp-server · clickhouse-mcp-server"]
 
     ctrl --> ap & ia & k8s & helm & spec
     ap -. A2A .-> ia
@@ -203,9 +228,11 @@ Notes that bite if wrong:
 - **Tool-server name.** Agents reference `RemoteMCPServer/kagent-tool-server` by the kagent
   default-install convention. The kagent composition sets `kagentapp.fullnameOverride=kagent` so the
   server is named `kagent-tool-server` (not `kagent-<release-hash>-tool-server`).
-- **extraAgents gating.** The autopilot's A2A list is filtered to the agents whose component feature
-  is enabled (`compositions.yaml`); in agent-only mode it references only `krateo-installer-agent`,
-  so kagent doesn't fail to compile it ("Agent … not found").
+- **extraAgents gating.** The autopilot ships **standalone by default**
+  (`componentValues.krateo-autopilot.extraAgents: []`) — it answers questions and reports status but
+  does not auto-orchestrate the fleet. To opt into A2A orchestration you list specialist agents in
+  `extraAgents`; that list is then filtered (`compositions.yaml`) to the agents whose component feature
+  is enabled, so kagent never fails to compile a missing one ("Agent … not found").
 - **k8s-agent prompt.** The autopilot chart ships `prompts/k8s_agent` (added `0.1.11`).
 - **kagent-ui exposure.** The UI Service is nested at `kagentapp.ui.service` (not the chart
   top-level `service`), so the umbrella exposes it via the kagent component's `serviceValuesPath:
@@ -224,7 +251,7 @@ Each agent's model is configured through `componentValues.<agent>.modelConfig` �
 global `vertexAI` defaults. See *Give an agent a different model* in the QUICKSTART.
 
 **Ownership topology (the seam for any model change):** the **autopilot OWNS** the two shared
-ModelConfigs `gemini-flash` + `gemini-pro`; the installer-agent and all 9 specialists reference them
+ModelConfigs `gemini-flash` + `gemini-pro`; the installer-agent and all 5 specialists reference them
 **by name** with `create:false`. So flipping those two flips the whole fleet — which is exactly how
 the opt-in **`localModel`** path works (default off; `vertexAI` stays the default):
 
@@ -239,7 +266,7 @@ flowchart LR
 
 > **Local LLM in one flag.** `--set localModel.enabled=true --set localModel.host=<ollama-url>
 > --set localModel.model=qwen3.6` makes `compositions.yaml` inject `localModel` into the autopilot
-> (the `modelOwner`) so it renders `gemini-flash`/`gemini-pro` as `provider: Ollama`, and point every
+> (the `modelOwner`) so it renders `gemini-flash`/`gemini-pro` as `provider: Ollama`, and points every
 > other agent at `refName` (`create:false`) — the entire fleet runs on the local model, no
 > per-agent-chart change, `vertexAI` injection suppressed. Use a **tool-calling-capable** model
 > (qwen3.6 recommended; gemma ≤3 cannot tool-call). See
@@ -280,7 +307,7 @@ sequenceDiagram
     U->>AP: "install Krateo"
     AP->>IA: A2A delegate (install/evolve the platform)
     Note over IA: holds patch on installers.composition.krateo.io ONLY<br/>(its chart ships the narrow RBAC)
-    IA->>IC: kubectl patch spec.features.composableportal=true (etc.)
+    IA->>IC: kubectl patch spec.features.portal=true (etc.)
     IC->>CP: reconcile the changed desired state
     loop self-reconcile (60s)
         CP->>CP: Pass A + Pass B — provision the new components in dependency order
@@ -319,6 +346,7 @@ stateDiagram-v2
     note right of Sweeping
         controllers GONE
         HOOK 3 post-delete-cleanup: remove non-helm-owned leftovers
-          (core-provider MutatingWebhookConfiguration, generated *.hyperdx CRDs)
+          (core-provider runtime-registered mutating/validating webhook configs,
+           oasgen-generated hyperdx.krateo.io CRDs)
     end note
 ```
