@@ -380,7 +380,7 @@ components:
     feature: coreAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.11"
+    version: "0.1.12"
     deps:
       - kagent
     tier: observability
@@ -435,7 +435,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.27"
+    version: "0.1.28"
     deps:
       - kagent
     tier: observability
