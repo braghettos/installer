@@ -12,10 +12,11 @@ levels, and the difference matters:
   filtered to components whose `feature` is on). **Spawning alone does NOT make an agent
   orchestrated** — it must also be registered in that list.
 
-> **Verified on a live cluster (2026-06-16, installer 0.2.87):** `kubectl apply` of a minimal
+> **Verified on a live cluster (2026-06-16, installer 0.2.145):** `kubectl apply` of a minimal
 > `Agent` referencing the autopilot-owned `gemini-flash` ModelConfig reconciled to
 > `Accepted=True` → `Ready=True` (1/1) within ~20s. The autopilot's a2a tool list did **not**
-> pick it up (it lists only k8s/helm/installer-agent + the 9 specialists); the
+> pick it up (when fully orchestrated it lists only k8s/helm/installer-agent + the 5 specialists,
+> and by default `extraAgents` is empty so it lists none); the
 > `krateo.io/orchestrated-by: krateo-autopilot` label is **inert today** (label discovery is the
 > design end-state in [AUTOPILOT-DESIGN.md §8a](./AUTOPILOT-DESIGN.md), not yet implemented). So
 > orchestration is via the installer (`extraAgents`), per Path A below.
@@ -58,8 +59,8 @@ and narrow `rbac.yaml` if the agent's tools mutate the cluster. Publish it to
     version: "0.1.0"
     deps:
       - kagent
-    tier: observability
-    feature: specialistAgents       # or a new feature flag
+    tier: observability             # platform | observability (for sort/grouping)
+    feature: specialistAgents       # one of: coreProvider, coreAgents, portal, oasgenProvider, specialistAgents
     vertexAI: true                  # marks it an agent: gets vertexAI (or localModel) model wiring + the HITL gate
 ```
 
@@ -104,7 +105,7 @@ Useful for a quick experiment or a transient agent. The kagent operator reconcil
 CR into a running Deployment — no helm release, no installer component:
 
 ```yaml
-# hello-dynamic-agent.yaml  (verified working on installer 0.2.87)
+# hello-dynamic-agent.yaml  (verified working on installer 0.2.145)
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:

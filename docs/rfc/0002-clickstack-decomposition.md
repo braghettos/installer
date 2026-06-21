@@ -12,8 +12,9 @@
 > one monolith** (ClickHouse + Keeper + OTel gateway + HyperDX + MongoDB, HyperDX
 > always-on) and instead **rename the chart `krateo-clickstack` → `krateo-observability`**
 > for a clearer domain name (braghettos/krateo-clickstack-chart PR #18). The portal's events
-> bell gets its ClickHouse from this monolith, which lives in the `observability` capability
-> (part of the `open` profile). The one real fix that survives — the missing
+> bell gets its ClickHouse from this monolith, which is now gated by the `portal` feature
+> (the observability stack — operators, krateo-observability, OTel collectors, sse-proxy — was
+> folded into `portal`; there is no separate `observability` feature anymore). The one real fix that survives — the missing
 > `frontend → sse-proxy → <ClickHouse>` dep-graph edge — moves to RFC 0001 Phase 0.
 > The text below is retained for the record.
 - **Affects:** `braghettos/krateo-clickstack-chart` (chart split), `krateo-installer` (`components[]`
@@ -38,17 +39,22 @@ This RFC splits the monolith into:
   reading the shared ClickHouse.
 
 and adds the missing `frontend → krateo-sse-proxy → krateo-events` edges. `krateo-events`
-becomes a shared substrate that either `portal` (bell) or `observability` (HyperDX/agent)
-pulls in via closure — brought up once, attached by both.
+becomes a shared substrate that the `portal` feature (which now gates both the bell and the
+whole observability stack — HyperDX/agent included) pulls in via closure — brought up once,
+attached by both paths.
 
 ## 2. Motivation
 
 (Grounded in RFC 0001 §5.2.)
 
-- **Dead bell on portal-only.** Verified on krateo-bell: `portal` Ready, `observability: false`,
-  no `sse-proxy` → the events bell has no backend. `frontend` deps `[frontend-crd, authn,
-  snowplow]`; `sse-proxy` is browser-facing (in `exposure`, port 8080, configKeys
-  `EVENTS_API_BASE_URL` / `EVENTS_PUSH_API_BASE_URL`) but nothing records `frontend → sse-proxy`.
+- **Dead bell on portal-only.** Verified on krateo-bell (under the then-current model, where
+  `observability` was a separate feature flag — that flag has since been removed and the
+  observability stack, sse-proxy included, was folded into `portal`): `portal` Ready,
+  `observability: false`, no `sse-proxy` → the events bell has no backend. `frontend` deps
+  `[frontend-crd, authn, snowplow]`; `sse-proxy` is browser-facing (in `exposure`, port 8080,
+  configKeys `EVENTS_API_BASE_URL` / `EVENTS_PUSH_API_BASE_URL`) but nothing records
+  `frontend → sse-proxy`. (In current installer 0.2.145 sse-proxy is `portal`-gated and comes
+  up with the portal, so this specific dead-bell gap no longer occurs.)
 - **Welded layers.** ClickHouse (needed by the bell) is inseparable from HyperDX/Mongo
   (the product) because they ship in one chart. So "give the portal a bell" today means
   "install the entire observability product."
@@ -90,13 +96,14 @@ krateo-clickstack   → krateo-events, mongodb-operator   (product reads the sha
 krateo-events       → clickhouse-operator
 ```
 
-`clickhouse-mcp-server` is **agent tooling** (RFC 0001: `agents-specialist`), not platform — it
+`clickhouse-mcp-server` is **agent tooling** (the `specialistAgents` feature), not platform — it
 *reads* `krateo-events` at runtime when present but does **not** hard-dep it (decoupled, degrades
 gracefully). So it is **not** an install edge here and never drags the platform into the agents addon.
 
-Resulting closures (RFC 0001 §4.3): `portal` pulls `… → sse-proxy → krateo-events →
-clickhouse-operator` (+ collectors); `observability` pulls `krateo-clickstack (HyperDX/Mongo)
-→ krateo-events`. `krateo-events` is shared — first enabler brings it up.
+Resulting closures (RFC 0001 §4.3): the `portal` feature — which gates both the bell path and
+the observability stack — pulls `… → sse-proxy → krateo-events → clickhouse-operator`
+(+ collectors) as well as `krateo-clickstack (HyperDX/Mongo) → krateo-events`. `krateo-events`
+is shared — first enabler brings it up.
 
 ### 4.3 Frontend wiring
 

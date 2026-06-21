@@ -7,26 +7,28 @@ itself as an `Installer` composition, and then self-reconciles: it registers eac
 `Ready` and its CRD exists (Pass B), resolving exposure (`service.type`) and the portal config
 (peer LoadBalancer IPs) by reconciliation — no prerequisite scripts, no post-install patching.
 
-- **Chart:** `oci://ghcr.io/braghettos/krateo/installer` (current: **`0.2.87`**)
+- **Chart:** `oci://ghcr.io/braghettos/krateo/installer` (current: **`0.2.145`**)
 - **Install guide:** see **[QUICKSTART.md](./QUICKSTART.md)** — kind (local) and managed GKE.
 - **Kind:** `Installer` (`composition.krateo.io`).
-- **Engine:** core-provider **2.0.x** (app `2.0.2`, **de-webhooked** — uses `MutatingAdmissionPolicy`, GA in **k8s ≥ 1.36**, instead of a mutating webhook), pinned by the `krateo-core-provider` bootstrap subchart `0.36.7`. Requires **Kubernetes ≥ 1.36**.
+- **Engine:** core-provider engine app **`2.3.3`** (**de-webhooked** — uses `MutatingAdmissionPolicy`, GA in **k8s ≥ 1.36**, instead of a mutating webhook), pinned by the `krateo-core-provider` bootstrap subchart `0.36.24` (cdc `1.0.5`, chart-inspector `1.0.2`). Requires **Kubernetes ≥ 1.36**.
 - **Expert agent:** a kagent `Agent` that knows this blueprint — see **[kagent/](./kagent)** and the [agent-driven guide](./kagent/AGENT-DRIVEN-PROVISIONING.md).
 
 There are two ways to install, both from **one `helm install`**:
 
 ```bash
 # (A) FULL platform — every component (authn -> snowplow -> frontend -> portal, oasgen,
-#     observability, all agents) provisioned by the umbrella's self-reconcile loop:
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
-  -n krateo-system --create-namespace --set exposure.type=LoadBalancer \
+#     the observability stack, all agents) provisioned by the umbrella's self-reconcile loop:
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.145 \
+  -n krateo-system --create-namespace --set bootstrap.coreProvider.enabled=true \
+  --set exposure.type=LoadBalancer \
   --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 
 # (B) AGENT-ONLY — bring up just kagent + the installer-agent + the autopilot, then let the
 #     autopilot install the rest of Krateo by editing the Installer CR (see QUICKSTART):
-curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
-  -n krateo-system --create-namespace -f values-agent-only.yaml \
+curl -sO https://raw.githubusercontent.com/braghettos/installer/main/chart/values-agent-only.yaml
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.145 \
+  -n krateo-system --create-namespace --set bootstrap.coreProvider.enabled=true \
+  -f values-agent-only.yaml \
   --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 
 # tear the whole platform down (ordered, finalizer-safe, no manual cleanup):
@@ -49,11 +51,11 @@ is the seam between "a plain Helm install" and "the Krateo composition engine":
 
 | | **Bootstrap mode** (`bootstrap.coreProvider.enabled: true`, the `helm install`) | **Composition mode** (`false`, core-provider re-rendering the Installer CR) |
 |---|---|---|
-| `self-bootstrap.yaml` | ✅ renders — `installer` CompositionDefinition + RBAC + post-install hook | — |
-| subchart deps (`Chart.yaml`) | ✅ installed — core-provider, cert-manager, clickhouse-op, mongodb-op | — |
+| `self-bootstrap.yaml` | ✅ renders — `installer` CompositionDefinition + RBAC + post-install/post-upgrade hook | — |
+| subchart deps (`Chart.yaml`) | ✅ installed — core-provider, cert-manager (the ClickHouse/MongoDB operators are NOT subcharts — they are `portal`-gated compositions) | — |
 | `definitions.yaml` (Pass A) | — | ✅ one CompositionDefinition per enabled component |
 | `compositions.yaml` (Pass B) | — | ✅ one Composition per component (gated on CRD + deps Ready) |
-| `secret.yaml` | — | ✅ component secrets (e.g. gemini key) |
+| `secret.yaml` | — | ✅ `jwt-sign-key` secret (portal-gated, lookup-stable) |
 | teardown hooks | `bootstrap-teardown` (pre-delete) + `post-delete-cleanup` | `ordered-teardown` (pre-delete) |
 
 One `helm install` runs **bootstrap mode**. core-provider then reconciles the `Installer` CR by
@@ -68,10 +70,10 @@ stateDiagram-v2
     [*] --> Bootstrapping: helm install (bootstrap mode)
 
     note right of Bootstrapping
-        Helm pre-installs subchart crds/ (compositiondefinitions CRD),
-        installs engine + operator subcharts (core-provider, cert-manager,
-        clickhouse-op, mongodb-op) and renders self-bootstrap.yaml:
-        the installer CompositionDefinition + RBAC + a post-install hook Job.
+        Helm installs the engine + cert-manager subcharts
+        (core-provider, cert-manager) and renders self-bootstrap.yaml:
+        the installer CompositionDefinition + RBAC + a post-install/post-upgrade
+        hook Job. (ClickHouse/MongoDB operators are portal-gated compositions, not subcharts.)
     end note
 
     Bootstrapping --> AwaitingInstallerCRD: core-provider reconciles the installer CompositionDefinition
@@ -116,9 +118,9 @@ stateDiagram-v2
     note right of Sweeping
         post-delete hook, controllers GONE.
         HOOK 3 post-delete-cleanup: remove runtime-created, non-helm-owned
-        leftovers core-provider/oasgen can no longer recreate - the
-        core-provider MutatingWebhookConfiguration + generated
-        *.hyperdx.krateo.io CRDs.
+        leftovers core-provider/oasgen can no longer recreate - any
+        core-provider runtime-registered webhook configs (matched by
+        release-name/core-provider$) + generated *.hyperdx.krateo.io CRDs.
     end note
 
     Sweeping --> [*]: bare (inherent helm residue only - namespace, PVCs, crds/-dir CRDs)
@@ -134,16 +136,18 @@ left once they're gone:
 
 1. **`ordered-teardown.yaml`** (pre-delete, composition release) — deletes component
    `Composition` CRs in **reverse dependency order** (consumers before providers), so the portal
-   drains before `frontend-crd`/`authn-crd`/`snowplow-crd` and `hyperdx-provider` drains before
-   `oasgen-provider`. Fixes the portal/`demo-system` wedge and the RestDefinition orphan.
+   drains before `frontend-crd`/`authn-crd`/`snowplow-crd`, resolving each Kind to its live CRD
+   plural at runtime. It special-cases `OasgenProvider`, waiting for the ogen `RestDefinition`s to
+   clear first. Fixes the portal drain wedge and the RestDefinition orphan.
 2. **`bootstrap-teardown.yaml`** (pre-delete, bootstrap release) — deletes the top-level
    `installer` CompositionDefinition and **blocks until the whole footprint drains** while
    core-provider is alive (so it GCs the generated CRDs and clears the installer CD finalizer).
    Fixes the bootstrap finalizer deadlock and the orphaned per-composition cdc Deployment.
 3. **`post-delete-cleanup.yaml`** (post-delete, bootstrap release) — sweeps **runtime-created,
-   non-helm-owned** resources core-provider/oasgen left behind (the core-provider
-   `MutatingWebhookConfiguration`, generated `*.hyperdx.krateo.io` CRDs) so a subsequent
-   reinstall does not crashloop.
+   non-helm-owned** resources core-provider/oasgen left behind (any core-provider
+   runtime-registered mutating/validating webhook configs matched by `release-name`/`core-provider$`,
+   plus oasgen-generated `*.hyperdx.krateo.io` CRDs) so a subsequent reinstall does not crashloop.
+   It ships its own SA/ClusterRole/Binding (weight `-5`) since the bootstrap SAs are already gone.
 
 ## Component dependency graph
 
@@ -153,45 +157,49 @@ dependents). Pass B emits each Composition only once every entry in its `deps` r
 
 ```mermaid
 flowchart LR
-    subgraph platform["platform (composable portal)"]
+    subgraph platform["platform (portal, feature: portal)"]
         authncrd[authn-crd] --> authn
         snowplowcrd[snowplow-crd] --> snowplow
         frontendcrd[frontend-crd] --> frontend
         authn --> frontend
         snowplow --> frontend
         frontend --> portal
-    end
-    subgraph obs["observability"]
-        clickstack[krateo-clickstack] --> oteld[otel-collector-deployment]
-        oteld --> otelds[otel-collector-daemonset]
-        clickstack --> sse[krateo-sse-proxy]
         oasgencrd[oasgen-provider-crd] --> oasgen[oasgen-provider]
-        oasgen --> hyperdx[hyperdx-provider]
     end
-    subgraph agents["agents (observabilityAgents + specialistAgents)"]
-        clickstack --> mcp[clickhouse-mcp-server]
+    subgraph obs["observability stack (feature: portal)"]
+        chop[clickhouse-operator] --> obsvc[krateo-observability]
+        mongoop[mongodb-operator] --> obsvc
+        obsvc --> oteld[otel-collector-deployment]
+        oteld --> otelds[otel-collector-daemonset]
+        obsvc --> sse[krateo-sse-proxy]
+        obsvc --> mcp[clickhouse-mcp-server]
+    end
+    subgraph agents["agents (coreAgents + specialistAgents)"]
         kagentcrds[kagent-crds] --> kagent
+        kagent --> fetch[fetch-mcp-server]
         kagent --> iagent[krateo-installer-agent]
         kagent --> autopilot[krateo-autopilot]
         iagent -. a2a .-> autopilot
-        kagent --> specialists[9 federated specialists<br/>authn/snowplow/frontend/clickstack/<br/>core-provider/code-analysis/3x codegen]
+        kagent --> specialists[5 federated specialists<br/>authn/snowplow/frontend/<br/>clickstack/core-provider]
         specialists -. a2a .-> autopilot
     end
 ```
 
-> **observabilityAgents** = the minimal layer (`kagent-crds` → `kagent` → `krateo-installer-agent`
-> + `krateo-autopilot`) — the agent-only profile. **specialistAgents** adds the 9 federated
-> component experts + `clickhouse-mcp-server`. The autopilot is the single orchestrator; every other
-> agent registers on it as an A2A sub-agent (`componentValues.krateo-autopilot.extraAgents`, gated
-> to the agents actually enabled). Deep dive — topology, ModelConfigs, the hands-off bootstrap
-> sequence, and the engine internals: **[ARCHITECTURE.md](./ARCHITECTURE.md)**. Adding your own
-> autopilot-orchestrated agent: **[kagent/ADDING-AN-AGENT.md](./kagent/ADDING-AN-AGENT.md)**.
+> **coreAgents** = the base agent layer (`kagent-crds` → `kagent` → `fetch-mcp-server` +
+> `krateo-installer-agent` + `krateo-autopilot`) — the agent-only profile. **specialistAgents**
+> adds the 5 federated component experts (authn/snowplow/frontend/clickstack/core-provider) +
+> `clickhouse-mcp-server`. The autopilot is the single orchestrator; every other agent registers
+> on it as an A2A sub-agent (`componentValues.krateo-autopilot.extraAgents`, gated to the agents
+> actually enabled — empty `[]` by default, so the autopilot ships standalone). Deep dive —
+> topology, ModelConfigs, the hands-off bootstrap sequence, and the engine internals:
+> **[ARCHITECTURE.md](./ARCHITECTURE.md)**. Adding your own autopilot-orchestrated agent:
+> **[kagent/ADDING-AN-AGENT.md](./kagent/ADDING-AN-AGENT.md)**.
 
 ## Layout
 
 ```
 chart/                            the umbrella chart
-  Chart.yaml                      bootstrap subchart deps (core-provider, cert-manager, ...)
+  Chart.yaml                      bootstrap subchart deps (core-provider, cert-manager)
   values.yaml                     spec surface + the components list (versions, deps, tiers)
   values.schema.json              full schema for the Installer spec
   templates/
@@ -221,7 +229,18 @@ python3 hack/gen-componentvalues-schema.py chart   # pulls each pinned component
                                                    # values.schema.json into componentValues.<name>
 ```
 
-The installer version is the unit that manages component **GVRs**: a component's version sets its
-Composition's served apiVersion + schema, and `values.schema.json` types `componentValues` against
-those exact schemas — so a new component GVR ships as a new installer version with a regenerated
-schema, never an in-place edit of a running install.
+**Multi-version CRD model.** Each component pins its **OWN** chart version (in `chart/values.yaml`
+`components[]`), and its served Composition apiVersion is derived per-component as
+`composition.krateo.io/v<version-with-dots-as-dashes>` (helper `inst.apiVersion`; e.g. snowplow
+`1.0.17` → `v1-0-17`). There is **one served version per composition-version**, plus a permanent
+"vacuum" stable **storage version** kept across all served versions. Composition instances are
+labelled `krateo.io/composition-version` with the served version they were written through — set
+in-apiserver by a `MutatingAdmissionPolicy` + Binding (CEL `request.requestKind.version`), which
+**replaces** the former `/mutate` admission webhook (no webhook server, no serving cert, no
+`MutatingWebhookConfiguration`) and so requires GA `admissionregistration.k8s.io/v1`
+`MutatingAdmissionPolicy` (k8s ≥ 1.36, in target clusters too). Stale served versions are **pruned**
+(#103): core-provider drives it from `Observe`, removing a served version from `spec.versions[]`
+once no Composition references it (trimming `status.storedVersions` first, since the apiserver
+forbids dropping a still-stored version). `values.schema.json` types `componentValues` against each
+pinned component chart's exact schema — so a component version bump is a values edit + a regenerated
+schema, propagated to the live install by the upgrade hook (see below), not a hand-edit of running CRs.

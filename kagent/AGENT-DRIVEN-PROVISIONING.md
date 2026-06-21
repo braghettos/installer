@@ -40,7 +40,7 @@ brings up only the composition engine + kagent + the `krateo-installer-agent` + 
 
 ```bash
 curl -sO https://raw.githubusercontent.com/braghettos/krateo-installer/main/chart/values-agent-only.yaml
-helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.87 \
+helm install installer oci://ghcr.io/braghettos/krateo/installer --version 0.2.145 \
   -n krateo-system --create-namespace -f values-agent-only.yaml \
   --set vertexAI.enabled=true --set vertexAI.projectID=<PROJECT>
 ```
@@ -113,24 +113,28 @@ tool does exactly this):
 
 ```bash
 kubectl patch installers.composition.krateo.io installer -n krateo-system --type=merge \
-  -p '{"spec":{"features":{"oasgenprovider":true}}}'
+  -p '{"spec":{"features":{"oasgenProvider":true}}}'
 ```
 
 The same surface drives the rest of the configuration model:
 
-- **`spec.features.<flag>`** — enable/disable a capability group (observability, oasgenprovider,
-  podRestartAlert, observabilityAgents, …). Additive and clean.
+- **`spec.features.<flag>`** — enable/disable a capability group (`portal`, `oasgenProvider`,
+  `coreAgents`, `specialistAgents`, …). Additive and clean.
 - **`spec.componentValues.<name>`** — override a component's Composition spec (strictly typed).
   Includes **per-agent `modelConfig`** — point an agent at a different ModelConfig or give it a
   dedicated one (Vertex / Gemini / Anthropic / OpenAI); see *Give an agent a different model* in the
   [QUICKSTART](../QUICKSTART.md#give-an-agent-a-different-model-modelconfig).
 - **`spec.registryAuth`** — point components at a private registry.
-- **`spec.components`** — advanced; changing a component **version** is a GVR change (prefer a new
-  installer version — see the QUICKSTART).
+- **`spec.components`** — advanced; each component pins its **own** chart version and the engine
+  serves a CRD apiVersion derived from it (`composition.krateo.io/v<version-with-dots-as-dashes>`,
+  e.g. snowplow `1.0.17` → `v1-0-17`). Bumping a component version adds a new served version
+  alongside a permanent "vacuum" storage version; core-provider prunes stale served versions once no
+  composition references them (it trims `status.storedVersions` before dropping a version). Still
+  prefer a coordinated new installer version for cross-component bumps — see the QUICKSTART.
 
 ## What core-provider does (observed)
 
-On a kind cluster, toggling `features.oasgenprovider` from `false` → `true` with the patch above
+On a kind cluster, toggling `features.oasgenProvider` from `false` → `true` with the patch above
 drove the full chain unattended:
 
 | t (after the patch) | What happened |
@@ -139,7 +143,7 @@ drove the full chain unattended:
 | ~30s | both **Ready** (generated CRDs, cdc controllers Running) |
 | ~120s | **Pass B** — `oasgen-provider-crd` Composition emitted + Ready |
 | ~165s | `oasgen-provider` Composition emitted + Ready — **after its dependency** |
-| | Helm releases `oasgen-provider-crd-0.9.0` + `oasgen-provider-0.9.0` deployed |
+| | Helm releases `oasgen-provider-crd-0.9.5` + `oasgen-provider-0.9.5` deployed |
 
 A single boolean flip on one namespaced CR → definitions → generated CRDs → Compositions → running
 workloads, **in dependency order**. The patcher needed nothing but `patch` on the `Installer` CR.
@@ -158,12 +162,15 @@ workloads, **in dependency order**. The patcher needed nothing but `patch` on th
 
 ## Caveats
 
-- **Feature dependencies.** Capabilities aren't independent — e.g. `observabilityAgents` pulls in
-  the autopilot, which depends on `clickhouse-mcp-server` → `krateo-clickstack` (observability). The
+- **Feature dependencies.** Capabilities aren't independent — e.g. `specialistAgents` pulls in
+  `clickhouse-mcp-server`, which needs `coreAgents` (the base agent layer: kagent + the autopilot),
+  and the clickstack agent reasons over the observability stack that `portal` provisions. The
   expert agent knows the dependency graph and enables features in a valid order.
-- **Operator prerequisites.** Some features need a bootstrap operator that the lean install skipped
-  (enabling `observability` needs the ClickHouse + MongoDB operators). Either include those operators
-  in the bootstrap, or have the agent confirm they're present first.
+- **Operators come up automatically.** The ClickHouse + MongoDB operators are no longer bootstrap-only
+  subcharts — they're now `portal`-gated compositions (wrapped unforked upstream). Enabling `portal`
+  at runtime brings the operators up first, then the rest of the observability stack
+  (krateo-observability, OTel collectors, sse-proxy), in dependency order — closing the old gap where
+  observability required pre-installed bootstrap operators.
 - **Model availability.** The agent needs its `ModelConfig` working (Vertex ADC) from the start.
 - **The bootstrap is still privileged.** A human/pipeline performs the one `helm install`. After
   that, the platform is **agent-drivable** with minimal rights — which is the whole point.

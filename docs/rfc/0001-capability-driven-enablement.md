@@ -29,26 +29,28 @@ Three real mismatches exist in the current chart, all the same shape — a compo
 
 | Component | `feature:` | `deps:` (and their feature) | Defect |
 |---|---|---|---|
-| `clickhouse-mcp-server` | ~~`specialistAgents`~~ → `observability` (fixed in 0.2.124) | `krateo-clickstack` (`observability`) | Enabling specialist agents without observability scheduled it with no ClickHouse backend. |
-| `hyperdx-provider` | `podRestartAlert` | `oasgen-provider` (`oasgenprovider`) | Enabling `podRestartAlert` without `oasgenprovider` leaves its dep unsatisfiable. |
+| `clickhouse-mcp-server` | ~~`specialistAgents`~~ → `portal` data layer (the observability stack is now `portal`-gated) | `krateo-observability` (`portal`) | Enabling specialist agents without the portal/observability data layer scheduled it with no ClickHouse backend. |
+| `hyperdx-provider` | `podRestartAlert` (now removed) | `oasgen-provider` (`oasgenProvider`) | Enabling `podRestartAlert` without `oasgenProvider` left its dep unsatisfiable. |
 | `clickstack-agent` | `specialistAgents` | `[kagent]` only | **Fuzzy boundary** — gated `specialistAgents`, but only *useful* with the observability data layer; the toggles can't express "works better with" vs "requires". (Resolved differently from the rows above: agents are an intentional decoupled addon that degrades gracefully — §5 — so this is by-design, not a dep to add.) |
 
 The model even encodes feature→feature requirements **in prose**:
-`specialistAgents # ... (need observabilityAgents)`. A comment is not a constraint.
+`specialistAgents # ... (need the observability data layer)`. A comment is not a constraint.
 
 ### 2.2 Structural problems
 
 - **Redundant third source of truth.** A toggle says *what the user wants*; `deps` says
   *what that needs*. The per-component `feature:` string is a third thing that restates a
   subset of the dep graph by hand, and drifts from it.
-- **Combinatorial validity.** 9 booleans = 512 combinations; most are invalid
-  (`specialistAgents` without `observability`, `podRestartAlert` without `oasgenprovider`).
+- **Combinatorial validity.** The current 5 booleans (`coreProvider`, `coreAgents`,
+  `portal`, `oasgenProvider`, `specialistAgents`) still admit invalid combinations
+  (`specialistAgents` without `coreAgents`, an agent without the data layer it speaks for).
   Invalid combinations are not rejected — they become stuck reconciles.
-- **Dead surface.** `composableoperations` gates no component (its own comment: "gates no
-  component here"); it is an engine-present marker only.
-- **Fuzzy boundaries.** `observability` / `observabilityAgents` / `specialistAgents`
-  overlap — `clickhouse-mcp-server` is an agent tool that needs the data layer, so it
-  legitimately belongs to two of them.
+- **Dead surface.** `coreProvider` gates no component (its own comment: "gates no
+  component here"); it is an engine-present marker only — core-provider is always-on via the
+  bootstrap subchart.
+- **Fuzzy boundaries.** the `portal` data layer (which now subsumes the observability stack)
+  and `specialistAgents` overlap — `clickhouse-mcp-server` is an agent tool that needs the
+  data layer, so it legitimately straddles both.
 
 ## 3. Goals / Non-goals
 
@@ -135,6 +137,13 @@ spec:
 | **agents-codegen** | ❌ addon | krateo-code-analysis / ansible-to-operator / tf-provider-to-operator / tf-to-helm agents |
 | **githubMcp** | ❌ opt-in | GitHub RemoteMCPServer (needs a PAT) |
 
+> **As-built note (post-RFC):** the chart that shipped did **not** keep `observability` as a
+> separate feature flag — the observability group (krateo-observability + clickhouse/mongodb
+> operators + otel collectors + krateo-sse-proxy) was folded under the **`portal`** flag, so
+> in the live `features.*` surface `portal` provisions the whole data/UI + observability plane
+> as one unit. The proposed `observability` capability below is therefore subsumed by `portal`
+> in the implementation; the profile sets are unchanged in effect.
+
 Profiles are just capability sets:
 - **open** = platform, no agents — `{ portal, oasgen-provider, observability }`. The platform
   is **atomic**: there is **no `portal-only`** (nor observability-only / oasgen-only) — the data
@@ -168,24 +177,24 @@ spec:
     githubMcp: false
 ```
 
-`spec.features` is **retained as a deprecated compatibility shim**, mapped at render time:
+`spec.features` is **retained as a deprecated compatibility shim**, mapped at render time.
+The current chart already collapsed the historical 9-toggle surface to **5 flags**
+(`coreProvider`, `coreAgents`, `portal`, `oasgenProvider`, `specialistAgents`); the shim maps
+those, and continues to accept the long-gone names purely for back-compat:
 
-| legacy `features.*` | → capability |
+| `features.*` (current, then historical) | → capability |
 |---|---|
-| `composableportal` | `portal` |
-| `composableportalstarter` | `portal` (merged) |
-| `composableoperations` | *(dropped — engine marker, no-op)* |
-| `observabilityAgents` | `agents` (core) **+ `agents-specialist`** (legacy bundled `installer-agent`, now in the specialist tier) |
+| `portal` (← `composableportal` + `composableportalstarter` + `observability` + `podRestartAlert`) | `portal` (now subsumes portal-starter **and** the whole observability/HyperDX stack) |
+| `coreProvider` (← `composableoperations`) | *(dropped — engine marker, no-op)* |
+| `coreAgents` (← `observabilityAgents`) | `agents` (core) **+ `agents-specialist`** (legacy bundled `installer-agent`, now in the specialist tier) |
 | `specialistAgents` | `agents-specialist` + `agents-codegen` |
-| `observability` | `observability` |
-| `oasgenprovider` | `oasgen-provider` |
-| `podRestartAlert` | `observability` (the HyperDX/podRestartAlert pipeline) |
-| `githubMcp` | `githubMcp` |
+| `oasgenProvider` (← `oasgenprovider`) | `oasgen-provider` |
+| `githubMcp` (removed) | `githubMcp` (no chart component today) |
 
 If `spec.capabilities` (or `spec.profile`) is set it wins; otherwise the shim derives
 capabilities from `spec.features`. Because agents are a **decoupled addon** (§5), legacy
 combinations that ran agents without their data plane — `specialistAgents: true` with
-`observability: false` — map cleanly to `agents` without backing and behave exactly as
+`portal: false` — map cleanly to `agents` without backing and behave exactly as
 before. So unlike a hard-require model, the addon model **preserves render-parity** for these
 combinations; there are no "intentionally broken" legacy combos to exempt (the one genuine
 behavior change is the autopilot roster shrinking on lean installs — §5.1).
@@ -280,8 +289,8 @@ components. Required guarantees:
 
 1. **Render parity.** For every legacy `features` combination in use (at minimum `autopilot`,
    `open`, `enterprise`), `helm template` output under the new model must be
-   **byte-identical** (modulo the removed `feature:` field, the dead `composableoperations`,
-   and the autopilot `extraAgents` roster which is now derived — §5.1, the `autopilot`-profile
+   **byte-identical** (modulo the removed `feature:` field, the dead `coreProvider` marker
+   flag, and the autopilot `extraAgents` roster which is now derived — §5.1, the `autopilot`-profile
    roster shrinks by design) to the current output. A golden-file test enforces this. Because agents
    are a decoupled addon (§5), the legacy agents-without-backing combinations map cleanly and
    are preserved — there are no intentionally-broken combos to exempt (cf. §4.4).
@@ -307,7 +316,7 @@ components. Required guarantees:
    `componentValues.krateo-autopilot.extraAgents` from the enabled closure** (§5.1) instead
    of the static list. Gated by the render-parity golden test (`enterprise` unchanged;
    `autopilot`-profile roster shrinks per §5.1). No behavior change on valid profiles.
-3. **Phase 2 — drop `feature:`** from `components[]` and delete `composableoperations`.
+3. **Phase 2 — drop `feature:`** from `components[]` and delete the `coreProvider` marker flag.
    Pure cleanup once Phase 1 proves parity.
 4. **Phase 3 — surface `capabilities`** in `values.schema.json`, docs (`INSTALL-WORKFLOW.md`,
    `llms.txt`), and the installer-agent/autopilot prompts (they currently patch
@@ -336,11 +345,12 @@ Each phase is independently shippable and reversible.
    platform (portal + oasgen-provider + observability, **no agents**), **`enterprise`** = open
    + autopilot + the agent fleet, plus the lean **`autopilot`** bootstrap (autopilot + kagent). No `portal-only`
    — the platform is atomic. See §4.3a.
-4. ~~`composableoperations`~~ — **RESOLVED (2026-06-19): drop.** It gates no component
+4. ~~`coreProvider` marker flag~~ — **RESOLVED (2026-06-19): drop.** It gates no component
    (core-provider is always-on via bootstrap), so it is not a capability. Removed from the
    toggle/capability surface; if an "engine present" signal is ever needed it is exposed as
-   read-only **status**, not a settable feature. (The autopilot prompt's "base = composableportal
-   + composableoperations + composableportalstarter" line collapses to the `portal` capability.)
+   read-only **status**, not a settable feature. (The autopilot prompt's "base = `portal` +
+   `coreProvider` marker" line collapses to the `portal` capability, since `portal` now
+   subsumes the portal-starter and observability components.)
 5. ~~Agent-addon sub-tiers~~ — **RESOLVED (2026-06-19): graduated.** `agents` (core =
    kagent + autopilot + fetch-mcp = the `autopilot` profile),
    `agents-specialist` (installer-agent + the 5 platform agents + clickhouse-mcp),

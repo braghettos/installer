@@ -40,8 +40,9 @@ the cluster, then fetch these docs at the matching git tag:
   the `Installer` CR.
 - [INSTALL-WORKFLOW.md](INSTALL-WORKFLOW.md): the end-to-end installation workflow — the two render
   modes, the self-bootstrap hook, the Pass A / Pass B dependency engine (feature + crdExists +
-  depsReady gates), the dependency layering (observability operators install first), teardown
-  ordering, and the install profiles.
+  depsReady gates), the dependency layering (the portal-gated observability operators come up
+  before their dependents as compositions, not as bootstrap subcharts), teardown ordering, and the
+  install profiles.
 
 ## Releasing & chart shape
 
