@@ -1,139 +1,39 @@
 #!/usr/bin/env python3
-"""Regenerate the installer's componentValues typing in chart/values.schema.json.
+"""Regenerate componentValues.<component> in chart/values.schema.json so each
+entry mirrors that component chart's OWN values.schema.json (strict, fully-typed).
 
-For every component pinned in chart/values.yaml, pull its chart and embed that chart's
-values.schema.json under componentValues.properties.<name>, so `componentValues.<name>`
-is strictly typed against the component's REAL Composition schema (the component chart's
-values are the Composition spec). `required` is stripped recursively because componentValues
-is a PARTIAL override (a deep-merge), not a full values document.
+componentValues now has exactly one entry per pinned component in values.yaml
+`components[]`, each = the wrapped chart's published values.schema.json. Chart name
+resolves to components[].chart, else the component name. Requires helm + OCI network.
 
-Run this on every installer release — when a component's GVR/schema changes (a new component
-version), re-running ties the installer's schema to the new composition schema. The installer
-VERSION is the unit that manages the component GVRs (a new GVR -> a new installer version with
-a regenerated values.schema.json).
-
-Usage:  python3 hack/gen-componentvalues-schema.py [chart-dir]   (default: ./chart)
-Requires: helm (logged in to the registry if components are private), pyyaml.
+Usage: python3 hack/gen-componentvalues-schema.py
 """
-import glob
-import json
-import os
-import subprocess
-import sys
-import tempfile
+import json, os, subprocess, sys, tempfile, yaml
 
-import yaml
+OCI = "oci://ghcr.io/braghettos/krateo"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCHEMA = os.path.join(ROOT, "chart", "values.schema.json")
+VALUES = os.path.join(ROOT, "chart", "values.yaml")
 
-CHART = sys.argv[1] if len(sys.argv) > 1 else "chart"
+schema = json.load(open(SCHEMA))
+values = yaml.safe_load(open(VALUES))
+comps = [(c["name"], c.get("chart") or c["name"], str(c["version"])) for c in values["components"]]
 
+cv = {}
+with tempfile.TemporaryDirectory() as tmp:
+    for name, chart, ver in comps:
+        subprocess.run(["helm", "pull", f"{OCI}/{chart}", "--version", ver, "-d", tmp, "--untar"],
+                       check=True, capture_output=True)
+        sp = os.path.join(tmp, chart, "values.schema.json")
+        if not os.path.exists(sp):
+            sys.exit(f"ERROR: {chart}@{ver} ships no values.schema.json")
+        cs = json.load(open(sp))
+        cs.pop("$schema", None)   # inherit the installer root dialect (2020-12)
+        cs.pop("$id", None)
+        cv[name] = cs
 
-def strip_required(node):
-    """Recursively drop the JSON-Schema `required` keyword (partial overrides need none)."""
-    if isinstance(node, dict):
-        node.pop("required", None)
-        for v in node.values():
-            strip_required(v)
-    elif isinstance(node, list):
-        for v in node:
-            strip_required(v)
-    return node
-
-
-def strip_default(node):
-    """Recursively drop `default`. core-provider 1.0.x renders this schema into the Installer
-    CRD's openAPIV3Schema; a `default: []` on an array-of-object field (e.g. frontend
-    tolerations/imagePullSecrets/ingress.hosts/ingress.tls) makes the generated CRD invalid on
-    strict apiservers (k8s 1.35: `default.[0] must be of type object`). componentValues are
-    partial overrides — they need no schema defaults (the component charts supply real defaults
-    at deploy time)."""
-    if isinstance(node, dict):
-        node.pop("default", None)
-        for v in node.values():
-            strip_default(v)
-    elif isinstance(node, list):
-        for v in node:
-            strip_default(v)
-    return node
-
-
-# A ModelConfig's provider must be one kagent supports (kagent.dev/v1alpha2 ModelConfig CRD enum).
-# Injected into every component's `provider` string field so the installer rejects a typo'd/unknown
-# provider at `helm install` — even for an agent chart whose own schema hasn't been republished with
-# the enum yet (the agent charts carry the same enum at source). Keep in sync with the CRD.
-KAGENT_PROVIDERS = [
-    "Anthropic", "OpenAI", "AzureOpenAI", "Ollama", "Gemini",
-    "GeminiVertexAI", "AnthropicVertexAI", "Bedrock", "SAPAICore",
-]
-
-
-def inject_provider_enum(node):
-    """Add the kagent provider enum to any `provider: {type: string}` (modelConfig / models.*)."""
-    if isinstance(node, dict):
-        for k, v in node.items():
-            if k == "provider" and isinstance(v, dict) and v.get("type") == "string" and "enum" not in v:
-                v["enum"] = list(KAGENT_PROVIDERS)
-            else:
-                inject_provider_enum(v)
-    elif isinstance(node, list):
-        for v in node:
-            inject_provider_enum(v)
-    return node
-
-
-def main():
-    vals = yaml.safe_load(open(os.path.join(CHART, "values.yaml")))
-    oci = vals["ociRepo"]
-    props = {}
-    with tempfile.TemporaryDirectory() as tmp:
-        for c in vals["components"]:
-            name, ver = c["name"], str(c["version"])
-            # The OCI artifact is the chart name, which may differ from the component identity
-            # (e.g. component `frontend` -> chart `krateo-frontend`). Honor the `chart:` override.
-            artifact = c.get("chart", name)
-            ref = f'{c.get("repo", oci)}/{artifact}'
-            dest = os.path.join(tmp, name)
-            os.makedirs(dest, exist_ok=True)
-            r = subprocess.run(
-                ["helm", "pull", ref, "--version", ver, "-d", dest, "--untar"],
-                capture_output=True, text=True,
-            )
-            if r.returncode != 0:
-                print(f"  WARN {name}: pull failed: {r.stderr.strip()[:90]}", file=sys.stderr)
-                continue
-            found = glob.glob(os.path.join(dest, "*", "values.schema.json"))
-            if not found:
-                print(f"  WARN {name}: no values.schema.json in chart", file=sys.stderr)
-                continue
-            s = json.load(open(found[0]))
-            s.pop("$schema", None)  # a sub-schema embedded in a CRD must not carry its own $schema
-            # FAITHFUL embed: do NOT strip `required` or `default` — preserve each component's
-            # values.schema.json verbatim. (core-provider 1.0.x renders these into the Installer
-            # CRD; array `default`s are now handled correctly by the crdgen fix in
-            # braghettos/plumbing >= v1.7.5, so no stripping workaround is needed.)
-            inject_provider_enum(s)  # additive only (kagent provider enum) — nothing removed
-            s["description"] = f"Overrides for the {name} Composition (chart {ver}), deep-merged into its spec."
-            props[name] = s
-            print(f"  typed {name} ({ver})")
-
-    sp = os.path.join(CHART, "values.schema.json")
-    schema = json.load(open(sp))
-    schema["properties"]["componentValues"] = {
-        "type": "object",
-        "title": "Per-component spec overrides",
-        "description": (
-            "Per-component Composition spec overrides, STRICTLY TYPED against each pinned "
-            "component's chart schema (regenerated per installer version by "
-            "hack/gen-componentvalues-schema.py). Deep-merged into the rendered Composition "
-            "spec; the installer-computed wiring (service.type/config/vertexAI/hitlApproval) "
-            "stays authoritative and wins on any leaf conflict."
-        ),
-        "additionalProperties": False,
-        "properties": props,
-    }
-    json.dump(schema, open(sp, "w"), indent=2)
-    open(sp, "a").write("\n")
-    print(f"\nwrote componentValues typing for {len(props)} components -> {sp}")
-
-
-if __name__ == "__main__":
-    main()
+# componentValues keeps additionalProperties:false -> only pinned components are accepted
+schema["properties"]["componentValues"]["properties"] = dict(sorted(cv.items()))
+json.dump(schema, open(SCHEMA, "w"), indent=2)
+open(SCHEMA, "a").write("\n")
+print(f"Embedded {len(cv)} component chart schemas into componentValues.")
