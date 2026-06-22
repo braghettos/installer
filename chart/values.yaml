@@ -136,6 +136,27 @@ componentValues:
   kagent:
     kagentapp:
       fullnameOverride: kagent
+      # OTel export for the agents is OFF by default (omitted => byte-identical install). The
+      # kagent controller forwards its OTEL_* env to every agent pod it deploys, so to stream agent
+      # traces + GenAI token metrics to the observability stack, uncomment and point at the collector:
+      #   otel:
+      #     tracing:
+      #       enabled: true
+      #       exporter:
+      #         otlp: { endpoint: "http://<otel-collector>.<ns>.svc:4318", protocol: http/protobuf, insecure: true }
+      #   controller:
+      #     env:
+      #       OTEL_METRICS_ENABLED: "true"
+      #       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://<otel-collector>.<ns>.svc:4318"
+  # OTel export for the engine + every cdc is OFF by default (byte-identical when omitted). To
+  # stream reconcile metrics + traces (e.g. the reconciliation-throughput series) to the
+  # observability stack, add a krateo-core-provider componentValues entry:
+  #   krateo-core-provider:
+  #     otel:
+  #       enabled: true
+  #       tracing: true
+  #       endpoint: "http://<otel-collector>.<ns>.svc:4318"
+  #       protocol: http/protobuf
   krateo-autopilot:
     # STANDALONE BY DEFAULT: the autopilot ships as a self-contained Krateo PlatformOps
     # assistant — it answers questions + reports status and DEFERS mutations. It does NOT
@@ -329,7 +350,7 @@ components:
     feature: coreAgents
   - name: kagent
     kind: Kagent
-    version: "0.1.5"
+    version: "0.1.6"
     deps:
       - kagent-crds
     tier: observability
