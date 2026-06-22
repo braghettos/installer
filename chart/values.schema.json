@@ -4608,6 +4608,33 @@
               "description": "Helm global values (injected when this chart is used as a subchart)."
             }
           }
+        },
+        "krateo-core-provider": {
+          "type": "object",
+          "additionalProperties": false,
+          "title": "krateo-core-provider values",
+          "description": "Per-component overrides for the core-provider engine + cdc chart. Exposes the OTel export toggle (default-off in the chart); set by the installer/operator when observability is on to stream reconcile metrics + traces to the collector.",
+          "properties": {
+            "otel": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "OpenTelemetry export for the engine + every spawned cdc. Mirrors core-provider-chart values.otel.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "tracing": {
+                  "type": "boolean"
+                },
+                "endpoint": {
+                  "type": "string"
+                },
+                "protocol": {
+                  "type": "string"
+                }
+              }
+            }
+          }
         }
       }
     },
