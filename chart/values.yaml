@@ -302,7 +302,7 @@ components:
   # ociRepo = oci://ghcr.io/braghettos/krateo, like every other component.
   - name: otel-collector-deployment
     kind: OtelCollectorDeployment
-    version: "0.2.0"
+    version: "0.2.1"
     deps:
       - krateo-observability
     tier: observability
