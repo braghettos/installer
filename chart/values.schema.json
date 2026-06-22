@@ -36,16 +36,6 @@
             }
           }
         },
-        "certManager": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true
-            }
-          }
-        },
         "clickhouseOperator": {
           "type": "object",
           "additionalProperties": false,
@@ -89,11 +79,6 @@
       "type": "object",
       "title": "core-provider-crd subchart values",
       "description": "Passthrough to the bootstrap core-provider-crd subchart."
-    },
-    "cert-manager": {
-      "type": "object",
-      "title": "cert-manager subchart values",
-      "description": "Passthrough to the bootstrap cert-manager subchart."
     },
     "kagent-crds": {
       "type": "object",

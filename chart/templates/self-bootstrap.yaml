@@ -145,7 +145,7 @@ subjects:
     namespace: {{ .Values.namespaces.krateo }}
 ---
 {{- /* The Installer CR spec: only the umbrella's own keys (NOT the bootstrap subchart
-       passthroughs like cert-manager/kagent, which carry huge default trees and are unused
+       passthroughs like kagent, which carry huge default trees and are unused
        in composition mode), with all bootstrap flags OFF so the composition render does
        Pass A + Pass B only (no subcharts, no self-registration). */}}
 {{- /* INCLUDE "components": the Installer CR ships with the FULL component list (each
@@ -161,7 +161,7 @@ subjects:
        while spec.features and other runtime edits are preserved (not clobbered by a full
        re-apply). Single-entry in-place CR edits remain safe (whole list shipped). */}}
 {{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" "components" "componentValues" "registryAuth" }}
-{{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "certManager" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
+{{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
