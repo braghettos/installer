@@ -161,7 +161,7 @@ subjects:
        while spec.features and other runtime edits are preserved (not clobbered by a full
        re-apply). Single-entry in-place CR edits remain safe (whole list shipped). */}}
 {{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" "components" "componentValues" "registryAuth" }}
-{{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false) "clickhouseOperator" (dict "enabled" false) "mongodbOperator" (dict "enabled" false) "kagent" (dict "enabled" false)) }}
+{{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false)) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -8,7 +8,7 @@
     "ociRepo": {
       "type": "string",
       "title": "OCI chart repository",
-      "default": "oci://ghcr.io/braghettos/charts"
+      "default": "oci://ghcr.io/braghettos/krateo"
     },
     "installDefinitions": {
       "type": "boolean",
@@ -23,7 +23,7 @@
     "bootstrap": {
       "type": "object",
       "title": "Bootstrap (composition engine)",
-      "description": "Install core-provider as a hook-weighted subchart so a bare-cluster helm install self-bootstraps. Disable when registering on an existing Krateo.",
+      "description": "When true, install core-provider as a conditional subchart dependency (gated by bootstrap.coreProvider.enabled) so a bare-cluster helm install self-bootstraps. The hook-weighting that orders bootstrap is on the installer's own self-bootstrap Job, not the subchart.",
       "additionalProperties": false,
       "properties": {
         "coreProvider": {
@@ -35,38 +35,6 @@
               "default": false
             }
           }
-        },
-        "clickhouseOperator": {
-          "type": "object",
-          "additionalProperties": false,
-          "title": "DEPRECATED \u2014 no-op",
-          "description": "Deprecated/no-op: the ClickHouse operator is now an observability-gated composition (clickhouse-operator), no longer a bootstrap subchart. Kept for backward-compatibility of existing Installer CRs; gates nothing.",
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            }
-          }
-        },
-        "mongodbOperator": {
-          "type": "object",
-          "additionalProperties": false,
-          "title": "DEPRECATED \u2014 no-op",
-          "description": "Deprecated/no-op: the MongoDB operator is now an observability-gated composition (mongodb-operator), no longer a bootstrap subchart. Kept for backward-compatibility of existing Installer CRs; gates nothing.",
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            }
-          }
-        },
-        "kagent": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true
-            }
-          }
         }
       }
     },
@@ -74,21 +42,6 @@
       "type": "object",
       "title": "core-provider subchart values",
       "description": "Passthrough to the bootstrap core-provider subchart."
-    },
-    "krateo-core-provider-crd": {
-      "type": "object",
-      "title": "core-provider-crd subchart values",
-      "description": "Passthrough to the bootstrap core-provider-crd subchart."
-    },
-    "kagent-crds": {
-      "type": "object",
-      "title": "kagent-crds subchart values",
-      "description": "Passthrough to the bootstrap kagent-crds subchart."
-    },
-    "kagent": {
-      "type": "object",
-      "title": "kagent subchart values",
-      "description": "Passthrough to the bootstrap kagent operator subchart."
     },
     "namespaces": {
       "type": "object",
@@ -98,57 +51,22 @@
         "krateo": {
           "type": "string",
           "default": "krateo-system"
-        },
-        "clickhouse": {
-          "type": "string",
-          "default": "krateo-system"
         }
       }
     },
     "exposure": {
       "type": "object",
       "title": "Exposure",
-      "description": "How browser-facing components are reached. NodePort/LoadBalancer are resolved via Helm lookup at reconcile time; Ingress uses the host inputs.",
+      "description": "Exposure model for browser-facing components. NodePort/LoadBalancer are resolved via Helm lookup at reconcile time and set spec.service.type via exposure.type.",
       "additionalProperties": false,
       "properties": {
         "type": {
           "type": "string",
           "enum": [
             "NodePort",
-            "LoadBalancer",
-            "Ingress"
+            "LoadBalancer"
           ],
           "default": "NodePort"
-        },
-        "ingress": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": false
-            },
-            "domain": {
-              "type": "string",
-              "default": ""
-            },
-            "authnHost": {
-              "type": "string",
-              "default": ""
-            },
-            "snowplowHost": {
-              "type": "string",
-              "default": ""
-            },
-            "frontendHost": {
-              "type": "string",
-              "default": ""
-            },
-            "hyperdxHost": {
-              "type": "string",
-              "default": ""
-            }
-          }
         }
       }
     },
@@ -186,7 +104,7 @@
     "secrets": {
       "type": "object",
       "title": "Secret references",
-      "description": "Names of pre-existing Secrets. Values are never inlined in the blueprint.",
+      "description": "Names of pre-existing Secrets. Values are never inlined in the blueprint. NOTE: spec.secrets is plumbed into the Installer CR but not read by any component as shipped; the live Gemini-key path is componentValues.krateo-autopilot.geminiApiKey.",
       "additionalProperties": false,
       "properties": {
         "geminiApiKey": {
@@ -331,7 +249,7 @@
     "hitlApproval": {
       "type": "boolean",
       "title": "HITL approval",
-      "description": "Autopilot mutating-tool approval gate. true=pause for approval; false=autonomous remediation."
+      "description": "Human-in-the-loop approval gate applied to every vertexAI agent (autopilot orchestrator + subagents): true pauses each mutating tool call for chat approval; false runs autonomously."
     },
     "componentValues": {
       "type": "object",

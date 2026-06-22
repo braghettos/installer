@@ -8,13 +8,9 @@
 # Then talk to krateo-autopilot ("install Krateo") -> it routes to krateo-installer-agent, which
 # patches the Installer CR (e.g. features.portal=true, specialistAgents=true, ...) and
 # core-provider provisions the full platform in dependency order.
-# Skip the observability operator prerequisites (ClickHouse / MongoDB) — they're only
-# needed once `portal` is turned on (it now carries the observability stack). The engine (core-provider) stays.
-bootstrap:
-  clickhouseOperator:
-    enabled: false
-  mongodbOperator:
-    enabled: false
+# The observability operators (ClickHouse / MongoDB) are no longer bootstrap subcharts — they
+# come up as portal-gated compositions, so there's nothing to skip here. The engine
+# (core-provider) is enabled at install via --set bootstrap.coreProvider.enabled=true.
 
 features:
   coreProvider: true               # engine marker (core-provider is always-on via bootstrap)
