@@ -9,12 +9,25 @@ apiVersion: v2
 # components become Ready and emits the next layer until the platform is up.
 # Pinned to installer 2.7.0 component versions. Kind: Installer.
 name: installer
+description: Umbrella orchestrator blueprint that sequences the per-component Krateo PlatformOps blueprints into one ordered, readiness-gated install.
 type: application
 version: CHART_VERSION
 appVersion: "2.7.0"
 home: https://krateo.io
+icon: https://raw.githubusercontent.com/krateoplatformops/krateo/main/docs/media/logo.svg
+keywords:
+  - krateo
+  - platformops
+  - installer
+  - blueprint
+  - orchestrator
 sources:
   - https://github.com/braghettos/installer
+annotations:
+  krateo.io/category: application
+  krateo.io/maturity: stable
+  krateo.io/display-name: Krateo Installer
+  krateoSupportedVersion: ">= 2.5.1"
 
 # Bootstrap dependency: the Krateo composition engine controller (core-provider).
 #
