@@ -1,6 +1,6 @@
 dependencies:
 - name: krateo-core-provider
   repository: oci://ghcr.io/braghettos/krateo
-  version: 0.36.24
-digest: sha256:903a018ebd74d7148acd18d7a5960545a5005570d970427326a78f8f68e6a866
-generated: "2026-06-22T11:20:02.464049+02:00"
+  version: 0.36.25
+digest: sha256:e9ec9b86060c24283d11b5968c605ac369844b428d0ebfac279dc05cb8735c51
+generated: "2026-06-22T13:59:44.662965+02:00"
