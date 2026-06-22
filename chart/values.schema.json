@@ -36,32 +36,26 @@
             }
           }
         },
-        "certManager": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true
-            }
-          }
-        },
         "clickhouseOperator": {
           "type": "object",
           "additionalProperties": false,
-          "title": "DEPRECATED — no-op",
+          "title": "DEPRECATED \u2014 no-op",
           "description": "Deprecated/no-op: the ClickHouse operator is now an observability-gated composition (clickhouse-operator), no longer a bootstrap subchart. Kept for backward-compatibility of existing Installer CRs; gates nothing.",
           "properties": {
-            "enabled": { "type": "boolean" }
+            "enabled": {
+              "type": "boolean"
+            }
           }
         },
         "mongodbOperator": {
           "type": "object",
           "additionalProperties": false,
-          "title": "DEPRECATED — no-op",
+          "title": "DEPRECATED \u2014 no-op",
           "description": "Deprecated/no-op: the MongoDB operator is now an observability-gated composition (mongodb-operator), no longer a bootstrap subchart. Kept for backward-compatibility of existing Installer CRs; gates nothing.",
           "properties": {
-            "enabled": { "type": "boolean" }
+            "enabled": {
+              "type": "boolean"
+            }
           }
         },
         "kagent": {
@@ -85,11 +79,6 @@
       "type": "object",
       "title": "core-provider-crd subchart values",
       "description": "Passthrough to the bootstrap core-provider-crd subchart."
-    },
-    "cert-manager": {
-      "type": "object",
-      "title": "cert-manager subchart values",
-      "description": "Passthrough to the bootstrap cert-manager subchart."
     },
     "kagent-crds": {
       "type": "object",
