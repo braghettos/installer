@@ -78,13 +78,6 @@ features:
                                   #   + the observability stack (clickhouse/mongo operators, krateo-observability,
                                   #   otel collectors, sse-proxy) — the portal's events bell consumes sse-proxy.
 
-# Sensitive inputs referenced by Secret name; never inlined. NOTE: as shipped, `secrets.*` is
-# plumbed into the Installer CR `spec.secrets` but NOT read by any component composition — the
-# live Gemini-key path is `componentValues.krateo-autopilot.geminiApiKey`. Kept pending a
-# decision to wire spec.secrets through or drop it (see the values audit).
-secrets:
-  geminiApiKey: gemini-api-key          # NOT consumed as shipped (see note above)
-
 # HITL approval gate for the autopilot's mutating Kubernetes tools. true (default)=
 # pause for human approval before any cluster change; false=autonomous remediation.
 hitlApproval: true

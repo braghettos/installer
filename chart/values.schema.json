@@ -101,22 +101,6 @@
         }
       }
     },
-    "secrets": {
-      "type": "object",
-      "title": "Secret references",
-      "description": "Names of pre-existing Secrets. Values are never inlined in the blueprint. NOTE: spec.secrets is plumbed into the Installer CR but not read by any component as shipped; the live Gemini-key path is componentValues.krateo-autopilot.geminiApiKey.",
-      "additionalProperties": false,
-      "properties": {
-        "geminiApiKey": {
-          "type": "string",
-          "default": "gemini-api-key"
-        },
-        "gcloudCredentials": {
-          "type": "string",
-          "default": "gcloud-credentials"
-        }
-      }
-    },
     "components": {
       "type": "array",
       "title": "Component DAG (advanced override)",

@@ -160,7 +160,7 @@ subjects:
        components-patch.json + the post-upgrade branch), so chart-side pins reach the cluster
        while spec.features and other runtime edits are preserved (not clobbered by a full
        re-apply). Single-entry in-place CR edits remain safe (whole list shipped). */}}
-{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "secrets" "vertexAI" "hitlApproval" "components" "componentValues" "registryAuth" }}
+{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "vertexAI" "hitlApproval" "components" "componentValues" "registryAuth" }}
 {{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false)) }}
 apiVersion: v1
 kind: ConfigMap
