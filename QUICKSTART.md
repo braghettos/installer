@@ -139,9 +139,10 @@ That's it. The one-shot bootstrap **must opt in** with `--set bootstrap.coreProv
 `false`** (so a stray spec that loses its `bootstrap` key can't silently re-enter bootstrap mode and
 wedge the install). With bootstrap on, the install:
 
-1. installs the engine + cert-manager subcharts (core-provider at chart `0.36.24`, cert-manager
-   `v1.20.2`). The engine's CRD chart (`krateo-core-provider-crd`) is **not** bundled — it is applied
-   as a **separate earlier** `helm install` before the umbrella (two-step bootstrap);
+1. installs the engine subchart (core-provider). Its `core.krateo.io` CRDs (CompositionDefinition,
+   KubernetesTarget) are **vendored into the umbrella's `crds/`**, which helm installs before any
+   template build — so this is a **single** `helm install`, with **no** separate
+   `krateo-core-provider-crd` prerequisite;
 2. registers the `installer` CompositionDefinition; a **post-install/post-upgrade hook** waits for
    core-provider to generate the `Installer` CRD, then applies the `Installer` CR (with bootstrap
    **off** in the CR spec) and auto-heals any stuck `external-create-pending` until `Synced`;
@@ -537,9 +538,9 @@ helm uninstall installer -n krateo-system
 
 After uninstall the only residue is **inherent Helm behavior** (not Krateo defects): the
 `krateo-system` namespace (`--create-namespace` namespaces are never deleted on uninstall),
-StatefulSet PVCs (ClickHouse/MongoDB data), and the engine CRDs from the separate
-`krateo-core-provider-crd` release (applied before the umbrella in the two-step bootstrap, so they
-outlive the umbrella's uninstall). Delete those with a one-liner if you want bare:
+StatefulSet PVCs (ClickHouse/MongoDB data), and the engine `core.krateo.io` CRDs (helm never
+deletes a chart's `crds/` by design, so the umbrella's vendored CompositionDefinition/KubernetesTarget
+CRDs outlive its uninstall). Delete those with a one-liner if you want bare:
 
 ```bash
 kubectl delete ns krateo-system
