@@ -43,6 +43,11 @@
       "title": "core-provider subchart values",
       "description": "Passthrough to the bootstrap core-provider subchart."
     },
+    "krateo-core-provider-crd": {
+      "type": "object",
+      "title": "core-provider-crd subchart values",
+      "description": "Passthrough to the bootstrap core-provider-crd subchart (engine core.krateo.io CRDs)."
+    },
     "namespaces": {
       "type": "object",
       "title": "Namespaces",

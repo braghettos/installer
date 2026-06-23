@@ -139,13 +139,18 @@ That's it. The one-shot bootstrap **must opt in** with `--set bootstrap.coreProv
 `false`** (so a stray spec that loses its `bootstrap` key can't silently re-enter bootstrap mode and
 wedge the install). With bootstrap on, the install:
 
-1. installs the engine subchart (core-provider). Its `core.krateo.io` CRDs (CompositionDefinition,
-   KubernetesTarget) are **vendored into the umbrella's `crds/`**, which helm installs before any
-   template build — so this is a **single** `helm install`, with **no** separate
+1. installs two bootstrap-conditional subchart deps — the engine (`krateo-core-provider`) and its
+   `core.krateo.io` CRDs (`krateo-core-provider-crd`: CompositionDefinition, KubernetesTarget). The
+   CRDs are **helm-owned** by this release (a subchart, not an un-owned `crds/` dir) and, being
+   bootstrap-gated, are **absent from the composition-mode render** — so chart-inspector's RBAC
+   dry-run never collides with them. Still a **single** `helm install`, **no** separate
    `krateo-core-provider-crd` prerequisite;
-2. registers the `installer` CompositionDefinition; a **post-install/post-upgrade hook** waits for
-   core-provider to generate the `Installer` CRD, then applies the `Installer` CR (with bootstrap
-   **off** in the CR spec) and auto-heals any stuck `external-create-pending` until `Synced`;
+2. registers the `installer` CompositionDefinition. It is **not** a build-time template (a CR of a
+   CRD this same release installs is unmappable at build); instead a **post-install/post-upgrade
+   hook** first waits for the `compositiondefinitions` CRD ("lookup the CRD, once present proceed"),
+   applies the CompositionDefinition, then waits for core-provider to generate the `Installer` CRD,
+   applies the `Installer` CR (bootstrap **off** in the CR spec), and auto-heals any stuck
+   `external-create-pending` until `Synced`;
 3. core-provider re-renders this same chart in **composition mode** from the live CR spec and rolls
    out every component by dependency order (cdc resync is 60s, so each dependency level advances in
    ~1m). The observability operators (ClickHouse, MongoDB) come up first as compositions when
@@ -537,10 +542,11 @@ helm uninstall installer -n krateo-system
 ```
 
 After uninstall the only residue is **inherent Helm behavior** (not Krateo defects): the
-`krateo-system` namespace (`--create-namespace` namespaces are never deleted on uninstall),
-StatefulSet PVCs (ClickHouse/MongoDB data), and the engine `core.krateo.io` CRDs (helm never
-deletes a chart's `crds/` by design, so the umbrella's vendored CompositionDefinition/KubernetesTarget
-CRDs outlive its uninstall). Delete those with a one-liner if you want bare:
+`krateo-system` namespace (`--create-namespace` namespaces are never deleted on uninstall) and
+StatefulSet PVCs (ClickHouse/MongoDB data). The engine `core.krateo.io` CRDs are now helm-owned
+(the `krateo-core-provider-crd` subchart, plain templates with no `resource-policy: keep`), so the
+pre-delete teardown drains the compositions first and helm then **removes** those CRDs — they no
+longer outlive the uninstall. Delete the remaining residue with a one-liner if you want bare:
 
 ```bash
 kubectl delete ns krateo-system

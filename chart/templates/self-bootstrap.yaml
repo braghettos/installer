@@ -11,19 +11,11 @@
   render ONLY in composition mode, so the bootstrap release doesn't double-own them.
 */}}
 {{- if .Values.bootstrap.coreProvider.enabled }}
-apiVersion: core.krateo.io/v1alpha1
-kind: CompositionDefinition
-metadata:
-  name: installer
-  namespace: {{ .Values.namespaces.krateo }}
-  labels:
-    app.kubernetes.io/managed-by: krateo-installer
-spec:
-  chart:
-    url: {{ .Values.ociRepo }}/installer
-    version: {{ .Chart.Version | quote }}
-    {{- include "inst.chartExtras" (list .) | nindent 4 }}
----
+{{- /* The `installer` CompositionDefinition is NOT templated here: it is a CR of the
+       compositiondefinitions.core.krateo.io CRD that THIS release installs (the
+       krateo-core-provider-crd dependency), so helm could not REST-map it at build time. It is
+       carried in the installer-self-cr ConfigMap below and applied by the post-install hook AFTER
+       that hook confirms the CRD exists ("lookup the CRD, once present proceed with the bootstrap"). */}}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -42,11 +34,11 @@ rules:
   - apiGroups: ["composition.krateo.io"]
     resources: ["installers"]
     verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
-  # compositiondefinitions: pre-delete HOOK 2 deletes the top-level `installer` one (core-provider
-  # cascades the rest) and polls these to detect full drain.
+  # compositiondefinitions: post-install hook CREATES/applies the top-level `installer` one; pre-delete
+  # HOOK 2 deletes it (core-provider cascades the rest) and polls these to detect full drain.
   - apiGroups: ["core.krateo.io"]
     resources: ["compositiondefinitions"]
-    verbs: ["get", "list", "watch", "delete"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
   # restdefinitions read: pre-delete HOOK 2 polls these so it doesn't return (and let helm kill
   # core-provider) while an ogen RestDefinition is still terminating.
   - apiGroups: ["ogen.krateo.io"]
@@ -168,6 +160,21 @@ metadata:
   name: installer-self-cr
   namespace: {{ .Values.namespaces.krateo }}
 data:
+  # The installer CompositionDefinition — applied by the post-install hook once the
+  # compositiondefinitions CRD exists (it can't be a build-time template; see header note).
+  compositiondefinition.yaml: |
+    apiVersion: core.krateo.io/v1alpha1
+    kind: CompositionDefinition
+    metadata:
+      name: installer
+      namespace: {{ .Values.namespaces.krateo }}
+      labels:
+        app.kubernetes.io/managed-by: krateo-installer
+    spec:
+      chart:
+        url: {{ .Values.ociRepo }}/installer
+        version: {{ .Chart.Version | quote }}
+{{- include "inst.chartExtras" (list .) | nindent 8 }}
   installer.yaml: |
     apiVersion: {{ include "inst.apiVersion" (list .Chart.Version) }}
     kind: Installer
@@ -218,6 +225,14 @@ spec:
             - |
               set -e
               NS={{ .Values.namespaces.krateo }}
+              # LOOKUP the engine CRD (installed by the krateo-core-provider-crd dependency), then
+              # register the installer CompositionDefinition. It can't be a build-time helm template
+              # (a CR of a CRD this same release installs is unmappable at build), so the hook applies
+              # it once the CRD is present. kubectl apply is idempotent — safe on post-upgrade too.
+              echo "waiting for the compositiondefinitions CRD (krateo-core-provider-crd dep)..."
+              until kubectl get crd compositiondefinitions.core.krateo.io >/dev/null 2>&1; do sleep 5; done
+              echo "registering the installer CompositionDefinition"
+              kubectl apply -f /cr/compositiondefinition.yaml
               echo "waiting for the generated Installer CRD..."
               until kubectl get crd installers.composition.krateo.io >/dev/null 2>&1; do sleep 5; done
               # wait until the CRD actually serves this chart's version

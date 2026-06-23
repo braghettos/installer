@@ -29,22 +29,28 @@ annotations:
   krateo.io/display-name: Krateo Installer
   krateoSupportedVersion: ">= 2.5.1"
 
-# Bootstrap dependency: the Krateo composition engine controller (core-provider).
-#
-# The engine's core.krateo.io CRDs (CompositionDefinition, KubernetesTarget) are VENDORED into this
-# chart's crds/ (copied verbatim from krateo-core-provider-crd's templates). Helm installs crds/
-# BEFORE it REST-maps any template, so the self-bootstrap's `installer` CompositionDefinition CR (a
-# plain template) resolves on a bare cluster — the one-shot `helm install` needs NO separate
-# `helm install krateo-core-provider-crd` prerequisite step. This is a DELIBERATE crds/ exception
-# SCOPED to the bootstrap engine CRDs only (the chicken-and-egg: the umbrella creates a CR of a CRD
-# it must itself establish first). Component CRDs stay in their dedicated -crd charts' templates/
-# (helm-owned, upgradable) — unchanged.
-# CAVEAT: helm NEVER upgrades crds/. The core.krateo.io CRD schema is stable, but re-sync
-# chart/crds/ from krateo-core-provider-crd whenever the krateo-core-provider version below is bumped.
+# Bootstrap dependencies — BOTH gated by bootstrap.coreProvider.enabled, so they render ONLY on a
+# bare-cluster `helm install`, NEVER during the cdc/chart-inspector's COMPOSITION-mode render of the
+# live Installer (where bootstrap is off):
+#   - krateo-core-provider     : the composition engine controller.
+#   - krateo-core-provider-crd : the engine's core.krateo.io CRDs (CompositionDefinition,
+#     KubernetesTarget). As a SUBCHART its CRDs are HELM-OWNED by this release — NOT an un-owned
+#     crds/ dir. That distinction is load-bearing: chart-inspector re-installs the umbrella under a
+#     random release to generate RBAC, and an un-owned crds/ CRD made that fail (it could not be
+#     adopted). Because the CRD subchart is bootstrap-conditional, it is simply ABSENT from the
+#     composition-mode render chart-inspector sees — nothing to collide with.
+# The `installer` CompositionDefinition is therefore NOT a build-time template (a CR of a CRD this
+# same release installs can't be REST-mapped at build time). It lives in the installer-self-cr
+# ConfigMap and is applied by the post-install hook, which first waits for the compositiondefinitions
+# CRD to exist — "lookup the CRD, once present proceed with the bootstrap". One-shot, no prereq.
 dependencies:
-  # composition engine controller (its core.krateo.io CRDs are vendored into this chart's crds/)
   - name: krateo-core-provider
     version: "0.37.1"
+    repository: oci://ghcr.io/braghettos/krateo
+    condition: bootstrap.coreProvider.enabled
+  # engine CRDs (CompositionDefinition, KubernetesTarget) — helm-owned subchart, bootstrap-only
+  - name: krateo-core-provider-crd
+    version: "0.36.9"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # The ClickHouse + MongoDB observability operators are NO LONGER bootstrap subcharts. They
