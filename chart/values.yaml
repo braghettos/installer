@@ -350,7 +350,7 @@ components:
     feature: coreAgents
   - name: kagent
     kind: Kagent
-    version: "0.1.6"
+    version: "0.1.7"
     deps:
       - kagent-crds
     tier: observability
