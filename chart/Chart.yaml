@@ -31,15 +31,18 @@ annotations:
 
 # Bootstrap dependency: the Krateo composition engine controller (core-provider).
 #
-# The engine's CRD chart (krateo-core-provider-crd) is NOT bundled here. It is applied as
-# the FIRST bootstrap step in its own helm release — `helm install krateo-core-provider-crd`
-# — BEFORE this umbrella. Reason: the umbrella creates CompositionDefinition CRs in this
-# release, and the dedicated CRD chart ships its CRDs in templates/ (uniform standard,
-# resource-policy: keep — NO crds/ exception for core-provider). A CRD in templates/ is not
-# pre-established within its own release, so it must land in a SEPARATE earlier release; then
-# helm can bind this umbrella's CompositionDefinition CRs. See QUICKSTART (two-step bootstrap).
+# The engine's core.krateo.io CRDs (CompositionDefinition, KubernetesTarget) are VENDORED into this
+# chart's crds/ (copied verbatim from krateo-core-provider-crd's templates). Helm installs crds/
+# BEFORE it REST-maps any template, so the self-bootstrap's `installer` CompositionDefinition CR (a
+# plain template) resolves on a bare cluster — the one-shot `helm install` needs NO separate
+# `helm install krateo-core-provider-crd` prerequisite step. This is a DELIBERATE crds/ exception
+# SCOPED to the bootstrap engine CRDs only (the chicken-and-egg: the umbrella creates a CR of a CRD
+# it must itself establish first). Component CRDs stay in their dedicated -crd charts' templates/
+# (helm-owned, upgradable) — unchanged.
+# CAVEAT: helm NEVER upgrades crds/. The core.krateo.io CRD schema is stable, but re-sync
+# chart/crds/ from krateo-core-provider-crd whenever the krateo-core-provider version below is bumped.
 dependencies:
-  # composition engine controller (its CRDs are pre-applied separately; see above)
+  # composition engine controller (its core.krateo.io CRDs are vendored into this chart's crds/)
   - name: krateo-core-provider
     version: "0.37.0"
     repository: oci://ghcr.io/braghettos/krateo
