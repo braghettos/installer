@@ -44,7 +44,7 @@ annotations:
 dependencies:
   # composition engine controller (its core.krateo.io CRDs are vendored into this chart's crds/)
   - name: krateo-core-provider
-    version: "0.37.0"
+    version: "0.37.1"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # The ClickHouse + MongoDB observability operators are NO LONGER bootstrap subcharts. They
