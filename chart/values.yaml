@@ -233,6 +233,9 @@ components:
     svcMatch: snowplow
     configKeys:
       - SNOWPLOW_API_BASE_URL
+    # Phase-1 nav-prewarm reads the frontend config-vars ConfigMap by name; the installer
+    # injects this env with the name COMPUTED from the frontend (consumer) component.
+    frontendConfigEnv: FRONTEND_CONFIG_CONFIGMAP
   - name: frontend
     kind: KrateoFrontend
     chart: krateo-frontend

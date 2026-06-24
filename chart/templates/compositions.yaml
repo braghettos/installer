@@ -69,6 +69,24 @@
 {{- $_ := set $spec "config" $cfg }}
 {{- end }}
 {{- end }}
+{{- /* Frontend config-vars ConfigMap wiring. snowplow's Phase-1 nav-prewarm walker reads the
+       frontend config-vars ConfigMap BY NAME via the k8s API (it is not mounted). A component
+       opts in with `frontendConfigEnv: <ENV_KEY>`; we inject that env key with the ConfigMap name
+       COMPUTED from the consumer (frontend) component — NOT hardcoded — so a rename or re-chart of
+       the frontend carries through. The name follows the krateo-frontend chart's fullname
+       convention `<release>-<chart>-config-vars`, where the composition's release == the component
+       name (the chart falls back to the name when no explicit `chart`). A runtime Helm `lookup`
+       would be wrong: snowplow is a DEP of frontend, so it renders before that ConfigMap exists. */}}
+{{- if $c.frontendConfigEnv }}
+{{- range $d := $top.Values.components }}
+{{- if $d.consumer }}
+{{- $feCm := printf "%s-%s-config-vars" $d.name (default $d.name $d.chart) }}
+{{- $env := default (dict) $spec.env }}
+{{- $_ := set $env $c.frontendConfigEnv $feCm }}
+{{- $_ := set $spec "env" $env }}
+{{- end }}
+{{- end }}
+{{- end }}
 {{- /* Agent model wiring. localModel (opt-in) takes precedence over vertexAI:
        - localModel.enabled: the model OWNER (krateo-autopilot, modelOwner:true) gets
          .Values.localModel injected so it renders its gemini-flash/gemini-pro ModelConfigs

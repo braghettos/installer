@@ -173,6 +173,10 @@
               "type": "string"
             }
           },
+          "frontendConfigEnv": {
+            "type": "string",
+            "description": "Opt-in: env var key to inject into this component's spec.env with the frontend config-vars ConfigMap name, COMPUTED from the consumer (frontend) component (see compositions.yaml). Used by snowplow's Phase-1 nav-prewarm walker."
+          },
           "vertexAI": {
             "type": "boolean",
             "description": "Inject the umbrella's .vertexAI block into this component's Composition spec (krateo-autopilot)."
