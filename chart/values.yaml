@@ -221,7 +221,7 @@ components:
   - name: authn
     kind: KrateoAuthn
     chart: krateo-authn
-    version: "0.22.14"
+    version: "0.22.15"
     deps:
       - authn-crd
     tier: platform
@@ -234,7 +234,7 @@ components:
   - name: snowplow
     kind: KrateoSnowplow
     chart: krateo-snowplow
-    version: "1.0.27"
+    version: "1.0.38"
     deps:
       - snowplow-crd
     tier: platform
@@ -250,7 +250,7 @@ components:
   - name: frontend
     kind: KrateoFrontend
     chart: krateo-frontend
-    version: "1.1.5"
+    version: "1.1.6"
     deps:
       - frontend-crd
       - authn
@@ -271,7 +271,7 @@ components:
   - name: oasgen-provider
     kind: KrateoOasgenProvider
     chart: krateo-oasgen-provider
-    version: "0.9.6"
+    version: "0.9.7"
     deps:
       - oasgen-provider-crd
     tier: platform
@@ -316,7 +316,7 @@ components:
   # ociRepo = oci://ghcr.io/braghettos/krateo, like every other component.
   - name: otel-collector-deployment
     kind: OtelCollectorDeployment
-    version: "0.2.1"
+    version: "0.3.0"
     deps:
       - krateo-observability
     tier: observability
@@ -330,7 +330,7 @@ components:
     feature: portal
   - name: krateo-sse-proxy
     kind: KrateoSseProxy
-    version: "0.1.5"
+    version: "0.1.6"
     deps:
       - krateo-observability
     tier: observability
