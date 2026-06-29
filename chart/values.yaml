@@ -123,8 +123,8 @@ localModel:
 # wins on any leaf conflict — so you can safely add anything else here (e.g.
 # resources, replicaCount, service.annotations) and edit it in place on the live
 # Installer composition; a direct kubectl edit of the component CR reverts.
-# Default below registers the installer's federated agent on the autopilot orchestrator (the
-# single entry point). Add per-component overrides here too, e.g.:
+# The autopilot orchestrator auto-attaches the deployed agent fleet (see krateo-autopilot below);
+# no manual registration is needed. Add per-component overrides here too, e.g.:
 #     snowplow:
 #       replicaCount: 2
 componentValues:
@@ -158,14 +158,25 @@ componentValues:
   #       endpoint: "http://<otel-collector>.<ns>.svc:4318"
   #       protocol: http/protobuf
   krateo-autopilot:
-    # STANDALONE BY DEFAULT: the autopilot ships as a self-contained Krateo PlatformOps
-    # assistant — it answers questions + reports status and DEFERS mutations. It does NOT
-    # auto-orchestrate the agent fleet. To opt into A2A orchestration, list the specialist
-    # agents to attach here (each must also be deployed — e.g. enable specialistAgents), e.g.:
+    # ORCHESTRATOR BY DEFAULT: the autopilot auto-attaches EVERY deployed agent as an A2A
+    # sub-agent — the installer derives extraAgents from the feature-enabled `vertexAI` agent
+    # components (excluding the autopilot itself). So the enterprise profile wires the whole fleet
+    # (installer/authn/snowplow/frontend/clickstack/core-provider agents) and agent-only wires just
+    # the installer-agent — no manual list needed, and it adapts to whatever profile is enabled.
+    # To pin an EXPLICIT set instead, list them here (still gated to deployed agents); an explicit
+    # `extraAgents: []` means standalone (no orchestration).
     #   extraAgents:
     #     - name: krateo-installer-agent
     #     - name: krateo-core-provider-agent
-    extraAgents: []
+    # Generic Kubernetes + Helm sub-agents (built into the autopilot chart, gemini-flash) — ON for
+    # every profile so the orchestrator can delegate raw cluster/Helm work alongside the krateo
+    # specialists. Their mutations are HITL-gated by hitlApproval. Deep-merges with the chart's
+    # `agents` defaults (keeps agents.autopilot on, flips k8s/helm on).
+    agents:
+      k8s:
+        enabled: true
+      helm:
+        enabled: true
 
 # ---------------------------------------------------------------------------
 # Component DAG. `deps` = component names whose Compositions must be Ready=True

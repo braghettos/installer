@@ -124,22 +124,34 @@
        the ONLY durable way to customize a component's spec; a direct kubectl edit reverts. */}}
 {{- $custom := default dict (index ($top.Values.componentValues | default dict) $c.name) }}
 {{- $spec = merge $spec (deepCopy $custom) }}
-{{- /* Gate the orchestrator's extraAgents (a2a sub-agents) to agents that are actually
-       deployed: a reference to an Agent whose component is feature-disabled (e.g. the 9
-       specialists in the agent-only profile) makes kagent fail to compile the orchestrator
-       ("Agent <name> not found"). Filter extraAgents to components whose feature is enabled. */}}
-{{- if hasKey $spec "extraAgents" }}
+{{- /* Auto-orchestration: the model-owner (autopilot) attaches EVERY deployed agent as an A2A
+       sub-agent. When extraAgents is NOT explicitly set, the installer AUTO-DERIVES it from the
+       feature-enabled `vertexAI` agent components (excluding the owner itself) — so the enterprise
+       profile wires the whole fleet (installer/authn/snowplow/frontend/clickstack/core-provider
+       agents) and agent-only wires just the installer-agent, with no manual list. An explicit
+       componentValues.<owner>.extraAgents (including `[]` for standalone) is honored instead. Either
+       way the set is gated to feature-enabled components — a reference to a feature-disabled Agent
+       makes kagent fail to compile the orchestrator ("Agent <name> not found"). */}}
+{{- if $c.modelOwner }}
 {{- $enabled := dict }}
 {{- range $comp := $top.Values.components }}
 {{- if eq (include "inst.featureEnabled" (list $top $comp.feature)) "true" }}
 {{- $_ := set $enabled $comp.name true }}
 {{- end }}
 {{- end }}
-{{- $keep := list }}
+{{- $fleet := list }}
+{{- if hasKey $spec "extraAgents" }}
 {{- range $ea := $spec.extraAgents }}
-{{- if hasKey $enabled $ea.name }}{{- $keep = append $keep $ea }}{{- end }}
+{{- if hasKey $enabled $ea.name }}{{- $fleet = append $fleet $ea }}{{- end }}
 {{- end }}
-{{- $_ := set $spec "extraAgents" $keep }}
+{{- else }}
+{{- range $comp := $top.Values.components }}
+{{- if and $comp.vertexAI (ne $comp.name $c.name) (hasKey $enabled $comp.name) }}
+{{- $fleet = append $fleet (dict "name" $comp.name) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- $_ := set $spec "extraAgents" $fleet }}
 {{- end }}
 ---
 apiVersion: {{ include "inst.apiVersion" (list $c.version) }}
