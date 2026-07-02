@@ -12,7 +12,7 @@
   Fix (helm construct + reconciliation loop, NO controller change): helm runs ALL
   pre-delete hooks to completion BEFORE deleting any normal resource — so every component
   controller is still alive here. We delete the component Composition CRs in the EXACT
-  REVERSE of the dependency-ordered `.Values.components` list (consumers before the
+  REVERSE of the dependency-ordered component-pins list (files/component-pins.yaml; consumers before the
   providers they depend on), waiting for each kind to fully drain before the next. Because
   every controller is alive throughout, each CR's finalizer clears in order: portal drains
   (demo-system auto-deletes) before frontend-crd/authn-crd/snowplow-crd; hyperdx-provider's
@@ -55,7 +55,7 @@ spec:
               # Component Kinds in REVERSE dependency order (consumers first). Rendered from
               # the chart's dependency-sorted components list, so the order can never drift
               # from the install order. Disabled/absent kinds resolve to nothing and skip.
-              KINDS="{{- range $c := reverse .Values.components }}{{ $c.kind }} {{ end }}"
+              KINDS="{{- range $c := reverse (include "inst.componentsYaml" $ | fromYaml).components }}{{ $c.kind }} {{ end }}"
               echo "pre-delete: draining component compositions in reverse-dependency order, controllers still alive"
               for kind in $KINDS; do
                 # OasgenProvider holds the finalizer on ogen RestDefinitions (spawned by the
