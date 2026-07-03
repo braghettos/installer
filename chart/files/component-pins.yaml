@@ -57,6 +57,7 @@ components:
     version: "1.0.55"
     deps:
       - snowplow-crd
+      - authn
     tier: platform
     feature: portal
     expose: true
