@@ -148,7 +148,7 @@
 {{- else }}
 {{- range $comp := $components }}
 {{- if and $comp.vertexAI (ne $comp.name $c.name) (hasKey $enabled $comp.name) }}
-{{- $fleet = append $fleet (dict "name" $comp.name) }}
+{{- $fleet = append $fleet (dict "name" (default $comp.name $comp.chart)) }}
 {{- end }}
 {{- end }}
 {{- end }}
