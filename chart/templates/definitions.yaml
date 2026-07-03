@@ -7,7 +7,8 @@
      upgrade. The CD is dropped only once its component is fully gone. Composition mode only — the
      bootstrap helm install registers the Installer composition (self-bootstrap.yaml). */}}
 {{- if and .Values.installDefinitions (not .Values.bootstrap.coreProvider.enabled) }}
-{{- range $c := .Values.components }}
+{{- $components := (include "inst.componentsYaml" $ | fromYaml).components }}
+{{- range $c := $components }}
 {{- if or (eq (include "inst.featureEnabled" (list $ $c.feature)) "true") (eq (include "inst.compositionExists" (list $ $c.kind $c.name $c.version)) "true") }}
 ---
 apiVersion: core.krateo.io/v1alpha1

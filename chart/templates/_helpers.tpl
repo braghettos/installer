@@ -149,3 +149,15 @@
 {{- end -}}
 {{- $ip -}}
 {{- end -}}
+
+{{/*
+inst.componentsYaml — the chart-managed component pin list, sourced from
+files/component-pins.yaml (NOT .Values), so it is CHART CONTENT immune to
+`helm upgrade --reuse-values`. A chart bump therefore always propagates its component
+version/repo/dep pins on upgrade. Callers pass the ROOT context ($) so .Files is available and
+parse the result:
+    {{- $components := (include "inst.componentsYaml" $ | fromYaml).components -}}
+*/}}
+{{- define "inst.componentsYaml" -}}
+{{ .Files.Get "files/component-pins.yaml" }}
+{{- end -}}

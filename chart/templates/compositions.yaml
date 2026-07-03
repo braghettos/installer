@@ -19,21 +19,22 @@
 */}}
 {{- if not .Values.bootstrap.coreProvider.enabled }}
 {{- $top := . }}
+{{- $components := (include "inst.componentsYaml" $ | fromYaml).components }}
 {{- $isLB := or (eq .Values.exposure.type "LoadBalancer") (eq .Values.exposure.type "NodePort") }}
-{{- range $c := .Values.components }}
+{{- range $c := $components }}
 {{- $featOn := eq (include "inst.featureEnabled" (list $top $c.feature)) "true" }}
 {{- $crd  := include "inst.crdExists" (list $c.kind $c.version) }}
 {{- $render := "" }}
 {{- if $featOn }}
 {{/* install / steady-state: emit once the CRD is served and all deps are Ready (forward dep order). */}}
-{{- $deps := include "inst.depsReady" (list $top $c.deps $top.Values.components) }}
+{{- $deps := include "inst.depsReady" (list $top $c.deps $components) }}
 {{- if and (eq $crd "true") (eq $deps "true") }}{{- $render = "true" }}{{- end }}
 {{- else }}
 {{/* feature OFF -> reverse-dependency DRAIN: keep rendering (alive) until every component that
      deps on this one is gone, so teardown is leaves-first and never deletes this component (or the
      CRDs its release ships) out from under a still-present dependent. Dropped from the render — and
      thus deleted by the cdc — only once inst.dependentsGone reports clear. */}}
-{{- if and (eq $crd "true") (ne (include "inst.dependentsGone" (list $top $c.name $top.Values.components)) "true") }}{{- $render = "true" }}{{- end }}
+{{- if and (eq $crd "true") (ne (include "inst.dependentsGone" (list $top $c.name $components)) "true") }}{{- $render = "true" }}{{- end }}
 {{- end }}
 {{- if eq $render "true" }}
 {{- $spec := dict }}
@@ -55,7 +56,7 @@
 {{- end }}
 {{- if $c.consumer }}
 {{- $cfg := dict }}
-{{- range $d := $top.Values.components }}
+{{- range $d := $components }}
 {{- if $d.configKeys }}
 {{- $ip := include "inst.lbip" (list $top $d.svcMatch) }}
 {{- if $ip }}
@@ -78,7 +79,7 @@
        name (the chart falls back to the name when no explicit `chart`). A runtime Helm `lookup`
        would be wrong: snowplow is a DEP of frontend, so it renders before that ConfigMap exists. */}}
 {{- if $c.frontendConfigEnv }}
-{{- range $d := $top.Values.components }}
+{{- range $d := $components }}
 {{- if $d.consumer }}
 {{- $feCm := printf "%s-%s-config-vars" $d.name (default $d.name $d.chart) }}
 {{- $env := default (dict) $spec.env }}
@@ -134,7 +135,7 @@
        makes kagent fail to compile the orchestrator ("Agent <name> not found"). */}}
 {{- if $c.modelOwner }}
 {{- $enabled := dict }}
-{{- range $comp := $top.Values.components }}
+{{- range $comp := $components }}
 {{- if eq (include "inst.featureEnabled" (list $top $comp.feature)) "true" }}
 {{- $_ := set $enabled $comp.name true }}
 {{- end }}
@@ -145,7 +146,7 @@
 {{- if hasKey $enabled $ea.name }}{{- $fleet = append $fleet $ea }}{{- end }}
 {{- end }}
 {{- else }}
-{{- range $comp := $top.Values.components }}
+{{- range $comp := $components }}
 {{- if and $comp.vertexAI (ne $comp.name $c.name) (hasKey $enabled $comp.name) }}
 {{- $fleet = append $fleet (dict "name" $comp.name) }}
 {{- end }}

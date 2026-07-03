@@ -152,7 +152,10 @@ subjects:
        components-patch.json + the post-upgrade branch), so chart-side pins reach the cluster
        while spec.features and other runtime edits are preserved (not clobbered by a full
        re-apply). Single-entry in-place CR edits remain safe (whole list shipped). */}}
-{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "vertexAI" "hitlApproval" "components" "componentValues" "registryAuth" }}
+{{- $spec := pick .Values "ociRepo" "installDefinitions" "namespaces" "exposure" "features" "vertexAI" "hitlApproval" "componentValues" "registryAuth" }}
+{{- /* components pins come from the chart FILE (files/component-pins.yaml), NOT .Values, so a
+       chart bump always propagates its pins on upgrade even under `helm upgrade --reuse-values`. */}}
+{{- $_ := set $spec "components" (include "inst.componentsYaml" $ | fromYaml).components }}
 {{- $_ := set $spec "bootstrap" (dict "coreProvider" (dict "enabled" false)) }}
 apiVersion: v1
 kind: ConfigMap
@@ -189,7 +192,7 @@ data:
   # component version/set/config bumps propagate WITHOUT clobbering what the installer-agent (or
   # a user) changed at runtime. The `components` list is replaced wholesale; `componentValues`
   # deep-merges, so chart-set keys win and any user-only componentValues keys are preserved.
-  components-patch.json: {{ dict "spec" (dict "components" .Values.components "componentValues" .Values.componentValues) | toJson | quote }}
+  components-patch.json: {{ dict "spec" (dict "components" (include "inst.componentsYaml" $ | fromYaml).components "componentValues" .Values.componentValues) | toJson | quote }}
 ---
 apiVersion: batch/v1
 kind: Job
