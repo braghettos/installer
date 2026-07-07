@@ -33,7 +33,7 @@ components:
   - name: snowplow-crd
     kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
-    version: "1.0.55"
+    version: "1.0.58"
     tier: platform
     feature: portal
 
@@ -54,7 +54,7 @@ components:
   - name: snowplow
     kind: KrateoSnowplow
     chart: krateo-snowplow
-    version: "1.0.55"
+    version: "1.0.58"
     deps:
       - snowplow-crd
       - authn
