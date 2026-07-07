@@ -157,7 +157,29 @@ files/component-pins.yaml (NOT .Values), so it is CHART CONTENT immune to
 version/repo/dep pins on upgrade. Callers pass the ROOT context ($) so .Files is available and
 parse the result:
     {{- $components := (include "inst.componentsYaml" $ | fromYaml).components -}}
+
+PERMIT UPDATE — per-component `version` override from the Installer CR:
+Each component's `version` may be overridden by the Installer CR's spec.components[].version
+(= .Values.components here), matched by name. This lets an operator bump a live component version
+by patching the Installer CR — the override flows through BOTH Pass A (definitions.yaml ->
+CompositionDefinition spec.chart.version) AND Pass B (compositions.yaml -> the instance apiVersion
+via inst.apiVersion), so the CD and its composition instance move in LOCKSTEP (no served-version
+skew). When the CR does not set a component's version, the baked file version is used — so a chart
+bump still propagates its pins and the set stays immune to `--reuse-values`. Only `version` is
+overridable; all other pin fields (kind/chart/deps/tier/feature/exposure) remain chart content.
 */}}
 {{- define "inst.componentsYaml" -}}
-{{ .Files.Get "files/component-pins.yaml" }}
+{{- $file := .Files.Get "files/component-pins.yaml" | fromYaml -}}
+{{- $ov := dict -}}
+{{- range $o := (.Values.components | default list) -}}
+{{- if and (kindIs "map" $o) (hasKey $o "name") (hasKey $o "version") -}}
+{{- $_ := set $ov (toString $o.name) $o.version -}}
+{{- end -}}
+{{- end -}}
+{{- range $c := ($file.components | default list) -}}
+{{- if hasKey $ov (toString $c.name) -}}
+{{- $_ := set $c "version" (index $ov (toString $c.name)) -}}
+{{- end -}}
+{{- end -}}
+{{ $file | toYaml }}
 {{- end -}}
