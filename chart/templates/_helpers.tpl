@@ -53,10 +53,15 @@
      the exact version makes both Pass B emission and readiness checks tolerate that
      transient (treat as "not ready yet") instead of failing the whole render. */}}
 {{- define "inst.crdExists" -}}
-{{- $kind := index . 0 -}}{{- $ver := index . 1 -}}
+{{- $kind := index . 0 -}}{{- $ver := index . 1 -}}{{- $allCRDs := index . 2 -}}
 {{- $want := printf "v%s" ($ver | toString | replace "." "-") -}}
 {{- $found := "" -}}
-{{- range (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "").items -}}
+{{/* $allCRDs is the cluster's CRD list, looked up ONCE by the caller and threaded through here — see
+     the head of definitions.yaml / compositions.yaml. Ranging it in-memory (instead of a fresh
+     apiextensions LIST per call) turns the gating from O(components x all-CRDs LISTs) into a single
+     LIST; on a full cluster (121 CRDs, 42 large widget schemas) that cut the umbrella render from ~55s
+     (which blew the cdc<->chart-inspector timeout) to a few seconds (D9, 2026-07-08). */}}
+{{- range $allCRDs -}}
 {{- if and (eq .spec.group "composition.krateo.io") (eq .spec.names.kind $kind) -}}
 {{- range .spec.versions -}}{{- if and (eq .name $want) .served -}}{{- $found = "true" -}}{{- end -}}{{- end -}}
 {{- end -}}
@@ -70,9 +75,9 @@
      empty. So short-circuit via inst.crdExists (an apiextensions lookup, always valid)
      before doing the typed Composition lookup. */}}
 {{- define "inst.ready" -}}
-{{- $top := index . 0 -}}{{- $kind := index . 1 -}}{{- $name := index . 2 -}}{{- $ver := index . 3 -}}
+{{- $top := index . 0 -}}{{- $kind := index . 1 -}}{{- $name := index . 2 -}}{{- $ver := index . 3 -}}{{- $allCRDs := index . 4 -}}
 {{- $r := "" -}}
-{{- if eq (include "inst.crdExists" (list $kind $ver)) "true" -}}
+{{- if eq (include "inst.crdExists" (list $kind $ver $allCRDs)) "true" -}}
 {{- $apiv := include "inst.apiVersion" (list $ver) -}}
 {{- $o := lookup $apiv $kind $top.Values.namespaces.krateo $name -}}
 {{- if $o -}}
@@ -91,12 +96,12 @@
 
 {{/* Are all of a component's deps Ready? args: (list $ $deps $components) */}}
 {{- define "inst.depsReady" -}}
-{{- $top := index . 0 -}}{{- $deps := index . 1 -}}{{- $comps := index . 2 -}}
+{{- $top := index . 0 -}}{{- $deps := index . 1 -}}{{- $comps := index . 2 -}}{{- $allCRDs := index . 3 -}}
 {{- $all := "true" -}}
 {{- range $d := $deps -}}
   {{- $kind := "" -}}{{- $ver := "" -}}
   {{- range $c := $comps -}}{{- if eq $c.name $d -}}{{- $kind = $c.kind -}}{{- $ver = $c.version -}}{{- end -}}{{- end -}}
-  {{- if ne (include "inst.ready" (list $top $kind $d $ver)) "true" -}}{{- $all = "" -}}{{- end -}}
+  {{- if ne (include "inst.ready" (list $top $kind $d $ver $allCRDs)) "true" -}}{{- $all = "" -}}{{- end -}}
 {{- end -}}
 {{- $all -}}
 {{- end -}}
@@ -110,11 +115,11 @@
      "uninstalling", and no CompositionDefinition delete deadlock. Guarded by inst.crdExists before the typed
      lookup (an unserved Kind is a hard error in chart-inspector), exactly like inst.ready. */}}
 {{- define "inst.dependentsGone" -}}
-{{- $top := index . 0 -}}{{- $name := index . 1 -}}{{- $comps := index . 2 -}}
+{{- $top := index . 0 -}}{{- $name := index . 1 -}}{{- $comps := index . 2 -}}{{- $allCRDs := index . 3 -}}
 {{- $gone := "true" -}}
 {{- range $c := $comps -}}
   {{- if has $name ($c.deps | default list) -}}
-    {{- if eq (include "inst.crdExists" (list $c.kind $c.version)) "true" -}}
+    {{- if eq (include "inst.crdExists" (list $c.kind $c.version $allCRDs)) "true" -}}
       {{- if (lookup (include "inst.apiVersion" (list $c.version)) $c.kind $top.Values.namespaces.krateo $c.name) -}}{{- $gone = "" -}}{{- end -}}
     {{- end -}}
   {{- end -}}
@@ -128,8 +133,8 @@
      is still present/draining — so the generated CRD OUTLIVES the Composition it serves and is never
      GC'd out from under a still-draining component (the Pass-A counterpart to inst.dependentsGone). */}}
 {{- define "inst.compositionExists" -}}
-{{- $top := index . 0 -}}{{- $kind := index . 1 -}}{{- $name := index . 2 -}}{{- $ver := index . 3 -}}
-{{- if eq (include "inst.crdExists" (list $kind $ver)) "true" -}}
+{{- $top := index . 0 -}}{{- $kind := index . 1 -}}{{- $name := index . 2 -}}{{- $ver := index . 3 -}}{{- $allCRDs := index . 4 -}}
+{{- if eq (include "inst.crdExists" (list $kind $ver $allCRDs)) "true" -}}
 {{- if (lookup (include "inst.apiVersion" (list $ver)) $kind $top.Values.namespaces.krateo $name) -}}true{{- end -}}
 {{- end -}}
 {{- end -}}

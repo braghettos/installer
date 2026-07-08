@@ -20,10 +20,13 @@
 {{- if not .Values.bootstrap.coreProvider.enabled }}
 {{- $top := . }}
 {{- $components := (include "inst.componentsYaml" $ | fromYaml).components }}
+{{/* LIST all CRDs ONCE and thread the slice into the gating helpers, instead of each inst.crdExists
+     re-LISTing all CRDs per component/dep — see inst.crdExists (D9). */}}
+{{- $allCRDs := (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "").items }}
 {{- $isLB := or (eq .Values.exposure.type "LoadBalancer") (eq .Values.exposure.type "NodePort") }}
 {{- range $c := $components }}
 {{- $featOn := eq (include "inst.featureEnabled" (list $top $c.feature)) "true" }}
-{{- $crd  := include "inst.crdExists" (list $c.kind $c.version) }}
+{{- $crd  := include "inst.crdExists" (list $c.kind $c.version $allCRDs) }}
 {{- $render := "" }}
 {{- if $featOn }}
 {{/* install / steady-state: emit once the CRD is served and all deps are Ready (forward dep order).
@@ -34,15 +37,15 @@
      instances, Deployments and Services deleted during an engine restart though their deps were Ready
      seconds later). depsReady still gates the FIRST creation, so forward dependency order on bring-up
      is preserved; real teardown is handled by the feature-OFF drain branch below, not by a lookup miss. */}}
-{{- $deps := include "inst.depsReady" (list $top $c.deps $components) }}
-{{- $exists := include "inst.compositionExists" (list $top $c.kind $c.name $c.version) }}
+{{- $deps := include "inst.depsReady" (list $top $c.deps $components $allCRDs) }}
+{{- $exists := include "inst.compositionExists" (list $top $c.kind $c.name $c.version $allCRDs) }}
 {{- if and (eq $crd "true") (or (eq $deps "true") (eq $exists "true")) }}{{- $render = "true" }}{{- end }}
 {{- else }}
 {{/* feature OFF -> reverse-dependency DRAIN: keep rendering (alive) until every component that
      deps on this one is gone, so teardown is leaves-first and never deletes this component (or the
      CRDs its release ships) out from under a still-present dependent. Dropped from the render — and
      thus deleted by the cdc — only once inst.dependentsGone reports clear. */}}
-{{- if and (eq $crd "true") (ne (include "inst.dependentsGone" (list $top $c.name $components)) "true") }}{{- $render = "true" }}{{- end }}
+{{- if and (eq $crd "true") (ne (include "inst.dependentsGone" (list $top $c.name $components $allCRDs)) "true") }}{{- $render = "true" }}{{- end }}
 {{- end }}
 {{- if eq $render "true" }}
 {{- $spec := dict }}
