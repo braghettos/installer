@@ -27,7 +27,7 @@ components:
   - name: frontend-crd
     kind: KrateoFrontendCrd
     chart: krateo-frontend-crd
-    version: "1.2.0"
+    version: "1.2.2"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -71,7 +71,7 @@ components:
   - name: frontend
     kind: KrateoFrontend
     chart: krateo-frontend
-    version: "1.2.1"
+    version: "1.2.2"
     deps:
       - frontend-crd
       - authn
