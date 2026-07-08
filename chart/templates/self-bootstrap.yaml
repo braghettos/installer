@@ -184,6 +184,14 @@ data:
     metadata:
       name: installer
       namespace: {{ .Values.namespaces.krateo }}
+      labels:
+        # Pin the umbrella's Helm RELEASE name to a stable fullname ("krateo") instead of the cdc
+        # default <name>-<hash(UID)>. Kept DISTINCT from the bootstrap base release ("installer")
+        # to avoid a name collision, and stable across any recreate of the Installer composition CR
+        # so the umbrella never churns to a new <name>-<newUID> release (mirrors the per-component
+        # krateo.io/release-name pins in compositions.yaml). safe-release-name stays true; the cdc
+        # honors this label verbatim (SetReleaseName only fills it when absent).
+        krateo.io/release-name: krateo
     spec:
 {{ $spec | toYaml | indent 6 }}
   # Surgical upgrade patch: ONLY the chart-managed component pins (versions/repos/deps) and
