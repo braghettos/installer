@@ -8,8 +8,11 @@
      bootstrap helm install registers the Installer composition (self-bootstrap.yaml). */}}
 {{- if and .Values.installDefinitions (not .Values.bootstrap.coreProvider.enabled) }}
 {{- $components := (include "inst.componentsYaml" $ | fromYaml).components }}
+{{/* LIST all CRDs ONCE and thread the slice into the gating helpers, instead of each inst.crdExists
+     re-LISTing all CRDs — see inst.crdExists (D9). */}}
+{{- $allCRDs := (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "").items }}
 {{- range $c := $components }}
-{{- if or (eq (include "inst.featureEnabled" (list $ $c.feature)) "true") (eq (include "inst.compositionExists" (list $ $c.kind $c.name $c.version)) "true") }}
+{{- if or (eq (include "inst.featureEnabled" (list $ $c.feature)) "true") (eq (include "inst.compositionExists" (list $ $c.kind $c.name $c.version $allCRDs)) "true") }}
 ---
 apiVersion: core.krateo.io/v1alpha1
 kind: CompositionDefinition
