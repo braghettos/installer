@@ -26,9 +26,17 @@
 {{- $crd  := include "inst.crdExists" (list $c.kind $c.version) }}
 {{- $render := "" }}
 {{- if $featOn }}
-{{/* install / steady-state: emit once the CRD is served and all deps are Ready (forward dep order). */}}
+{{/* install / steady-state: emit once the CRD is served and all deps are Ready (forward dep order).
+     THEN keep emitting it as long as the instance still EXISTS -- even if a dep goes transiently
+     not-Ready during churn (e.g. an engine restart flips dep instances not-Ready for a moment).
+     Without the `$exists` clause a momentary depsReady=false drops the instance from the manifest and
+     the cdc/helm PRUNES the live workload on that blip (observed 2026-07-08: frontend + kagent
+     instances, Deployments and Services deleted during an engine restart though their deps were Ready
+     seconds later). depsReady still gates the FIRST creation, so forward dependency order on bring-up
+     is preserved; real teardown is handled by the feature-OFF drain branch below, not by a lookup miss. */}}
 {{- $deps := include "inst.depsReady" (list $top $c.deps $components) }}
-{{- if and (eq $crd "true") (eq $deps "true") }}{{- $render = "true" }}{{- end }}
+{{- $exists := include "inst.compositionExists" (list $top $c.kind $c.name $c.version) }}
+{{- if and (eq $crd "true") (or (eq $deps "true") (eq $exists "true")) }}{{- $render = "true" }}{{- end }}
 {{- else }}
 {{/* feature OFF -> reverse-dependency DRAIN: keep rendering (alive) until every component that
      deps on this one is gone, so teardown is leaves-first and never deletes this component (or the
