@@ -95,6 +95,21 @@ spec:
                   sleep 5
                 done
               done
+              # Reap orphaned ClickHouse/Keeper PVCs (#93). KrateoObservability drained above, so its
+              # ClickHouseCluster/KeeperCluster CRs are gone and the operator tore down the StatefulSets —
+              # but it sets no ownerReference / retentionPolicy on the data PVCs (clickhouse-storage-volume-*),
+              # so they orphan. Bounded wait then delete; best-effort (the Job already has set +e / exit 0).
+              echo "pre-delete: reaping orphaned clickhouse-storage-volume-* PVCs in $NS"
+              for i in $(seq 1 12); do
+                pvcs=$(kubectl get pvc -n "$NS" --no-headers -o custom-columns=N:.metadata.name 2>/dev/null \
+                       | grep '^clickhouse-storage-volume-'); rc=$?
+                [ $rc -ne 0 ] && { sleep 5; continue; }
+                [ -z "$pvcs" ] && { echo "  no clickhouse-storage-volume-* PVCs remain"; break; }
+                echo "$pvcs" | while read -r pvc; do
+                  [ -n "$pvc" ] && echo "  deleting PVC $pvc" && kubectl delete pvc "$pvc" -n "$NS" --wait=false 2>/dev/null
+                done
+                sleep 5
+              done
               echo "pre-delete done — helm deletes the CompositionDefinitions; core-provider GCs the generated CRDs (no orphans)"
               exit 0
 {{- end }}
