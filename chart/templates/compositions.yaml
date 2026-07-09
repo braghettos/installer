@@ -172,7 +172,9 @@ metadata:
   name: {{ $c.name }}
   namespace: {{ $top.Values.namespaces.krateo }}
   labels:
-    app.kubernetes.io/managed-by: krateo-installer
+    # NB: app.kubernetes.io/managed-by is intentionally NOT set — helm forces it to
+    # "Helm" on every release resource, so a chart-set value never converges and makes
+    # the cdc reconcile churn a revision every cycle. Let helm own it.
     krateo.io/tier: {{ $c.tier }}
     # Pin the cdc's Helm RELEASE name to the stable component name (instead of the default
     # <name>-<hash(UID)>). The cdc honors a pre-set krateo.io/release-name label verbatim
