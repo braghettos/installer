@@ -1451,31 +1451,13 @@
                   "type": "string",
                   "title": "Events API base URL",
                   "default": "http://localhost:8083"
-                },
-                "SMITHERY_API_BASE_URL": {
-                  "type": "string",
-                  "title": "Smithery API base URL",
-                  "default": "http://localhost:8088"
-                },
-                "INIT": {
-                  "type": "string",
-                  "title": "Init route",
-                  "default": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
-                },
-                "ROUTES_LOADER": {
-                  "type": "string",
-                  "title": "Routes loader route",
-                  "default": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
                 }
               },
               "default": {
                 "SNOWPLOW_API_BASE_URL": "http://localhost:8081",
                 "AUTHN_API_BASE_URL": "http://localhost:8082",
                 "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
-                "EVENTS_API_BASE_URL": "http://localhost:8083",
-                "SMITHERY_API_BASE_URL": "http://localhost:8088",
-                "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system",
-                "ROUTES_LOADER": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
+                "EVENTS_API_BASE_URL": "http://localhost:8083"
               }
             },
             "env": {
