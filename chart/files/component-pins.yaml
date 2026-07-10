@@ -27,7 +27,7 @@ components:
   - name: frontend-crd
     kind: KrateoFrontendCrd
     chart: krateo-frontend-crd
-    version: "1.3.2"
+    version: "1.3.3"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -84,7 +84,7 @@ components:
     consumer: true
   - name: portal
     kind: Portal
-    version: "1.5.1"
+    version: "1.5.9"
     deps:
       - frontend
     tier: platform
@@ -270,7 +270,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.29"
+    version: "0.1.30"
     deps:
       - kagent
     tier: observability
