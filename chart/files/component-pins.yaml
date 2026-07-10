@@ -21,7 +21,7 @@ components:
   - name: oasgen-provider-crd
     kind: KrateoOasgenProviderCrd
     chart: krateo-oasgen-provider-crd
-    version: "0.9.5"
+    version: "0.9.7"
     tier: platform
     feature: oasgenProvider
   - name: frontend-crd
@@ -33,7 +33,7 @@ components:
   - name: snowplow-crd
     kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
-    version: "1.0.62"
+    version: "1.0.63"
     tier: platform
     feature: portal
 
@@ -54,7 +54,7 @@ components:
   - name: snowplow
     kind: KrateoSnowplow
     chart: krateo-snowplow
-    version: "1.0.62"
+    version: "1.0.63"
     deps:
       - snowplow-crd
       - authn
@@ -71,7 +71,7 @@ components:
   - name: frontend
     kind: KrateoFrontend
     chart: krateo-frontend
-    version: "1.3.2"
+    version: "1.3.3"
     deps:
       - frontend-crd
       - authn
