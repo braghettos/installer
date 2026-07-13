@@ -215,7 +215,7 @@ components:
     feature: coreAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.12"
+    version: "0.1.13"
     deps:
       - kagent
     tier: observability

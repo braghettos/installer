@@ -22,8 +22,9 @@ modelConfig:
 prompts:
   language: eng
 
-# Human-in-the-loop gate on the mutating tools (k8s_patch_resource, k8s_apply_manifest) the
-# agent uses to edit the Installer CR. true = pause for approval (safe); false = autonomous.
+# Human-in-the-loop gate on the mutating tools (k8s_patch_resource, k8s_apply_manifest,
+# k8s_label_resource, k8s_annotate_resource) the agent uses to edit the Installer CR.
+# true = pause for approval (safe); false = autonomous.
 hitlApproval: true
 
 # Narrow RBAC: bind patch-on-installers (+ read compositiondefinitions) to the ServiceAccount the
