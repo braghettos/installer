@@ -1446,6 +1446,33 @@
               },
               "default": {}
             },
+            "previewSandbox": {
+              "type": "object",
+              "title": "Preview sandbox",
+              "description": "Wave-4 live-preview sandbox provisioning (krateo-preview namespace + author RBAC + ResourceQuota + TTL janitor). Passed through to the frontend chart; PREVIEW_SANDBOX_NAMESPACE is auto-forced from previewSandbox.namespace when enabled.",
+              "additionalProperties": true,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "namespace": {
+                  "type": "string"
+                },
+                "ttl": {
+                  "type": "string"
+                },
+                "quota": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "widgetPlurals": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
             "global": {
               "type": "object",
               "title": "Global values",
