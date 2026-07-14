@@ -1,0 +1,284 @@
+bootstrap:
+  coreProvider:
+    enabled: false
+componentValues:
+  frontend:
+    config:
+      AUTHN_API_BASE_URL: http://localhost:8082
+      EVENTS_API_BASE_URL: http://localhost:8083
+      EVENTS_PUSH_API_BASE_URL: http://localhost:8083
+      PROVENANCE_ENABLED: "true"
+      SNOWPLOW_API_BASE_URL: http://localhost:8081
+    fullnameOverride: ""
+    imagePullSecrets: []
+    nameOverride: ""
+    replicaCount: 1
+    tolerations: []
+  kagent:
+    kagentapp:
+      fullnameOverride: kagent
+  krateo-autopilot:
+    agents:
+      helm:
+        enabled: true
+      k8s:
+        enabled: true
+  snowplow:
+    env:
+      PHASE1_TIMEOUT_SECONDS: "900"
+      RESOLVED_CACHE_REFRESHER_PARALLELISM: "8"
+components:
+- chart: krateo-authn-crd
+  feature: portal
+  kind: KrateoAuthnCrd
+  name: authn-crd
+  tier: platform
+  version: 0.22.19
+- chart: krateo-oasgen-provider-crd
+  feature: oasgenProvider
+  kind: KrateoOasgenProviderCrd
+  name: oasgen-provider-crd
+  tier: platform
+  version: 0.9.7
+- chart: krateo-frontend-crd
+  feature: portal
+  kind: KrateoFrontendCrd
+  name: frontend-crd
+  tier: platform
+  version: 1.3.12
+- chart: krateo-snowplow-crd
+  feature: portal
+  kind: KrateoSnowplowCrd
+  name: snowplow-crd
+  tier: platform
+  version: 1.0.69
+- chart: krateo-authn
+  configKeys:
+  - AUTHN_API_BASE_URL
+  deps:
+  - authn-crd
+  expose: true
+  exposePort: 8082
+  feature: portal
+  kind: KrateoAuthn
+  name: authn
+  svcMatch: authn
+  tier: platform
+  version: 0.22.19
+- chart: krateo-snowplow
+  configKeys:
+  - SNOWPLOW_API_BASE_URL
+  deps:
+  - snowplow-crd
+  - authn
+  expose: true
+  exposePort: 8081
+  feature: portal
+  frontendConfigEnv: FRONTEND_CONFIG_CONFIGMAP
+  kind: KrateoSnowplow
+  name: snowplow
+  svcMatch: snowplow
+  tier: platform
+  version: 1.0.69
+- chart: krateo-frontend
+  consumer: true
+  deps:
+  - frontend-crd
+  - authn
+  - snowplow
+  expose: true
+  exposePort: 8080
+  feature: portal
+  kind: KrateoFrontend
+  name: frontend
+  svcMatch: frontend
+  tier: platform
+  version: 1.3.14
+- deps:
+  - frontend
+  feature: portal
+  kind: Portal
+  name: portal
+  tier: platform
+  version: 1.5.15
+- chart: krateo-oasgen-provider
+  deps:
+  - oasgen-provider-crd
+  feature: oasgenProvider
+  kind: KrateoOasgenProvider
+  name: oasgen-provider
+  tier: platform
+  version: 0.9.8
+- feature: portal
+  kind: ClickhouseOperator
+  name: clickhouse-operator
+  tier: observability
+  version: 0.1.0
+- feature: portal
+  kind: MongodbOperator
+  name: mongodb-operator
+  tier: observability
+  version: 0.1.0
+- deps:
+  - clickhouse-operator
+  - mongodb-operator
+  feature: portal
+  kind: KrateoObservability
+  name: krateo-observability
+  tier: observability
+  version: 0.1.8
+- deps:
+  - krateo-observability
+  feature: portal
+  kind: OtelCollectorDeployment
+  name: otel-collector-deployment
+  tier: observability
+  version: 0.3.2
+- deps:
+  - otel-collector-deployment
+  feature: portal
+  kind: OtelCollectorDaemonset
+  name: otel-collector-daemonset
+  tier: observability
+  version: 0.1.4
+- configKeys:
+  - EVENTS_API_BASE_URL
+  - EVENTS_PUSH_API_BASE_URL
+  deps:
+  - krateo-observability
+  expose: true
+  exposePort: 8080
+  feature: portal
+  kind: KrateoSseProxy
+  name: krateo-sse-proxy
+  svcMatch: sse-proxy
+  tier: observability
+  version: 0.1.6
+- deps:
+  - krateo-observability
+  feature: specialistAgents
+  kind: ClickhouseMcpServer
+  name: clickhouse-mcp-server
+  tier: observability
+  version: 0.1.7
+- feature: coreAgents
+  kind: KagentCrds
+  name: kagent-crds
+  tier: observability
+  version: 0.1.3
+- deps:
+  - kagent-crds
+  expose: true
+  exposePort: 8080
+  feature: coreAgents
+  kind: Kagent
+  name: kagent
+  serviceValuesPath: kagentapp.ui.service
+  svcMatch: kagent-ui
+  tier: observability
+  version: 0.1.7
+- deps:
+  - kagent
+  feature: coreAgents
+  kind: FetchMcpServer
+  name: fetch-mcp-server
+  tier: observability
+  version: 0.1.1
+- deps:
+  - kagent
+  feature: coreAgents
+  kind: KrateoInstallerAgent
+  name: krateo-installer-agent
+  tier: observability
+  version: 0.1.13
+  vertexAI: true
+- chart: krateo-authn-agent
+  deps:
+  - kagent
+  feature: specialistAgents
+  kind: KrateoAuthnAgent
+  name: authn-agent
+  tier: observability
+  version: 0.1.8
+  vertexAI: true
+- chart: krateo-snowplow-agent
+  deps:
+  - kagent
+  feature: specialistAgents
+  kind: KrateoSnowplowAgent
+  name: snowplow-agent
+  tier: observability
+  version: 0.1.8
+  vertexAI: true
+- chart: krateo-frontend-agent
+  deps:
+  - kagent
+  feature: specialistAgents
+  kind: KrateoFrontendAgent
+  name: frontend-agent
+  tier: observability
+  version: 0.1.7
+  vertexAI: true
+- chart: krateo-clickstack-agent
+  deps:
+  - kagent
+  feature: specialistAgents
+  kind: KrateoClickstackAgent
+  name: clickstack-agent
+  tier: observability
+  version: 0.1.6
+  vertexAI: true
+- chart: krateo-core-provider-agent
+  deps:
+  - kagent
+  feature: specialistAgents
+  kind: KrateoCoreProviderAgent
+  name: core-provider-agent
+  tier: observability
+  version: 0.1.9
+  vertexAI: true
+- deps:
+  - kagent
+  feature: coreAgents
+  kind: KrateoAutopilot
+  modelOwner: true
+  name: krateo-autopilot
+  tier: observability
+  version: 0.1.30
+  vertexAI: true
+exposure:
+  type: LoadBalancer
+features:
+  coreAgents: true
+  coreProvider: true
+  oasgenProvider: true
+  portal: true
+  specialistAgents: true
+global:
+  compositionApiVersion: composition.krateo.io/v0-2-219
+  compositionGroup: composition.krateo.io
+  compositionId: 73f3d944-ee45-431b-90bb-2fe92e618e4c
+  compositionInstalledVersion: v0-2-219
+  compositionKind: Installer
+  compositionName: installer
+  compositionNamespace: krateo-system
+  compositionResource: installers
+  gracefullyPaused: "false"
+  krateoNamespace: krateo-system
+hitlApproval: true
+installDefinitions: true
+namespaces:
+  krateo: krateo-system
+ociRepo: oci://ghcr.io/braghettos/krateo
+registryAuth:
+  enabled: false
+  insecureSkipVerifyTLS: false
+  passwordRef:
+    key: ""
+    name: ""
+    namespace: ""
+  username: ""
+vertexAI:
+  enabled: true
+  location: global
+  projectID: ""
