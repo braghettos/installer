@@ -45,7 +45,7 @@ annotations:
 # CRD to exist — "lookup the CRD, once present proceed with the bootstrap". One-shot, no prereq.
 dependencies:
   - name: krateo-core-provider
-    version: "0.53.4"
+    version: "0.53.5"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # engine CRDs (CompositionDefinition, KubernetesTarget) — helm-owned subchart, bootstrap-only
