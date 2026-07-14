@@ -1449,7 +1449,10 @@
             "previewSandbox": {
               "type": "object",
               "title": "Preview sandbox",
-              "description": "Wave-4 live-preview sandbox provisioning (krateo-preview namespace + author RBAC + ResourceQuota + TTL janitor). Passed through to the frontend chart; PREVIEW_SANDBOX_NAMESPACE is auto-forced from previewSandbox.namespace when enabled.",
+              "description": "Wave-4 live-preview sandbox provisioning (krateo-preview namespace + author RBAC + ResourceQuota + TTL janitor). Passed through to the frontend chart; PREVIEW_SANDBOX_NAMESPACE is auto-forced from previewSandbox.namespace when enabled. The default {enabled:false} keeps the key in the schema-defaulted componentValues so a live-values override (enabled:true) durably merges through the self-bootstrap patch — matching how the config-object keys propagate. The frontend chart supplies namespace/ttl/quota defaults.",
+              "default": {
+                "enabled": false
+              },
               "additionalProperties": true,
               "properties": {
                 "enabled": {
