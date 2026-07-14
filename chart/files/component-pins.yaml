@@ -89,6 +89,16 @@ components:
       - frontend
     tier: platform
     feature: portal
+  # The helm-render dry-run service behind blueprint-preview + upgrade-impact (POST /render,
+  # /diff). ClusterIP-only (never browser-exposed); snowplow reaches it in-cluster via the
+  # chart-provisioned `helm-render-endpoint` Secret. A Krateo COMPOSITION component (NOT a
+  # hand `helm install`) — the CDC names its release after the component (`krateo-helm-render-service`),
+  # so the Service DNS `krateo-helm-render-service.krateo-system.svc:8080` the RAs use is preserved.
+  - name: krateo-helm-render-service
+    kind: KrateoHelmRenderService
+    version: "0.1.4"
+    tier: platform
+    feature: portal
   - name: oasgen-provider
     kind: KrateoOasgenProvider
     chart: krateo-oasgen-provider
@@ -180,7 +190,7 @@ components:
   #   kagent (the operator) depends on it, so the CRDs are established before its CRs render.
   - name: kagent-crds
     kind: KagentCrds
-    version: "0.1.3"
+    version: "0.1.4"
     tier: observability
     feature: coreAgents
   - name: kagent
