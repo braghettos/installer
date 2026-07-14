@@ -1428,13 +1428,49 @@
                   "type": "string",
                   "title": "Events API base URL",
                   "default": "http://localhost:8083"
+                },
+                "RENDER_API_BASE_URL": {
+                  "type": "string",
+                  "title": "Render API base URL",
+                  "description": "Autopilot previewBlueprint (frontend >= 1.3.18): base URL of the helm-render dry-run service. Default = the frontend chart's same-origin nginx proxy path (/render-api -> helm-render-service, ClusterIP-only, zero exposure). '' turns the preview off (graceful chip).",
+                  "default": "/render-api"
                 }
               },
               "default": {
                 "SNOWPLOW_API_BASE_URL": "http://localhost:8081",
                 "AUTHN_API_BASE_URL": "http://localhost:8082",
                 "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
-                "EVENTS_API_BASE_URL": "http://localhost:8083"
+                "EVENTS_API_BASE_URL": "http://localhost:8083",
+                "RENDER_API_BASE_URL": "/render-api"
+              }
+            },
+            "renderProxy": {
+              "type": "object",
+              "title": "Render proxy",
+              "description": "Same-origin nginx reverse proxy /render-api/* -> the helm-render dry-run service (Autopilot previewBlueprint). Mirrors the frontend chart block (>= 1.3.20) so the umbrella's additionalProperties:false doesn't reject overrides. Scalar property defaults only — NO object-level default (crdgen marker emission, core-provider#46).",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "title": "Enable render proxy",
+                  "default": true
+                },
+                "upstream": {
+                  "type": "string",
+                  "title": "Render service cluster DNS name",
+                  "default": "helm-render-service.krateo-system.svc.cluster.local"
+                },
+                "upstreamPort": {
+                  "type": "integer",
+                  "title": "Render service port",
+                  "default": 8080
+                },
+                "resolver": {
+                  "type": "string",
+                  "title": "Cluster DNS resolver name",
+                  "description": "nginx `resolver` for request-time upstream lookup. kube-dns.kube-system is the standard Service name on GKE/kind/kubeadm/k3s/EKS/AKS; override on distros that rename it (an unresolvable name fails nginx at boot), or set enabled=false.",
+                  "default": "kube-dns.kube-system.svc.cluster.local"
+                }
               }
             },
             "env": {
