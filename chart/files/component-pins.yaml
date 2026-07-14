@@ -96,7 +96,7 @@ components:
   # so the Service DNS `krateo-helm-render-service.krateo-system.svc:8080` the RAs use is preserved.
   - name: krateo-helm-render-service
     kind: KrateoHelmRenderService
-    version: "0.1.5"
+    version: "0.1.6"
     tier: platform
     feature: portal
   - name: oasgen-provider
