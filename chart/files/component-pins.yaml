@@ -71,7 +71,7 @@ components:
   - name: frontend
     kind: KrateoFrontend
     chart: krateo-frontend
-    version: "1.3.22"
+    version: "1.3.23"
     deps:
       - frontend-crd
       - authn

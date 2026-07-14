@@ -1149,7 +1149,7 @@
                 "repository": {
                   "type": "string",
                   "title": "Image repository",
-                  "default": "ghcr.io/krateoplatformops/frontend"
+                  "default": "ghcr.io/braghettos/krateo-frontend"
                 },
                 "pullPolicy": {
                   "type": "string",
