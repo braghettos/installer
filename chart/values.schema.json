@@ -1324,18 +1324,7 @@
                         }
                       }
                     }
-                  },
-                  "default": [
-                    {
-                      "host": "chart-example.local",
-                      "paths": [
-                        {
-                          "path": "/",
-                          "pathType": "ImplementationSpecific"
-                        }
-                      ]
-                    }
-                  ]
+                  }
                 },
                 "tls": {
                   "type": "array",
@@ -1354,23 +1343,11 @@
             },
             "livenessProbe": {
               "type": "object",
-              "title": "Liveness probe",
-              "default": {
-                "httpGet": {
-                  "path": "/",
-                  "port": "http"
-                }
-              }
+              "title": "Liveness probe"
             },
             "readinessProbe": {
               "type": "object",
-              "title": "Readiness probe",
-              "default": {
-                "httpGet": {
-                  "path": "/",
-                  "port": "http"
-                }
-              }
+              "title": "Readiness probe"
             },
             "autoscaling": {
               "type": "object",
