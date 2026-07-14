@@ -96,7 +96,7 @@ components:
   # so the Service DNS `krateo-helm-render-service.krateo-system.svc:8080` the RAs use is preserved.
   - name: krateo-helm-render-service
     kind: KrateoHelmRenderService
-    version: "0.1.4"
+    version: "0.1.5"
     tier: platform
     feature: portal
   - name: oasgen-provider
@@ -190,7 +190,7 @@ components:
   #   kagent (the operator) depends on it, so the CRDs are established before its CRs render.
   - name: kagent-crds
     kind: KagentCrds
-    version: "0.1.4"
+    version: "0.1.3"
     tier: observability
     feature: coreAgents
   - name: kagent
