@@ -114,7 +114,7 @@ components:
   # name = component name, so no `chart:` override (like krateo-helm-render-service above).
   - name: krateo-github-provider-kog
     kind: KrateoGithubProviderKog
-    version: "0.1.1"
+    version: "0.1.2"
     deps:
       - oasgen-provider
     tier: platform
