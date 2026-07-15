@@ -84,7 +84,7 @@ components:
     consumer: true
   - name: portal
     kind: Portal
-    version: "1.5.27"
+    version: "1.5.28"
     deps:
       - frontend
     tier: platform
