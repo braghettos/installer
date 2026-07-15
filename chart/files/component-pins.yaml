@@ -107,6 +107,18 @@ components:
       - oasgen-provider-crd
     tier: platform
     feature: oasgenProvider
+  # The KOG git-write provider: RepoContent/GitRef/PullRequest as github.krateo.io kinds —
+  # the in-cluster git transport for portal blueprint authoring (and the KOG builder live
+  # path). Ships only RestDefinitions + trimmed OpenAPI ConfigMaps; oasgen-provider generates
+  # the CRDs and auto-deploys a rest-dynamic-controller per kind (no provider image). Chart
+  # name = component name, so no `chart:` override (like krateo-helm-render-service above).
+  - name: krateo-github-provider-kog
+    kind: KrateoGithubProviderKog
+    version: "0.1.0"
+    deps:
+      - oasgen-provider
+    tier: platform
+    feature: portal
 
   # ---- observability backend ----
   # ClickStack (ClickHouse + OTel gateway + HyperDX + MongoDB) is now a composition
