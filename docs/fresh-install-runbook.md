@@ -5,8 +5,8 @@ session or a new operator; every command is copy-pasteable, every `kubectl`/`hel
 **explicit** `--kubeconfig` and `--context` (`--kube-context` for helm) — never ambient config.
 
 Scope: **first install only.** Day-2 component bumps are a different runbook —
-[updating-component-versions.md](./updating-component-versions.md). Concepts/architecture:
-[INSTALL-WORKFLOW.md](./INSTALL-WORKFLOW.md), profiles/kind/local: [../QUICKSTART.md](../QUICKSTART.md).
+[updating-component-versions.md](./updating-component-versions.md). Overview, quick install, and a
+brief how-it-works: [../README.md](../README.md).
 
 Placeholders used throughout (replace all of them):
 
