@@ -72,6 +72,13 @@
             "LoadBalancer"
           ],
           "default": "NodePort"
+        },
+        "port": {
+          "type": "integer",
+          "title": "Exposure port",
+          "description": "Optional. Overrides the single port browser-facing (expose:true, top-level Service) components are exposed on — sets both their Service port and the frontend config.json peer URLs (http://<lb-ip>:<port>). Unset => each component keeps its per-component exposePort default. Nested-Service (kagent) and own-LB (hyperdx) components are set via componentValues.",
+          "minimum": 1,
+          "maximum": 65535
         }
       }
     },

@@ -62,7 +62,12 @@
 {{- end }}
 {{- $_ := mergeOverwrite $spec $nested }}
 {{- else }}
-{{- $_ := set $spec "service" (dict "type" $top.Values.exposure.type) }}
+{{/* Top-level `service`: flip type to exposure.type, and (when exposure.port is set) pin the
+     Service port so the LB/NodePort listens on the shared exposure port. targetPort is left to
+     the component chart (named `http` or a fixed containerPort), so the pod keeps its own port. */}}
+{{- $svc := dict "type" $top.Values.exposure.type }}
+{{- if $top.Values.exposure.port }}{{- $_ := set $svc "port" (int $top.Values.exposure.port) }}{{- end }}
+{{- $_ := set $spec "service" $svc }}
 {{- end }}
 {{- end }}
 {{- if $c.consumer }}
@@ -71,8 +76,11 @@
 {{- if $d.configKeys }}
 {{- $ip := include "inst.lbip" (list $top $d.svcMatch) }}
 {{- if $ip }}
+{{/* Peer's browser URL port: the shared exposure.port when set, else the peer's own exposePort. */}}
+{{- $eport := $d.exposePort }}
+{{- if $top.Values.exposure.port }}{{- $eport = $top.Values.exposure.port }}{{- end }}
 {{- range $k := $d.configKeys }}
-{{- $_ := set $cfg $k (printf "http://%s:%v" $ip $d.exposePort) }}
+{{- $_ := set $cfg $k (printf "http://%s:%v" $ip $eport) }}
 {{- end }}
 {{- end }}
 {{- end }}

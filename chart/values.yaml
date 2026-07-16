@@ -67,6 +67,16 @@ namespaces:
 #   NodePort | LoadBalancer -> resolved via Helm `lookup` at reconcile time
 exposure:
   type: NodePort          # NodePort | LoadBalancer
+  # port: 80
+  # Optional. Overrides the single port that browser-facing components are exposed on.
+  # When set it drives BOTH:
+  #   - the Service port of every `expose: true` component that uses a top-level `service`
+  #     (authn, snowplow, frontend, sse-proxy) — the LoadBalancer/NodePort listens here;
+  #   - the frontend config.json peer URLs (http://<lb-ip>:<port>), so the SPA reaches the
+  #     exposed peers on the same port.
+  # Unset (default) => each component keeps its per-component `exposePort` (authn 8082,
+  # snowplow 8081, frontend/sse-proxy 8080). Components with a nested Service (kagent) or
+  # their own LoadBalancer (hyperdx) are not covered here — set those via componentValues.
 
 # Feature flags (carried over from the installer chart).
 features:
