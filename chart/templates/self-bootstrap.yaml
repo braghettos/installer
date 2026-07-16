@@ -202,12 +202,14 @@ data:
     spec:
 {{ $spec | toYaml | indent 6 }}
   # Surgical upgrade patch: ONLY the chart-managed component pins (versions/repos/deps) and
-  # componentValues — NOT spec.features or any other runtime/user-edited field. Applied as an
+  # componentValues, plus `exposure` (all values-managed — the runbook passes live values on every
+  # upgrade) — NOT spec.features or any other runtime/user-edited field. Applied as an
   # RFC-7386 merge patch on `helm upgrade` (see the post-upgrade branch below) so chart-side
-  # component version/set/config bumps propagate WITHOUT clobbering what the installer-agent (or
-  # a user) changed at runtime. The `components` list is replaced wholesale; `componentValues`
-  # deep-merges, so chart-set keys win and any user-only componentValues keys are preserved.
-  components-patch.json: {{ dict "spec" (dict "components" (include "inst.componentsYaml" $ | fromYaml).components "componentValues" .Values.componentValues) | toJson | quote }}
+  # component version/set/config bumps AND exposure changes (type/port) propagate WITHOUT clobbering
+  # what the installer-agent (or a user) changed at runtime. The `components` list is replaced
+  # wholesale; `componentValues` and `exposure` deep-merge, so chart-set keys win and any user-only
+  # keys are preserved.
+  components-patch.json: {{ dict "spec" (dict "components" (include "inst.componentsYaml" $ | fromYaml).components "componentValues" .Values.componentValues "exposure" .Values.exposure) | toJson | quote }}
 ---
 apiVersion: batch/v1
 kind: Job
