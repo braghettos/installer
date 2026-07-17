@@ -292,7 +292,7 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.40"
+    version: "0.1.41"
     deps:
       - kagent
     tier: observability
