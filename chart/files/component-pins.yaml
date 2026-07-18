@@ -276,10 +276,10 @@ components:
   - name: frontend-agent
     kind: KrateoFrontendAgent
     chart: krateo-frontend-agent
-    # 1.3.31: A2A agent-card rewritten accurate — DROPPED removed kinds (Page/NavMenu/Route/Panel);
-    # real v1beta1 widget kinds + dry-run loop + snowplow delegation. (1.3.30 = prompt rewrite +
-    # gemini-pro; chart tracks the repo tag via the standard CHART_VERSION placeholder.)
-    version: "1.3.31"
+    # 1.3.32: perf — single-pass authoring + reuse existing compositions-list RA + capped dry-run loop
+    # (was ~13 gemini iterations / 11+ min per page) + hitlApproval=false (dry-run is non-mutating;
+    # real write gate stays downstream at publishPage). (1.3.31 = accurate A2A card; 1.3.30 = gemini-pro.)
+    version: "1.3.32"
     deps:
       - kagent
     tier: observability
