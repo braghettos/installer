@@ -71,7 +71,11 @@ components:
   - name: frontend
     kind: KrateoFrontend
     chart: krateo-frontend
-    version: "1.3.28"
+    # 1.3.30: externalize the Autopilot portal-builder prompt to config.json
+    # (AUTOPILOT_PORTAL_PROMPT / AUTOPILOT_PORTAL_HOUSE_RULES config keys, empty=baked default).
+    # Ships image 1.3.50 (delegation cue: PORTAL BUILDER delegates widget-CR authoring to the
+    # frontend specialist). Pairs with frontend-agent 1.3.30 + krateo-autopilot 0.1.43.
+    version: "1.3.30"
     deps:
       - frontend-crd
       - authn
@@ -266,7 +270,10 @@ components:
   - name: frontend-agent
     kind: KrateoFrontendAgent
     chart: krateo-frontend-agent
-    version: "0.1.7"
+    # 1.3.30: prompt rewrite for real widget-CR authoring (envelope + real kinds + author->dry-run
+    # validate loop) + model gemini-flash->gemini-pro. Chart now tracks the repo release tag
+    # (standard CHART_VERSION placeholder), so it jumps from the orphan 0.1.x stream to 1.3.30.
+    version: "1.3.30"
     deps:
       - kagent
     tier: observability
@@ -292,10 +299,12 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    # 0.1.42: FE-BP7 — step-3 publish rule generalized to teach the scalar publishPage verb
-    # (portal page git-publish) alongside publishBlueprint; never hand-write the multi-op set,
-    # never supply a git sha. Pairs with frontend 1.3.47.
-    version: "0.1.42"
+    # 0.1.43: ORCHESTRATOR DOMAIN OWNERSHIP hard-rule — the orchestrator delegates domain
+    # authoring to the owning specialist (portal page/widget-CR -> krateo-frontend-agent,
+    # RESTAction -> krateo-snowplow-agent, blueprint chart -> helm-agent) and takes its result
+    # verbatim; never hand-authors a domain CR while its owner is attached. Pairs with
+    # frontend-agent 1.3.30 (the now-functional widget-CR author).
+    version: "0.1.43"
     deps:
       - kagent
     tier: observability
