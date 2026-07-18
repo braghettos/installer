@@ -292,7 +292,10 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
-    version: "0.1.41"
+    # 0.1.42: FE-BP7 — step-3 publish rule generalized to teach the scalar publishPage verb
+    # (portal page git-publish) alongside publishBlueprint; never hand-write the multi-op set,
+    # never supply a git sha. Pairs with frontend 1.3.47.
+    version: "0.1.42"
     deps:
       - kagent
     tier: observability
