@@ -132,8 +132,20 @@
        so the delegated flow does NOT deadlock. (Older kagent did not bubble subagent interrupts,
        which is why this gate used to be forced OFF for subagents; fixed upstream in
        go/adk/pkg/tools/remote_a2a_tool.go, so subagents now inherit the real value.) */}}
+{{- /* GRANULAR HITL (kagent requireApproval). A component may declare its OWN `requireApproval` — the
+       exact list of tool names that pause for approval — in component-pins. When present it is threaded
+       verbatim onto the agent's spec (kagent-native per-tool gate) and the coarse boolean is NOT set
+       for that agent: e.g. the frontend-agent declares `requireApproval: []` because its only
+       mutating-shaped tool, k8s_apply_manifest, is a NON-mutating server dry-run validator, so nothing
+       is gated and the real write gate stays downstream (publishPage blast-radius). Every OTHER agent
+       omits the key and inherits the coarse global `hitlApproval` (its chart gates its own mutating
+       tools). This lets one agent opt a specific tool in/out without an all-or-nothing switch. */}}
 {{- if $c.vertexAI }}
+{{- if hasKey $c "requireApproval" }}
+{{- $_ := set $spec "requireApproval" $c.requireApproval }}
+{{- else }}
 {{- $_ := set $spec "hitlApproval" $top.Values.hitlApproval }}
+{{- end }}
 {{- end }}
 {{- /* componentValues: per-component spec overrides, deep-merged into the rendered spec. The
        installer-computed wiring above (service/config/vertexAI/hitlApproval) stays AUTHORITATIVE

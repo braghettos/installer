@@ -191,6 +191,13 @@
           "modelOwner": {
             "type": "boolean",
             "description": "This agent OWNS the shared ModelConfigs the rest of the fleet references (krateo-autopilot). With localModel.enabled it gets .localModel injected to render them as Ollama; every other agent is pointed at localModel.refName (create:false)."
+          },
+          "requireApproval": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "GRANULAR kagent HITL override (compositions.yaml): the exact list of this agent's tool names that pause for human approval. When present it is threaded onto the agent's spec verbatim and the coarse global .hitlApproval boolean is NOT applied to this agent. Use [] for an agent whose only mutating-shaped tool is a NON-mutating validator (e.g. frontend-agent's k8s_apply_manifest server dry-run) so its authoring loop is not gated — the real write gate stays downstream (publishPage blast-radius). Omit the key entirely for agents that should inherit the coarse global gate on their own mutating tools."
           }
         },
         "required": [
