@@ -88,7 +88,11 @@ components:
     consumer: true
   - name: portal
     kind: Portal
-    version: "1.5.53"
+    # 1.5.54: incident RCA shows the DETERMINISTIC evidence basis ("grounded in N verbatim sources ·
+    # N analyzed resources") instead of a model-declared "confidence NN%" (false-precision theater;
+    # persona feedback). Portal bump verified CLEAN on installer-release (v1-5-53→v1-5-54, Ready, no
+    # "too many definitions" wedge — that collision was installer-test-only).
+    version: "1.5.54"
     deps:
       - frontend
     tier: platform
