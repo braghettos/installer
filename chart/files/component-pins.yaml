@@ -241,7 +241,9 @@ components:
     feature: coreAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    version: "0.1.13"
+    # 0.2.305: agent chart (kagent/chart in THIS repo) adopts the standard CHART_VERSION/APP_VERSION
+    # placeholders, so it now tracks the installer repo tag (jumps off the orphan 0.1.x stream).
+    version: "0.2.305"
     deps:
       - kagent
     tier: observability
@@ -252,7 +254,9 @@ components:
   - name: authn-agent
     kind: KrateoAuthnAgent
     chart: krateo-authn-agent
-    version: "0.1.8"
+    # 0.22.21: agent chart adopts the standard CHART_VERSION/APP_VERSION placeholders, so it now
+    # tracks the authn-chart repo tag (jumps off the orphan 0.1.x stream).
+    version: "0.22.21"
     deps:
       - kagent
     tier: observability
@@ -261,7 +265,9 @@ components:
   - name: snowplow-agent
     kind: KrateoSnowplowAgent
     chart: krateo-snowplow-agent
-    version: "0.1.8"
+    # 1.0.77: standard version placeholders (tracks snowplow-chart repo tag) + model gemini-flash->
+    # gemini-pro (RESTAction authoring specialist, like helm-agent/frontend-agent).
+    version: "1.0.77"
     deps:
       - kagent
     tier: observability
@@ -282,7 +288,10 @@ components:
   - name: clickstack-agent
     kind: KrateoClickstackAgent
     chart: krateo-clickstack-agent
-    version: "0.1.6"
+    # 3.0.30: agent chart tracks the clickstack-chart repo tag (version=CHART_VERSION), off the
+    # orphan 0.1.x stream. appVersion=CHART_VERSION (no braghettos app image — third-party stack).
+    # Model stays flash (query/troubleshoot specialist).
+    version: "3.0.30"
     deps:
       - kagent
     tier: observability
@@ -291,7 +300,9 @@ components:
   - name: core-provider-agent
     kind: KrateoCoreProviderAgent
     chart: krateo-core-provider-agent
-    version: "0.1.9"
+    # 0.53.12: standard version placeholders (tracks core-provider-chart repo tag) + model
+    # gemini-flash->gemini-pro (composition/CompositionDefinition authoring specialist).
+    version: "0.53.12"
     deps:
       - kagent
     tier: observability
