@@ -8,11 +8,13 @@ metadata:
     app.kubernetes.io/part-of: krateo-installer
 spec:
   description: >-
-    Installs, configures and evolves the Krateo PlatformOps platform by editing the Installer
-    CR. Subject-matter expert on the compose-of-compositions umbrella: how it self-bootstraps the
-    composition engine (core-provider) and self-reconciles every component (authn, snowplow,
-    frontend, portal, oasgen-provider, observability, agents) from one `helm install`, and tears
-    the whole tree down cleanly via three ordered Helm hooks. Route here for install/evolve/diagnose.
+    Installs, evolves, and diagnoses the Krateo PlatformOps platform by editing the one Installer CR
+    (installers.composition.krateo.io) the CRD-safe get->apply way — toggling spec.features (coreProvider,
+    coreAgents, portal, oasgenProvider, specialistAgents), typed spec.componentValues overrides (including
+    agent modelConfig), spec.registryAuth and spec.exposure — and is the subject-matter expert on the
+    braghettos/krateo-installer compose-of-compositions umbrella (bootstrap vs composition render modes,
+    self-bootstrap post-install hook, Pass A/Pass B self-reconcile gated on crdExists+depsReady over the
+    core-provider 1.0.x engine, and the three-hook teardown).
   type: Declarative
   declarative:
     runtime: python
@@ -68,37 +70,40 @@ spec:
 {{- end }}
     a2aConfig:
       skills:
-        - id: provision-platform
+        - id: provision-evolve-platform
           name: Provision & Evolve the Platform
           description: >-
-            Install, configure and evolve Krateo by editing the Installer CR — enable features,
-            override component specs (typed componentValues), set exposure and private-registry
-            auth — provisioned by core-provider in dependency order.
-          tags: [krateo, installer, provisioning, installer-cr]
+            Install and evolve Krateo by editing the one Installer CR (get->apply, never strategic-merge
+            patch): toggle spec.features, apply typed componentValues/modelConfig overrides, set registryAuth
+            and exposure — core-provider then provisions in dependency order.
+          tags: [krateo, installer, installer-cr, provisioning, component-values]
           examples:
             - Install Krateo on this cluster.
-            - Turn on the oasgen-provider feature.
-            - Override the snowplow replica count without breaking exposure.
-            - Pull the component charts from our private registry.
+            - Turn on the oasgenProvider feature.
+            - Override the snowplow spec via componentValues without breaking exposure.
+            - Point my installer agent at a dedicated modelConfig and pull charts from our private registry.
         - id: installer-architecture
-          name: Installer Architecture
+          name: Installer Architecture & Self-Reconcile
           description: >-
-            Explain the compose-of-compositions umbrella — the two render modes (bootstrap vs
-            composition), self-bootstrap via the post-install hook, the runtime-generated
-            installers CRD, and the Pass A / Pass B self-reconcile gated on crdExists + depsReady.
-          tags: [krateo, installer, architecture, self-bootstrap]
+            Explain the compose-of-compositions umbrella — bootstrap vs composition render modes, the
+            self-bootstrap post-install hook Job, the runtime-generated installers CRD, and Pass A / Pass B
+            self-reconcile gated on crdExists + depsReady over the core-provider 1.0.x engine.
+          tags: [krateo, installer, architecture, self-bootstrap, core-provider]
           examples:
-            - How does one `helm install` bring up the whole platform?
+            - How does one helm install bring up the whole platform?
             - What gates Pass B from emitting a component's Composition?
-        - id: teardown-internals
-          name: Teardown Internals
+            - Why does the install need core-provider 1.0.x and not 0.26.1?
+        - id: teardown-diagnostics
+          name: Teardown & Rollout Diagnostics
           description: >-
-            Walk through the three teardown hooks, why finalizer-based cleanup needs live
-            controllers, the reverse-dependency drain, and the runtime-orphan sweep.
-          tags: [teardown, finalizers, helm-hooks]
+            Walk through the three teardown Helm hooks (ordered-teardown, bootstrap-teardown,
+            post-delete-cleanup), finalizer-based cleanup requiring live controllers, and diagnose rollout
+            stalls (which Pass-B gate is unmet) or teardown wedges (lingering finalizers / hook Jobs).
+          tags: [teardown, finalizers, helm-hooks, diagnostics]
           examples:
-            - Why is teardown split across three hooks?
+            - Why is teardown split across three Helm hooks?
             - A reinstall crashloops core-provider with "convert GVK to GVR" — fix?
+            - My portal Composition is stuck NotReady — which Pass-B gate is blocking it?
     deployment:
       resources:
 {{- toYaml .Values.resources | nindent 8 }}

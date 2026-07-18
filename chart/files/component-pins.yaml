@@ -241,9 +241,9 @@ components:
     feature: coreAgents
   - name: krateo-installer-agent
     kind: KrateoInstallerAgent
-    # 0.2.305: agent chart (kagent/chart in THIS repo) adopts the standard CHART_VERSION/APP_VERSION
-    # placeholders, so it now tracks the installer repo tag (jumps off the orphan 0.1.x stream).
-    version: "0.2.305"
+    # 0.2.306: A2A agent-card (description + skills) rewritten accurate to the installer's real domain
+    # (Installer-CR get->apply, features/componentValues, self-reconcile/teardown). Chart in THIS repo.
+    version: "0.2.306"
     deps:
       - kagent
     tier: observability
@@ -254,9 +254,9 @@ components:
   - name: authn-agent
     kind: KrateoAuthnAgent
     chart: krateo-authn-agent
-    # 0.22.21: agent chart adopts the standard CHART_VERSION/APP_VERSION placeholders, so it now
-    # tracks the authn-chart repo tag (jumps off the orphan 0.1.x stream).
-    version: "0.22.21"
+    # 0.22.22: A2A agent-card rewritten accurate — names the four real auth CRDs (User/LDAPConfig/
+    # OIDCConfig/OAuthConfig) + apiGroups; split into manage + explain skills.
+    version: "0.22.22"
     deps:
       - kagent
     tier: observability
@@ -265,9 +265,9 @@ components:
   - name: snowplow-agent
     kind: KrateoSnowplowAgent
     chart: krateo-snowplow-agent
-    # 1.0.77: standard version placeholders (tracks snowplow-chart repo tag) + model gemini-flash->
-    # gemini-pro (RESTAction authoring specialist, like helm-agent/frontend-agent).
-    version: "1.0.77"
+    # 1.0.78: A2A agent-card rewritten accurate — real RESTAction fields (endpointRef/dependsOn/
+    # exportJwt) + real /call content types + diagnostics. (gemini-pro authoring specialist.)
+    version: "1.0.78"
     deps:
       - kagent
     tier: observability
@@ -276,10 +276,10 @@ components:
   - name: frontend-agent
     kind: KrateoFrontendAgent
     chart: krateo-frontend-agent
-    # 1.3.30: prompt rewrite for real widget-CR authoring (envelope + real kinds + author->dry-run
-    # validate loop) + model gemini-flash->gemini-pro. Chart now tracks the repo release tag
-    # (standard CHART_VERSION placeholder), so it jumps from the orphan 0.1.x stream to 1.3.30.
-    version: "1.3.30"
+    # 1.3.31: A2A agent-card rewritten accurate — DROPPED removed kinds (Page/NavMenu/Route/Panel);
+    # real v1beta1 widget kinds + dry-run loop + snowplow delegation. (1.3.30 = prompt rewrite +
+    # gemini-pro; chart tracks the repo tag via the standard CHART_VERSION placeholder.)
+    version: "1.3.31"
     deps:
       - kagent
     tier: observability
@@ -288,10 +288,10 @@ components:
   - name: clickstack-agent
     kind: KrateoClickstackAgent
     chart: krateo-clickstack-agent
-    # 3.0.30: agent chart tracks the clickstack-chart repo tag (version=CHART_VERSION), off the
-    # orphan 0.1.x stream. appVersion=CHART_VERSION (no braghettos app image — third-party stack).
-    # Model stays flash (query/troubleshoot specialist).
-    version: "3.0.30"
+    # 3.0.31: A2A agent-card rewritten accurate — names the real ClickHouse OTel tables; asserts
+    # read-only; split into troubleshoot + correlate skills. (Model stays flash; appVersion=
+    # CHART_VERSION, no braghettos app image — third-party stack.)
+    version: "3.0.31"
     deps:
       - kagent
     tier: observability
@@ -300,9 +300,9 @@ components:
   - name: core-provider-agent
     kind: KrateoCoreProviderAgent
     chart: krateo-core-provider-agent
-    # 0.53.12: standard version placeholders (tracks core-provider-chart repo tag) + model
-    # gemini-flash->gemini-pro (composition/CompositionDefinition authoring specialist).
-    version: "0.53.12"
+    # 0.53.13: A2A agent-card rewritten accurate — names CompositionDefinition/Composition/
+    # KubernetesTarget + values.schema.json authoring; 2 skills. (gemini-pro authoring specialist.)
+    version: "0.53.13"
     deps:
       - kagent
     tier: observability
