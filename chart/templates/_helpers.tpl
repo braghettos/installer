@@ -175,16 +175,35 @@ overridable; all other pin fields (kind/chart/deps/tier/feature/exposure) remain
 */}}
 {{- define "inst.componentsYaml" -}}
 {{- $file := .Files.Get "files/component-pins.yaml" | fromYaml -}}
+{{- $components := ($file.components | default list) -}}
+{{/* Index the chart-pinned component names. */}}
+{{- $known := dict -}}
+{{- range $c := $components -}}{{- $_ := set $known (toString $c.name) true -}}{{- end -}}
+{{/* .Values.components entries do one of two things, matched by name:
+       - name IS a pinned component  -> version override (bump a live component's chart version)
+       - name is NOT pinned          -> APPEND it as a new component. This is how a CMP (tier-b)
+         adds catalog blueprints (registerOnly + tier: catalog, e.g. openstack) via values while
+         the base installer stays use-case-agnostic — it ships no such blueprint by default. */}}
 {{- $ov := dict -}}
+{{- $extra := list -}}
 {{- range $o := (.Values.components | default list) -}}
-{{- if and (kindIs "map" $o) (hasKey $o "name") (hasKey $o "version") -}}
-{{- $_ := set $ov (toString $o.name) $o.version -}}
+{{- if and (kindIs "map" $o) (hasKey $o "name") -}}
+{{- if hasKey $known (toString $o.name) -}}
+{{- if hasKey $o "version" -}}{{- $_ := set $ov (toString $o.name) $o.version -}}{{- end -}}
+{{- else -}}
+{{/* Unknown name = a CMP-appended catalog blueprint. Guard the footgun: a typo'd known-component
+     name (e.g. `snowplowe`) would otherwise silently register a dead CompositionDefinition whose
+     chart URL resolves to nothing. Only allow the append when the entry explicitly opts in as a
+     registerOnly catalog blueprint — anything else is a mistake, so fail loudly at render time. */}}
+{{- if not $o.registerOnly -}}{{- fail (printf "components[%s]: unknown name not in files/component-pins.yaml — only registerOnly catalog blueprints may be appended via .Values.components (typo?)" (toString $o.name)) -}}{{- end -}}
+{{- $extra = append $extra $o -}}
 {{- end -}}
 {{- end -}}
-{{- range $c := ($file.components | default list) -}}
+{{- end -}}
+{{- range $c := $components -}}
 {{- if hasKey $ov (toString $c.name) -}}
 {{- $_ := set $c "version" (index $ov (toString $c.name)) -}}
 {{- end -}}
 {{- end -}}
-{{ $file | toYaml }}
+{{ dict "components" (concat $components $extra) | toYaml }}
 {{- end -}}
