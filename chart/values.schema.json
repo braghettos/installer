@@ -140,7 +140,8 @@
             "type": "string",
             "enum": [
               "platform",
-              "observability"
+              "observability",
+              "catalog"
             ]
           },
           "feature": {
@@ -198,6 +199,10 @@
               "type": "string"
             },
             "description": "GRANULAR kagent HITL override (compositions.yaml): the exact list of this agent's tool names that pause for human approval. When present it is threaded onto the agent's spec verbatim and the coarse global .hitlApproval boolean is NOT applied to this agent. Use [] for an agent whose only mutating-shaped tool is a NON-mutating validator (e.g. frontend-agent's k8s_apply_manifest server dry-run) so its authoring loop is not gated — the real write gate stays downstream (publishPage blast-radius). Omit the key entirely for agents that should inherit the coarse global gate on their own mutating tools."
+          },
+          "registerOnly": {
+            "type": "boolean",
+            "description": "Catalog blueprint: Pass A registers this component's CompositionDefinition (making the blueprint available in the portal) but Pass B never emits a Composition for it — the operator/end-user instantiates it on demand. Use for tenant workload blueprints (e.g. openstack) that ship in the catalog rather than being auto-installed. Typically paired with tier: catalog."
           }
         },
         "required": [

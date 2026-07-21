@@ -25,6 +25,9 @@
 {{- $allCRDs := (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "").items }}
 {{- $isLB := or (eq .Values.exposure.type "LoadBalancer") (eq .Values.exposure.type "NodePort") }}
 {{- range $c := $components }}
+{{/* registerOnly (catalog) blueprints are registered (definitions.yaml) but never auto-emitted —
+     the operator/end-user instantiates them from the portal on demand. */}}
+{{- if $c.registerOnly }}{{- continue }}{{- end }}
 {{- $featOn := eq (include "inst.featureEnabled" (list $top $c.feature)) "true" }}
 {{- $crd  := include "inst.crdExists" (list $c.kind $c.version $allCRDs) }}
 {{- $render := "" }}
