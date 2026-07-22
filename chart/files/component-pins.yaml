@@ -94,7 +94,9 @@ components:
     # (green=health-only, filled tags) + 100% Kubernetes-native vocabulary — NotReady/NotSynced/
     # Unhealthy/NotFound/ScaledToZero single tokens, verbatim True/False condition statuses,
     # verbatim pod phases/reasons (CrashLoopBackOff); non-K8s domains keep domain vocabulary.
-    version: "1.5.66"
+    # 1.5.67: honest marketplace caption — the catalog is an unfiltered helm-index mirror,
+    # not curated; subtitle/eyebrow no longer claim curation (UX-audit #9).
+    version: "1.5.67"
     deps:
       - frontend
     tier: platform
