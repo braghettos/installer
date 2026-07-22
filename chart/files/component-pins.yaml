@@ -329,11 +329,14 @@ components:
     vertexAI: true
   - name: krateo-autopilot
     kind: KrateoAutopilot
+    # 0.1.48: default the shared flash + pro ModelConfigs to gemini-3.6-flash (current GA workhorse,
+    # now callable on Vertex; the `pro` alias is kept so a 3.5-pro tier is a one-line restore).
+    # Live-validated on installer-test (k8s-agent + autopilot orchestration ran on 3.6-flash, clean).
     # 0.1.44: routing determinism — classify a page-build request by the ACTION, not the page's
     # subject, so "build a Cluster Health page" goes to krateo-frontend-agent (authoring), not the
     # clickstack telemetry agent. (0.1.43: DOMAIN OWNERSHIP hard-rule — delegate domain authoring to
     # the owning specialist: portal page -> frontend-agent, RESTAction -> snowplow, blueprint -> helm.)
-    version: "0.1.47"
+    version: "0.1.48"
     deps:
       - kagent
     tier: observability
