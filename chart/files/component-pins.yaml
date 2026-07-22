@@ -99,7 +99,10 @@ components:
     # 1.5.68: one verb per operation (UX-audit #10) — Install=blueprint acquisition (now the
     # PRIMARY marketplace-tile button), Create=composition ("New composition"→"Create
     # composition"), Uninstall=blueprint removal (was Delete); Delete reserved for instances.
-    version: "1.5.68"
+    # 1.5.69: /search page header (UX-audit #11) — eyebrow + H1 + dynamic subtitle echoing
+    # the query + result count (same RA as the list, cannot disagree); also the LAST
+    # keyExtras lint failure fixed (resource-detail-header) → lint green.
+    version: "1.5.69"
     deps:
       - frontend
     tier: platform
