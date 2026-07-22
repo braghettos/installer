@@ -27,7 +27,9 @@ components:
   - name: frontend-crd
     kind: KrateoFrontendCrd
     chart: krateo-frontend-crd
-    version: "1.3.36"
+    # 1.3.42: Listy gains widgetData.pagination {pageSize, position?} (UX-audit #21) —
+    # MUST deploy before/with portal >= 1.5.70, whose grid CRs use the field.
+    version: "1.3.42"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -102,7 +104,11 @@ components:
     # 1.5.69: /search page header (UX-audit #11) — eyebrow + H1 + dynamic subtitle echoing
     # the query + result count (same RA as the list, cannot disagree); also the LAST
     # keyExtras lint failure fixed (resource-detail-header) → lint green.
-    version: "1.5.69"
+    # 1.5.70: UX-audit batch 2 — obs nav Buttons out of the filter-chip band (#15),
+    # TroubleshootingReport phase Ready→Analyzed (#20, K8s Ready kept verbatim),
+    # marketplace/blueprints/search grids paginated via Listy pagination (#21 — REQUIRES
+    # frontend-crd >= 1.3.42 AND frontend image >= 1.3.76, else snowplow 400s the grids).
+    version: "1.5.70"
     deps:
       - frontend
     tier: platform
