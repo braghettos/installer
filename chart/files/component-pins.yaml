@@ -168,7 +168,10 @@ components:
     feature: portal
   - name: krateo-observability
     kind: KrateoObservability
-    version: "0.1.8"
+    # 0.1.9: durable ClickHouse retention — 15Gi data volume + 3d system-log TTLs via
+    # settings.extraConfig (the 10Gi/no-TTL volume filled in 8 days → insert 243 →
+    # OTel OOM loops → telemetry dead; live bench was PVC-expanded + ALTERed 2026-07-22).
+    version: "0.1.9"
     tier: observability
     feature: portal
     # Operators first: the clickhouse.com + mongodbcommunity CRDs must be served and the
@@ -183,14 +186,16 @@ components:
   # ociRepo = oci://ghcr.io/braghettos/krateo, like every other component.
   - name: otel-collector-deployment
     kind: OtelCollectorDeployment
-    version: "0.3.2"
+    # 0.3.3: clickhouse exporter ttl 168h (fresh installs create 7d-TTL otel tables).
+    version: "0.3.3"
     deps:
       - krateo-observability
     tier: observability
     feature: portal
   - name: otel-collector-daemonset
     kind: OtelCollectorDaemonset
-    version: "0.1.4"
+    # 0.1.5: clickhouse exporter ttl 168h (fresh installs create 7d-TTL otel tables).
+    version: "0.1.5"
     deps:
       - otel-collector-deployment
     tier: observability
