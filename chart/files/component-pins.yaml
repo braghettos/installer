@@ -27,7 +27,7 @@ components:
   - name: frontend-crd
     kind: KrateoFrontendCrd
     chart: krateo-frontend-crd
-    version: "1.3.22"
+    version: "1.3.36"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -92,7 +92,7 @@ components:
     # N analyzed resources") instead of a model-declared "confidence NN%" (false-precision theater;
     # persona feedback). Portal bump verified CLEAN on installer-release (v1-5-53→v1-5-54, Ready, no
     # "too many definitions" wedge — that collision was installer-test-only).
-    version: "1.5.54"
+    version: "1.5.64"
     deps:
       - frontend
     tier: platform
@@ -271,7 +271,7 @@ components:
     chart: krateo-snowplow-agent
     # 1.0.78: A2A agent-card rewritten accurate — real RESTAction fields (endpointRef/dependsOn/
     # exportJwt) + real /call content types + diagnostics. (gemini-pro authoring specialist.)
-    version: "1.0.78"
+    version: "1.0.82"
     deps:
       - kagent
     tier: observability
@@ -288,7 +288,7 @@ components:
     requireApproval: []
     # 1.3.34: granular requireApproval (list) replaces the hitlApproval boolean; default [] (dry-run
     # validator, nothing gated) + single-pass authoring + reuse compositions-list RA (1.3.30 = gemini-pro).
-    version: "1.3.34"
+    version: "1.3.41"
     deps:
       - kagent
     tier: observability
@@ -323,7 +323,7 @@ components:
     # subject, so "build a Cluster Health page" goes to krateo-frontend-agent (authoring), not the
     # clickstack telemetry agent. (0.1.43: DOMAIN OWNERSHIP hard-rule — delegate domain authoring to
     # the owning specialist: portal page -> frontend-agent, RESTAction -> snowplow, blueprint -> helm.)
-    version: "0.1.44"
+    version: "0.1.47"
     deps:
       - kagent
     tier: observability
