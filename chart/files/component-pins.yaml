@@ -108,7 +108,12 @@ components:
     # TroubleshootingReport phase Ready→Analyzed (#20, K8s Ready kept verbatim),
     # marketplace/blueprints/search grids paginated via Listy pagination (#21 — REQUIRES
     # frontend-crd >= 1.3.42 AND frontend image >= 1.3.76, else snowplow 400s the grids).
-    version: "1.5.70"
+    # 1.5.72: UX round-2 page punch list (30 items) — dashboard/compositions alignment +
+    # composition-incidents strip, observability Reconciliation/Telemetry tabs + resource
+    # LineChart, incident-first detail restructure, per-alert detail page, builder
+    # consistency + KOG PR listing, /api-builder path. No new widget fields (no frontend-crd
+    # bump). Item #30 KOG-publish-as-PR pairs with frontend >= 1.3.77.
+    version: "1.5.72"
     deps:
       - frontend
     tier: platform
