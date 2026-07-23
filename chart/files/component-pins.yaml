@@ -79,7 +79,13 @@ components:
     # (AUTOPILOT_PORTAL_PROMPT / AUTOPILOT_PORTAL_HOUSE_RULES config keys, empty=baked default).
     # Ships image 1.3.50 (delegation cue: PORTAL BUILDER delegates widget-CR authoring to the
     # frontend specialist). Pairs with frontend-agent 1.3.30 + krateo-autopilot 0.1.43.
-    version: "1.3.30"
+    # 1.3.43: ships app image 1.3.81 — the RBAC Menu that HIDES page entries the user's Role
+    #   cannot GET (pairs with the portal `tiers` split below). Moves in lockstep with
+    #   frontend-crd 1.3.43 (widget CRDs regenerated from 1.3.81). REQUIRES this chart, not just an
+    #   image tag: 1.3.81's non-root Bitnami nginx listens on 8080, and chart 1.3.43's Deployment
+    #   containerPort + liveness/readiness probes + Service targetPort all resolve to 8080 — pinning
+    #   image 1.3.81 onto the old chart 1.3.30 (probes :80) crashloops. Verified via helm template.
+    version: "1.3.43"
     deps:
       - frontend-crd
       - authn
@@ -121,7 +127,13 @@ components:
     #         + #21 composition-kind analyzed-resource deep-links to /compositions (needs fe >= 1.3.78).
     # 1.5.75: hotfix — 1.5.74 broke the incident-detail RA (filter: > folded block + # comments
     #         commented out the whole jq); switched to filter: | (literal). Page was skeleton-only.
-    version: "1.5.75"
+    # 1.5.76: RBAC tier split — page-root Flexes deploy into tiers.{common,tenant,admin} namespaces
+    #         so the monolithic Menu renders PER-AUDIENCE (snowplow resolves each item AS THE USER;
+    #         the >=1.3.81 frontend hides pages whose Role the user lacks). Additive: tiers default to
+    #         "" = release namespace, so prior single-namespace installs render unchanged. Set
+    #         componentValues.portal.tiers.admin (+ the krateo-portal-admin Role) per deployment to
+    #         split admin pages from tenants. Lockstep with frontend 1.3.43 above.
+    version: "1.5.76"
     deps:
       - frontend
     tier: platform
