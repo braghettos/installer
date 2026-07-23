@@ -83,7 +83,14 @@
 {{- $eport := $d.exposePort }}
 {{- if $top.Values.exposure.port }}{{- $eport = $top.Values.exposure.port }}{{- end }}
 {{- range $k := $d.configKeys }}
+{{/* OPERATOR OVERRIDE WINS: if componentValues.<consumer>.config.<KEY> is set, do NOT auto-compute
+     the peer URL from its LoadBalancer IP — leave the key unset here so the explicit override
+     survives the componentValues deep-merge (which otherwise lets chart-computed keys win). This
+     lets a caller pin an external hostname the in-cluster LB-IP extraction cannot know, e.g.
+     https://authn.<tenant>.krateo.dev behind a Gateway. Empty/unset keys still auto-fill from the LB IP. */}}
+{{- if not (dig $c.name "config" $k nil (default dict $top.Values.componentValues)) }}
 {{- $_ := set $cfg $k (printf "http://%s:%v" $ip $eport) }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
