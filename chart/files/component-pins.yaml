@@ -150,7 +150,9 @@ components:
   # so the Service DNS `krateo-helm-render-service.krateo-system.svc:8080` the RAs use is preserved.
   - name: krateo-helm-render-service
     kind: KrateoHelmRenderService
-    version: "0.1.6"
+    # 0.1.7: multi-arch image (linux/amd64 + linux/arm64). 0.1.6 was amd64-only, so it
+    # ImagePullBackOff'd on arm64 clusters (Apple-silicon kind/dev); functionally identical.
+    version: "0.1.7"
     tier: platform
     feature: portal
   - name: oasgen-provider
