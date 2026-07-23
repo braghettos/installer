@@ -154,6 +154,19 @@ components:
       - oasgen-provider
     tier: platform
     feature: portal
+  # In-cluster GitOps pull reconciler: applies merged API-Builder RestDefinitions (from
+  # braghettos/krateo-oas) to the cluster, closing the API-Builder merge-PR → live-kind loop
+  # the Krateo-native way (a controller reconciling declared git state, NOT a push-CI apply).
+  # oasgen-provider then generates the CRD+controller per applied RestDefinition. Reuses the
+  # github-api-braghettos token Secret (read-only); least-privilege RBAC (restdefinitions +
+  # configmaps in krateo-system only). Chart name = component name, so no `chart:` override.
+  - name: krateo-oas-gitops
+    kind: KrateoOasGitops
+    version: "0.1.0"
+    deps:
+      - oasgen-provider
+    tier: platform
+    feature: oasgenProvider
 
   # ---- observability backend ----
   # ClickStack (ClickHouse + OTel gateway + HyperDX + MongoDB) is now a composition
