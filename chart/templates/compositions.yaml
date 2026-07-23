@@ -10,12 +10,18 @@
     - components marked `expose: true` get spec.service.type = .Values.exposure.type
       (LoadBalancer | NodePort); for Ingress the Service stays chart-default (ClusterIP).
     - the `consumer: true` component (frontend) gets spec.config.<KEY> for each peer that
-      declares `configKeys`, with the URL built from that peer's LoadBalancer IP via
-      `inst.lbip`. Until the cloud assigns the IP the key is omitted, so the frontend keeps
-      its chart default; the next reconcile (core-provider re-renders the umbrella) fills it
-      in as soon as the peer's external IP is ready. The frontend serves config.json to the
-      browser as a static file, so the updated ConfigMap is picked up on page reload — no
-      pod restart required.
+      declares `configKeys`, with a BROWSER-reachable URL resolved from that peer's Service per
+      `exposure.type` via `inst.peerurl`: LoadBalancer -> http://<lb-ip>:<exposure.port>, NodePort
+      -> http://<node-ip>:<nodePort>. A caller may instead pin a STATIC external hostname in
+      componentValues.<consumer>.config.<KEY> (e.g. https://authn.<tenant>.krateo.dev behind a
+      Gateway) — a real (non-loopback) override wins and auto-compute is skipped for that key.
+      Until the external address exists the key is omitted, so the frontend keeps its chart
+      default; the next reconcile (core-provider re-renders the umbrella) fills it in as soon as
+      the peer's external IP/nodePort is ready. NB: the chart's localhost:808x dev-defaults are
+      seeded into componentValues by values.schema.json, so they are treated as UNSET (not as an
+      override) — else they would leak to the browser and break login (installer #203). The
+      frontend serves config.json to the browser as a static file, so the updated ConfigMap is
+      picked up on page reload — no pod restart required.
 */}}
 {{- if not .Values.bootstrap.coreProvider.enabled }}
 {{- $top := . }}
@@ -77,19 +83,29 @@
 {{- $cfg := dict }}
 {{- range $d := $components }}
 {{- if $d.configKeys }}
-{{- $ip := include "inst.lbip" (list $top $d.svcMatch) }}
-{{- if $ip }}
-{{/* Peer's browser URL port: the shared exposure.port when set, else the peer's own exposePort. */}}
+{{/* Peer's browser URL port: the shared exposure.port when set, else the peer's own exposePort.
+     (Used for LoadBalancer; NodePort uses the Service's allocated nodePort instead.) */}}
 {{- $eport := $d.exposePort }}
 {{- if $top.Values.exposure.port }}{{- $eport = $top.Values.exposure.port }}{{- end }}
+{{/* Browser-reachable base URL for this peer, resolved from its Service per exposure.type:
+     LoadBalancer -> http://<lb-ip>:<exposure.port>; NodePort -> http://<node-ip>:<nodePort>.
+     "" until the external address exists (LB IP pending / no node IP), so the key is omitted and
+     the next reconcile fills it. A static override is handled below and wins over this. */}}
+{{- $url := include "inst.peerurl" (list $top $d.svcMatch $eport) }}
+{{- if $url }}
 {{- range $k := $d.configKeys }}
-{{/* OPERATOR OVERRIDE WINS: if componentValues.<consumer>.config.<KEY> is set, do NOT auto-compute
-     the peer URL from its LoadBalancer IP — leave the key unset here so the explicit override
-     survives the componentValues deep-merge (which otherwise lets chart-computed keys win). This
-     lets a caller pin an external hostname the in-cluster LB-IP extraction cannot know, e.g.
-     https://authn.<tenant>.krateo.dev behind a Gateway. Empty/unset keys still auto-fill from the LB IP. */}}
-{{- if not (dig $c.name "config" $k nil (default dict $top.Values.componentValues)) }}
-{{- $_ := set $cfg $k (printf "http://%s:%v" $ip $eport) }}
+{{/* STATIC OVERRIDE WINS — a REAL external hostname the operator pinned in
+     componentValues.<consumer>.config.<KEY> (e.g. https://authn.<tenant>.krateo.dev behind a
+     Gateway) survives the componentValues deep-merge. BUT values.schema.json seeds that same map
+     with the frontend chart's localhost:808x dev-defaults (the core-provider applies schema
+     defaults to the composition spec); gating on mere PRESENCE (#201) treated those seeded
+     loopbacks as overrides and SKIPPED the auto-compute, so the browser got unreachable
+     http://localhost:808x URLs and portal login broke (installer #203). Fix: treat a loopback
+     value as UNSET — auto-fill the exposed URL (LB or NodePort) unless the operator pinned a REAL
+     (non-loopback) override. */}}
+{{- $ov := dig $c.name "config" $k "" (default dict $top.Values.componentValues) | toString }}
+{{- if or (not $ov) (hasPrefix "http://localhost" $ov) (hasPrefix "http://127.0.0.1" $ov) }}
+{{- $_ := set $cfg $k $url }}
 {{- end }}
 {{- end }}
 {{- end }}
