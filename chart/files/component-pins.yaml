@@ -154,15 +154,17 @@ components:
       - oasgen-provider
     tier: platform
     feature: portal
-  # In-cluster GitOps pull reconciler: applies merged API-Builder RestDefinitions (from
-  # braghettos/krateo-oas) to the cluster, closing the API-Builder merge-PR → live-kind loop
-  # the Krateo-native way (a controller reconciling declared git state, NOT a push-CI apply).
-  # oasgen-provider then generates the CRD+controller per applied RestDefinition. Reuses the
-  # github-api-braghettos token Secret (read-only); least-privilege RBAC (restdefinitions +
-  # configmaps in krateo-system only). Chart name = component name, so no `chart:` override.
-  - name: krateo-oas-gitops
-    kind: KrateoOasGitops
-    version: "0.1.1"
+  # API-Builder registry: braghettos/krateo-oas is itself a Helm chart whose templates glob the
+  # merged apis/**/restdefinition.yaml + configmaps/**-oas.yaml and emit them verbatim. CDC renders
+  # this singleton composition, so merged API-Builder artifacts become live RestDefinitions + OAS
+  # ConfigMaps — owned, drift-healed, and PRUNED natively (no bespoke controller, no in-cluster poll;
+  # this replaces the retired krateo-oas-gitops image). oasgen-provider then generates the CRD +
+  # controller per RestDefinition. The human PR merge is the hard gate; on merge, krateo-oas's CI
+  # re-tags the chart and this pin is bumped (git commit, no kubectl apply). Chart name = component
+  # name, so no `chart:` override.
+  - name: krateo-oas
+    kind: KrateoOas
+    version: "0.1.0"
     deps:
       - oasgen-provider
     tier: platform
