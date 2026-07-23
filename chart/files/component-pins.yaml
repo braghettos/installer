@@ -90,7 +90,11 @@ components:
     #   RUNTIME. Lockstep with frontend-crd 1.3.46 (widget CRDs incl. Theme). SUPERSEDES the 1.3.44
     #   pin (image 1.3.82, bitnami/nginx :8080), which no longer matches the trunk's port-80 image.
     # 1.3.30: ships image 1.3.50 (older; probes/listens on :80).
-    version: "1.3.47"
+    # 1.3.48: ships app image 1.3.86 — #69/#72 four render quick-wins (breadcrumb leaf-only
+    #   truncation, inert panel icon, secondary-subtitle 14px, small-table cellPaddingBlockSM:6).
+    #   No widget-schema change → frontend-crd stays 1.3.47 (Theme CRD present). Supersedes 1.3.47
+    #   (image 1.3.85).
+    version: "1.3.48"
     deps:
       - frontend-crd
       - authn
@@ -147,7 +151,12 @@ components:
     #         de-dup grounding line, remediation buttons small→middle. list: drop Affected-resource +
     #         Evidence columns, bind INCIDENT column to the short alert name, hideWhenEmpty the Autopilot
     #         feed. Widget-CR-only (no frontend-crd bump).
-    version: "1.5.78"
+    # 1.5.79: incident detail §1 4-panel restructure (#72 §1) — new Summary TL;DR panel (server-side
+    #         .summary: what happened/why/how to fix) + merged Why panel (root cause + gaps + trace,
+    #         one flat card); PLUS blueprint-formdef tenant self-service fix (#66) — jsonschema CM ns
+    #         from .compdef.metadata.namespace + composition target ns from userAccessFilter $namespaces.
+    #         Widget-CR-only (no frontend-crd bump).
+    version: "1.5.79"
     deps:
       - frontend
     tier: platform
