@@ -27,14 +27,15 @@ components:
   - name: frontend-crd
     kind: KrateoFrontendCrd
     chart: krateo-frontend-crd
-    # 1.3.44: widget CRDs regenerated from frontend 1.3.82 (the clean forward release — multi-arch,
-    # port 8080, carries the RBAC Menu-hiding fix). Supersedes 1.3.43 (which tracked 1.3.81, a dead
-    # port-80/amd64-only backport WITHOUT the RBAC fix — do NOT pin 1.3.81). Lockstep with frontend 1.3.44.
+    # 1.3.46: widget CRDs regenerated from frontend 1.3.84 (the reconciled trunk) — RESTORES the
+    # Theme widget CRD (tenant brand overrides, issue #49; it had been pruned by the pre-Theme 1.3.82
+    # crds) + the RBAC-era widget set. Multi-arch, nginx-alpine port 80. Lockstep with frontend 1.3.46.
+    # 1.3.44: widget CRDs regenerated from frontend 1.3.82 (multi-arch, port 8080, RBAC) — no Theme.
     # 1.3.43: widget CRDs regenerated from frontend 1.3.81 schemas — Row items gain responsive
     # spans (xs/sm/md/lg/xl/xxl) + aligns all widget CRDs to the now-running 1.3.81 frontend.
     # 1.3.42: Listy gains widgetData.pagination {pageSize, position?} (UX-audit #21) —
     # MUST deploy before/with portal >= 1.5.70, whose grid CRs use the field.
-    version: "1.3.44"
+    version: "1.3.46"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -82,15 +83,14 @@ components:
     # (AUTOPILOT_PORTAL_PROMPT / AUTOPILOT_PORTAL_HOUSE_RULES config keys, empty=baked default).
     # Ships image 1.3.50 (delegation cue: PORTAL BUILDER delegates widget-CR authoring to the
     # frontend specialist). Pairs with frontend-agent 1.3.30 + krateo-autopilot 0.1.43.
-    # 1.3.44: ships app image 1.3.82 — the clean forward release carrying the RBAC Menu that HIDES
-    #   page entries the user's Role cannot GET (pairs with the portal `tiers` split below). Lockstep
-    #   with frontend-crd 1.3.44. Port-matched + multi-arch: image 1.3.82 nginx listens on 8080 and
-    #   chart 1.3.44's containerPort + probes + Service targetPort all resolve to 8080 (verified at
-    #   RUNTIME on the released image, not just the manifest). REPLACES the earlier 1.3.43 pin, which
-    #   tracked app 1.3.81 — a DEAD divergent backport that regressed to port 80, dropped arm64, and
-    #   LACKS the RBAC fix; chart 1.3.43 (probes 8080) + image 1.3.81 (listens 80) would crashloop.
+    # 1.3.46: ships app image 1.3.84 — the reconciled trunk: RBAC Menu (hides page entries the
+    #   user's Role cannot GET) + tenant Theme widget + multi-arch (amd64+arm64). The frontend
+    #   unified on nginx:1.30-alpine (bitnami's free images are being sunset), which listens on
+    #   port 80 — so chart 1.3.46 uses containerPort=service.port again (both 80), verified at
+    #   RUNTIME. Lockstep with frontend-crd 1.3.46 (widget CRDs incl. Theme). SUPERSEDES the 1.3.44
+    #   pin (image 1.3.82, bitnami/nginx :8080), which no longer matches the trunk's port-80 image.
     # 1.3.30: ships image 1.3.50 (older; probes/listens on :80).
-    version: "1.3.44"
+    version: "1.3.46"
     deps:
       - frontend-crd
       - authn
