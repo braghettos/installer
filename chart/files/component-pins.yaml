@@ -117,7 +117,9 @@ components:
     # URL + float nav order 12.5) — both CRD-invalid, escaped helm template (schema-blind).
     # 1.5.74: #19 relative incident meta (rel jq parses troubleshooter microsecond+offset ts)
     #         + #21 composition-kind analyzed-resource deep-links to /compositions (needs fe >= 1.3.78).
-    version: "1.5.74"
+    # 1.5.75: hotfix — 1.5.74 broke the incident-detail RA (filter: > folded block + # comments
+    #         commented out the whole jq); switched to filter: | (literal). Page was skeleton-only.
+    version: "1.5.75"
     deps:
       - frontend
     tier: platform
