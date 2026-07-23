@@ -27,11 +27,14 @@ components:
   - name: frontend-crd
     kind: KrateoFrontendCrd
     chart: krateo-frontend-crd
+    # 1.3.44: widget CRDs regenerated from frontend 1.3.82 (the clean forward release — multi-arch,
+    # port 8080, carries the RBAC Menu-hiding fix). Supersedes 1.3.43 (which tracked 1.3.81, a dead
+    # port-80/amd64-only backport WITHOUT the RBAC fix — do NOT pin 1.3.81). Lockstep with frontend 1.3.44.
     # 1.3.43: widget CRDs regenerated from frontend 1.3.81 schemas — Row items gain responsive
     # spans (xs/sm/md/lg/xl/xxl) + aligns all widget CRDs to the now-running 1.3.81 frontend.
     # 1.3.42: Listy gains widgetData.pagination {pageSize, position?} (UX-audit #21) —
     # MUST deploy before/with portal >= 1.5.70, whose grid CRs use the field.
-    version: "1.3.43"
+    version: "1.3.44"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -79,13 +82,15 @@ components:
     # (AUTOPILOT_PORTAL_PROMPT / AUTOPILOT_PORTAL_HOUSE_RULES config keys, empty=baked default).
     # Ships image 1.3.50 (delegation cue: PORTAL BUILDER delegates widget-CR authoring to the
     # frontend specialist). Pairs with frontend-agent 1.3.30 + krateo-autopilot 0.1.43.
-    # 1.3.43: ships app image 1.3.81 — the RBAC Menu that HIDES page entries the user's Role
-    #   cannot GET (pairs with the portal `tiers` split below). Moves in lockstep with
-    #   frontend-crd 1.3.43 (widget CRDs regenerated from 1.3.81). REQUIRES this chart, not just an
-    #   image tag: 1.3.81's non-root Bitnami nginx listens on 8080, and chart 1.3.43's Deployment
-    #   containerPort + liveness/readiness probes + Service targetPort all resolve to 8080 — pinning
-    #   image 1.3.81 onto the old chart 1.3.30 (probes :80) crashloops. Verified via helm template.
-    version: "1.3.43"
+    # 1.3.44: ships app image 1.3.82 — the clean forward release carrying the RBAC Menu that HIDES
+    #   page entries the user's Role cannot GET (pairs with the portal `tiers` split below). Lockstep
+    #   with frontend-crd 1.3.44. Port-matched + multi-arch: image 1.3.82 nginx listens on 8080 and
+    #   chart 1.3.44's containerPort + probes + Service targetPort all resolve to 8080 (verified at
+    #   RUNTIME on the released image, not just the manifest). REPLACES the earlier 1.3.43 pin, which
+    #   tracked app 1.3.81 — a DEAD divergent backport that regressed to port 80, dropped arm64, and
+    #   LACKS the RBAC fix; chart 1.3.43 (probes 8080) + image 1.3.81 (listens 80) would crashloop.
+    # 1.3.30: ships image 1.3.50 (older; probes/listens on :80).
+    version: "1.3.44"
     deps:
       - frontend-crd
       - authn
