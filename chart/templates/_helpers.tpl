@@ -156,6 +156,54 @@
 {{- end -}}
 
 {{/*
+inst.nodeip — a browser-reachable Node IP for NodePort exposure. Prefers an ExternalIP
+(public), else falls back to the first InternalIP. "" if the cluster advertises neither (the
+caller then omits the key and the next reconcile retries). */}}
+{{- define "inst.nodeip" -}}
+{{- $top := index . 0 -}}{{- $ext := "" -}}{{- $int := "" -}}
+{{- range (lookup "v1" "Node" "" "").items -}}
+{{- range (.status | default dict).addresses | default list -}}
+{{- if eq .type "ExternalIP" -}}{{- $ext = .address -}}{{- end -}}
+{{- if eq .type "InternalIP" -}}{{- $int = .address -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if $ext -}}{{ $ext }}{{- else -}}{{ $int }}{{- end -}}
+{{- end -}}
+
+{{/*
+inst.peerurl — a peer component's BROWSER-reachable base URL, resolved from its Service per the
+exposure model (values.yaml `exposure.type`), so a consumer's spec.config.<KEY> points at an
+address the browser can actually reach — for LoadBalancer AND NodePort alike:
+  - LoadBalancer -> http://<lb-ingress-ip|hostname>:<eport>  (eport = shared exposure.port, passed in)
+  - NodePort     -> http://<node-ip>:<nodePort>              (nodePort read off the Service)
+The Service is matched on a stable name substring ($svcMatch), narrowed to the exposed type.
+Returns "" until the external address exists (LB IP still pending / no node IP) — the caller omits
+the key so the frontend keeps its default and the next reconcile fills it. A STATIC operator
+override (a real external hostname) is handled by the caller and wins over this; this helper only
+covers the two auto-exposed modes. */}}
+{{- define "inst.peerurl" -}}
+{{- $top := index . 0 -}}{{- $sub := index . 1 -}}{{- $eport := index . 2 -}}{{- $url := "" -}}
+{{- range (lookup "v1" "Service" $top.Values.namespaces.krateo "").items -}}
+{{- if contains $sub .metadata.name -}}
+{{- $t := .spec.type | toString -}}
+{{- if eq $t "LoadBalancer" -}}
+{{- $lb := (.status | default dict).loadBalancer | default dict -}}
+{{- range ($lb.ingress | default list) -}}
+{{- $addr := .ip | default .hostname -}}
+{{- if $addr -}}{{- $url = printf "http://%s:%v" $addr $eport -}}{{- end -}}
+{{- end -}}
+{{- else if eq $t "NodePort" -}}
+{{- $np := "" -}}
+{{- range .spec.ports -}}{{- if .nodePort -}}{{- $np = .nodePort -}}{{- end -}}{{- end -}}
+{{- $nip := include "inst.nodeip" (list $top) -}}
+{{- if and $nip $np -}}{{- $url = printf "http://%s:%v" $nip $np -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $url -}}
+{{- end -}}
+
+{{/*
 inst.componentsYaml — the chart-managed component pin list, sourced from
 files/component-pins.yaml (NOT .Values), so it is CHART CONTENT immune to
 `helm upgrade --reuse-values`. A chart bump therefore always propagates its component
