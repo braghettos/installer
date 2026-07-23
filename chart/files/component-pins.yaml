@@ -162,7 +162,7 @@ components:
   # configmaps in krateo-system only). Chart name = component name, so no `chart:` override.
   - name: krateo-oas-gitops
     kind: KrateoOasGitops
-    version: "0.1.0"
+    version: "0.1.1"
     deps:
       - oasgen-provider
     tier: platform
