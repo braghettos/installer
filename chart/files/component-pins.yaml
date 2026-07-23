@@ -62,7 +62,7 @@ components:
   - name: snowplow
     kind: KrateoSnowplow
     chart: krateo-snowplow
-    version: "1.0.83"
+    version: "1.0.84"
     deps:
       - snowplow-crd
       - authn
