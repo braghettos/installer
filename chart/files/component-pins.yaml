@@ -115,7 +115,9 @@ components:
     # bump). Item #30 KOG-publish-as-PR pairs with frontend >= 1.3.77.
     # 1.5.73: unwedge the 1.5.72 reconcile (item-less obs-header-actions Flex when no console
     # URL + float nav order 12.5) — both CRD-invalid, escaped helm template (schema-blind).
-    version: "1.5.73"
+    # 1.5.74: #19 relative incident meta (rel jq parses troubleshooter microsecond+offset ts)
+    #         + #21 composition-kind analyzed-resource deep-links to /compositions (needs fe >= 1.3.78).
+    version: "1.5.74"
     deps:
       - frontend
     tier: platform
