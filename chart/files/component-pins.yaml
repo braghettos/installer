@@ -142,7 +142,12 @@ components:
     #         (which right-aligns via .items flex-end) into the left-aligned body (UX-25); remediation
     #         steps stack their gated action under the step body instead of a horizontal
     #         space-between that stranded the button far right with an empty right half (UX-26).
-    version: "1.5.77"
+    # 1.5.78: incident #69/#72 CR quick-wins (UX-27) — detail: drop redundant Back link, strip title
+    #         emoji, remove duplicated alerts/<name> box, Phase→Analysis stage, drop category: prefix +
+    #         de-dup grounding line, remediation buttons small→middle. list: drop Affected-resource +
+    #         Evidence columns, bind INCIDENT column to the short alert name, hideWhenEmpty the Autopilot
+    #         feed. Widget-CR-only (no frontend-crd bump).
+    version: "1.5.78"
     deps:
       - frontend
     tier: platform
