@@ -192,7 +192,10 @@ components:
     #         and wedged the whole portal Composition (ReconcileError), which also blocked
     #         obs-troubleshooting-table from applying. Adds name:q (unused in the queryParam
     #         Input.Search branch, required by schema). Widget-CR-only.
-    version: "1.5.85"
+    # 1.5.86: align incident detail widget CRs to render — flex.incident-detail-titleline
+    #         align center→baseline; tag.incident-rootcause-category color magenta→red;
+    #         new flex.incident-rootcause-meta wraps category+confidence inline in the Why card.
+    version: "1.5.86"
     deps:
       - frontend
     tier: platform
