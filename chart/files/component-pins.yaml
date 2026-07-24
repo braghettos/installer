@@ -156,7 +156,11 @@ components:
     #         one flat card); PLUS blueprint-formdef tenant self-service fix (#66) — jsonschema CM ns
     #         from .compdef.metadata.namespace + composition target ns from userAccessFilter $namespaces.
     #         Widget-CR-only (no frontend-crd bump).
-    version: "1.5.79"
+    # 1.5.80: #68 — move the Compositions page (page-compositions flex + sidebar-nav ref) from the
+    #         admin tier to the common tier (.Release.Namespace) so namespace-scoped tenants see the
+    #         Compositions menu item + their own Krateos (compositions-table is server-side tenant-scoped).
+    #         No-op on non-tiered benches (already resolved to the release ns). Widget-CR-only.
+    version: "1.5.80"
     deps:
       - frontend
     tier: platform
