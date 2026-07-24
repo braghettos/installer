@@ -160,7 +160,12 @@ components:
     #         admin tier to the common tier (.Release.Namespace) so namespace-scoped tenants see the
     #         Compositions menu item + their own Krateos (compositions-table is server-side tenant-scoped).
     #         No-op on non-tiered benches (already resolved to the release ns). Widget-CR-only.
-    version: "1.5.80"
+    # 1.5.81: #70 — compositions-list discovers composition TYPES from the tenant blueprint namespace
+    #         too (crdsBlueprints step, ns .Values.blueprintNamespace default krateo-blueprints; merged +
+    #         uid-deduped), so a namespace-scoped tenant's own composition (blueprint in krateo-blueprints
+    #         per acmp#53) lists. Namespaced/user-token (no ClusterRole); continueOnError → no-op where
+    #         the ns is absent (non-tenant benches). Widget-CR-only.
+    version: "1.5.81"
     deps:
       - frontend
     tier: platform
