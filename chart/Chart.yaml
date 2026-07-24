@@ -45,12 +45,12 @@ annotations:
 # CRD to exist — "lookup the CRD, once present proceed with the bootstrap". One-shot, no prereq.
 dependencies:
   - name: krateo-core-provider
-    version: "0.53.11"
+    version: "0.53.14"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # engine CRDs (CompositionDefinition, KubernetesTarget) — helm-owned subchart, bootstrap-only
   - name: krateo-core-provider-crd
-    version: "0.36.13"
+    version: "0.36.15"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # The ClickHouse + MongoDB observability operators are NO LONGER bootstrap subcharts. They
