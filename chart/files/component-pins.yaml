@@ -201,7 +201,12 @@ components:
     # 1.5.88: issue #69 Reiteration 2 remainder — evidence lead-in prose sentence
     #         (incident-evidence-leadin Paragraph + RA evidenceLeadIn field) + Divider CRs
     #         between remediation steps for clear visual separation.
-    version: "1.5.88"
+    # 1.5.89: incident page UX redesign — "What happened": Resources/Sources Tabs (both Tables,
+    #         server-side count labels); "Why did it happen": Reasoning trace/Verdict/Gaps Tabs
+    #         (Trace is default-first); "How to fix": Steps navigator (finish/process/wait per
+    #         step) + current-step detail with button right-aligned (horizontal Flex);
+    #         Tabs CRD extended with `steps`+`alerts` (regenerated from schema.json).
+    version: "1.5.89"
     deps:
       - frontend
     tier: platform
