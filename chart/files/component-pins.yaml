@@ -165,7 +165,14 @@ components:
     #         uid-deduped), so a namespace-scoped tenant's own composition (blueprint in krateo-blueprints
     #         per acmp#53) lists. Namespaced/user-token (no ClusterRole); continueOnError → no-op where
     #         the ns is absent (non-tenant benches). Widget-CR-only.
-    version: "1.5.81"
+    # 1.5.82: #72 — composition DETAIL page tenant-safe type discovery. composition-detail/-resources/
+    #         -events discover the composition type via a cluster-wide compositiondefinitions list under
+    #         a userAccessFilter (SA lists, refilter to CDs the caller can list) instead of a caller-token
+    #         cluster-wide customresourcedefinitions list (403 → blank). -resources/-events `found` also
+    #         namespace-scoped. MIGRATES #70 compositions-list to the same UAF pattern (covers all tenant-
+    #         readable ns, not just 2 fixed). composition-editdef (Edit form) deferred (needs CM schema).
+    #         Widget-CR-only. No-op on non-tenant benches (admin lists CDs everywhere → unchanged).
+    version: "1.5.82"
     deps:
       - frontend
     tier: platform
