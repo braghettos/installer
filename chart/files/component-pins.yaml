@@ -35,7 +35,10 @@ components:
     # spans (xs/sm/md/lg/xl/xxl) + aligns all widget CRDs to the now-running 1.3.81 frontend.
     # 1.3.42: Listy gains widgetData.pagination {pageSize, position?} (UX-audit #21) —
     # MUST deploy before/with portal >= 1.5.70, whose grid CRs use the field.
-    version: "1.3.47"
+    # 1.3.89: Steps widget gains resourceRefId per item (renders inline child widget inside
+    #   the active step description — action button pattern); Tabs allowedResources += steps/alerts.
+    #   Ships alongside frontend 1.3.89 (image 1.3.88). Lockstep with portal >= 1.5.92.
+    version: "1.3.89"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -99,7 +102,9 @@ components:
     #   (WidgetPage.PAGE_SEARCH drops '/blueprints' — blueprints now render their own inline ?q=
     #   search Input in flex.blueprints-filterbar, so no duplicate frontend PageSearch box).
     #   No widget-schema change → frontend-crd stays 1.3.47. Supersedes 1.3.48 (image 1.3.86).
-    version: "1.3.49"
+    # 1.3.89: ships app image 1.3.88 — Steps widget resourceRefId per item (button inline in
+    #   active step); widget-schema change → lockstep with frontend-crd 1.3.89.
+    version: "1.3.89"
     deps:
       - frontend-crd
       - authn
@@ -206,7 +211,9 @@ components:
     #         (Trace is default-first); "How to fix": all steps inline (each with sequential-
     #         lock button inside the step Flex — button only on the current unapplied step);
     #         step markdown shows YAML resource coords + ✅ Verify/Applied labels.
-    version: "1.5.91"
+    # 1.5.92: "How to fix" Steps widget — button rendered INSIDE the active step via
+    #         resourceRefId (antd Steps inline child widget); requires frontend-crd 1.3.89.
+    version: "1.5.92"
     deps:
       - frontend
     tier: platform
