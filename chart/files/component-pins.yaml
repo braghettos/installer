@@ -172,7 +172,12 @@ components:
     #         namespace-scoped. MIGRATES #70 compositions-list to the same UAF pattern (covers all tenant-
     #         readable ns, not just 2 fixed). composition-editdef (Edit form) deferred (needs CM schema).
     #         Widget-CR-only. No-op on non-tenant benches (admin lists CDs everywhere → unchanged).
-    version: "1.5.82"
+    # 1.5.83: #74 — composition-editdef (tenant Edit form) reads the form schema from the per-version
+    #         jsonschema ConfigMap in the CD's namespace (namespaced, tenant-readable — like the #66
+    #         create form), NOT the cluster-scoped CRD openAPIV3Schema a tenant can't GET. crds→UAF CD
+    #         list, found→namespace-scoped. Completes the tenant self-service arc (#66/#68/#70/#72/#74).
+    #         Widget-CR-only. No-op on non-tenant benches.
+    version: "1.5.83"
     deps:
       - frontend
     tier: platform
