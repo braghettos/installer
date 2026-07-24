@@ -198,7 +198,10 @@ components:
     # 1.5.87: issue #69 Reiteration 2 — panel renames (Evidence→What happened,
     #         Why—root cause→Why did it happen, Remediation plan→How to fix) + remove all
     #         headerLeft captions + drop category tag/confidence from Why + strip divider suffixes.
-    version: "1.5.87"
+    # 1.5.88: issue #69 Reiteration 2 remainder — evidence lead-in prose sentence
+    #         (incident-evidence-leadin Paragraph + RA evidenceLeadIn field) + Divider CRs
+    #         between remediation steps for clear visual separation.
+    version: "1.5.88"
     deps:
       - frontend
     tier: platform
