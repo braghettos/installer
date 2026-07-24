@@ -187,7 +187,12 @@ components:
     #         troubleshooting card = obs-troubleshooting Table + "Investigate with Autopilot" CTA,
     #         retiring the list feed), and #75 §0.2 (blueprints category chips + ?q= search Input on
     #         one line via flex.blueprints-filterbar). Widget-CR-only; pairs with frontend 1.3.49.
-    version: "1.5.84"
+    # 1.5.85: HOTFIX for 1.5.84 — input.blueprints-search omitted the Input CRD's required
+    #         widgetData.name, so the CDC apply rejected it ("spec.widgetData.name: Required value")
+    #         and wedged the whole portal Composition (ReconcileError), which also blocked
+    #         obs-troubleshooting-table from applying. Adds name:q (unused in the queryParam
+    #         Input.Search branch, required by schema). Widget-CR-only.
+    version: "1.5.85"
     deps:
       - frontend
     tier: platform
