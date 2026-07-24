@@ -94,7 +94,12 @@ components:
     #   truncation, inert panel icon, secondary-subtitle 14px, small-table cellPaddingBlockSM:6).
     #   No widget-schema change → frontend-crd stays 1.3.47 (Theme CRD present). Supersedes 1.3.47
     #   (image 1.3.85).
-    version: "1.3.48"
+    # 1.3.49: ships app image 1.3.87 — #72 §0.5 + #76 small-table padding REVERSED to looser
+    #   (cellPaddingBlockSM 6→8, cellPaddingBlock 9→16) per the "too tight" reports, and #75 §0.2
+    #   (WidgetPage.PAGE_SEARCH drops '/blueprints' — blueprints now render their own inline ?q=
+    #   search Input in flex.blueprints-filterbar, so no duplicate frontend PageSearch box).
+    #   No widget-schema change → frontend-crd stays 1.3.47. Supersedes 1.3.48 (image 1.3.86).
+    version: "1.3.49"
     deps:
       - frontend-crd
       - authn
@@ -177,7 +182,12 @@ components:
     #         create form), NOT the cluster-scoped CRD openAPIV3Schema a tenant can't GET. crds→UAF CD
     #         list, found→namespace-scoped. Completes the tenant self-service arc (#66/#68/#70/#72/#74).
     #         Widget-CR-only. No-op on non-tenant benches.
-    version: "1.5.83"
+    # 1.5.84: frontend-issue render batch — #69 §0.4 (incident detail: lifecycle+trigger chips move
+    #         onto the title line via flex.incident-detail-titleline), #72 §0.7 (Autopilot
+    #         troubleshooting card = obs-troubleshooting Table + "Investigate with Autopilot" CTA,
+    #         retiring the list feed), and #75 §0.2 (blueprints category chips + ?q= search Input on
+    #         one line via flex.blueprints-filterbar). Widget-CR-only; pairs with frontend 1.3.49.
+    version: "1.5.84"
     deps:
       - frontend
     tier: platform
