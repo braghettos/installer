@@ -204,8 +204,9 @@ components:
     # 1.5.89: incident page UX redesign — "What happened": Resources/Sources Tabs (both Tables,
     #         server-side count labels); "Why did it happen": Reasoning trace/Verdict/Gaps Tabs
     #         (Trace is default-first); "How to fix": all steps inline (each with sequential-
-    #         lock button inside the step Flex — button only on the current unapplied step).
-    version: "1.5.90"
+    #         lock button inside the step Flex — button only on the current unapplied step);
+    #         step markdown shows YAML resource coords + ✅ Verify/Applied labels.
+    version: "1.5.91"
     deps:
       - frontend
     tier: platform
