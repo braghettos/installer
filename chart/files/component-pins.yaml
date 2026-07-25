@@ -221,7 +221,9 @@ components:
     # 1.5.94: step body prose — actionable: "Clicking Review & apply will {verb} resource/name
     #         in ns" + JSON payload block; non-actionable: explanatory prose per case (unrecognized
     #         GVR / no target / needs blueprint provisioning); navigator subtitle dropped.
-    version: "1.5.94"
+    # 1.5.95: non-actionable prose wrapped in italic (_..._); Verify separator uses --- + **Verify:**
+    #         bold label (not blockquote) for clear visual hierarchy vs step title.
+    version: "1.5.95"
     deps:
       - frontend
     tier: platform
