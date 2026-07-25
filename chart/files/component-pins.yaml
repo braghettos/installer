@@ -215,7 +215,10 @@ components:
     #         step markdown shows YAML resource coords + ✅ Verify/Applied labels.
     # 1.5.92: "How to fix" Steps widget — button rendered INSIDE the active step via
     #         resourceRefId (antd Steps inline child widget); requires frontend-crd 1.3.89.
-    version: "1.5.92"
+    # 1.5.93: remediation step UX — navigator subtitle shows kubectl op / target name;
+    #         step markdown drops bold title + uses blockquote for Verify/Applied;
+    #         Marketplace navigateTo pre-fills ?q=<targetName> for direct search.
+    version: "1.5.93"
     deps:
       - frontend
     tier: platform
