@@ -223,7 +223,9 @@ components:
     #         GVR / no target / needs blueprint provisioning); navigator subtitle dropped.
     # 1.5.95: non-actionable prose wrapped in italic (_..._); Verify separator uses --- + **Verify:**
     #         bold label (not blockquote) for clear visual hierarchy vs step title.
-    version: "1.5.95"
+    # 1.5.96: non-actionable step shows "→ evidence #N" (sourceRef+1); Verify adds a ```bash
+    #         verifyCommand block from the troubleshooter below the successCriterion text.
+    version: "1.5.96"
     deps:
       - frontend
     tier: platform
