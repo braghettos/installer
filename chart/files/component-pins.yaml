@@ -225,7 +225,9 @@ components:
     #         bold label (not blockquote) for clear visual hierarchy vs step title.
     # 1.5.96: non-actionable step shows "→ evidence #N" (sourceRef+1); Verify adds a ```bash
     #         verifyCommand block from the troubleshooter below the successCriterion text.
-    version: "1.5.96"
+    # 1.5.97: resource-detail page: manifestJson emits "" (not "{}") when resource not found,
+    #         so YamlViewer shows "No data to display" instead of an empty object.
+    version: "1.5.97"
     deps:
       - frontend
     tier: platform
