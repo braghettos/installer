@@ -229,7 +229,9 @@ components:
     #         so YamlViewer shows "No data to display" instead of an empty object.
     # 1.5.98: resource-detail subtitle shows "Not found in namespace X" (not silent "namespace X")
     #         when the resource does not exist at the given URL.
-    version: "1.5.98"
+    # 1.5.99: remove Autopilot investigations section from /incidents (label + secondary row
+    #         + obs-troubleshooting-card dropped; incidents page is incidents-only now).
+    version: "1.5.99"
     deps:
       - frontend
     tier: platform
