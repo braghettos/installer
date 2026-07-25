@@ -218,7 +218,10 @@ components:
     # 1.5.93: remediation step UX — navigator subtitle shows kubectl op / target name;
     #         step markdown drops bold title + uses blockquote for Verify/Applied;
     #         Marketplace navigateTo pre-fills ?q=<targetName> for direct search.
-    version: "1.5.93"
+    # 1.5.94: step body prose — actionable: "Clicking Review & apply will {verb} resource/name
+    #         in ns" + JSON payload block; non-actionable: explanatory prose per case (unrecognized
+    #         GVR / no target / needs blueprint provisioning); navigator subtitle dropped.
+    version: "1.5.94"
     deps:
       - frontend
     tier: platform
