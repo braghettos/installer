@@ -227,7 +227,9 @@ components:
     #         verifyCommand block from the troubleshooter below the successCriterion text.
     # 1.5.97: resource-detail page: manifestJson emits "" (not "{}") when resource not found,
     #         so YamlViewer shows "No data to display" instead of an empty object.
-    version: "1.5.97"
+    # 1.5.98: resource-detail subtitle shows "Not found in namespace X" (not silent "namespace X")
+    #         when the resource does not exist at the given URL.
+    version: "1.5.98"
     deps:
       - frontend
     tier: platform
