@@ -317,7 +317,9 @@ components:
     # 0.1.9: durable ClickHouse retention — 15Gi data volume + 3d system-log TTLs via
     # settings.extraConfig (the 10Gi/no-TTL volume filled in 8 days → insert 243 →
     # OTel OOM loops → telemetry dead; live bench was PVC-expanded + ALTERed 2026-07-22).
-    version: "0.1.9"
+    # 0.1.10: bump clickstack 3.0.0 → 3.0.2 (HyperDX 2.27.0 → 2.30.1). Unlocks
+    # /api/v2/external Bearer auth for native Composition + RESTDefinition Alert management.
+    version: "0.1.10"
     tier: observability
     feature: portal
     # Operators first: the clickhouse.com + mongodbcommunity CRDs must be served and the
