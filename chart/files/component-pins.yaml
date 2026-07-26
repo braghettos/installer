@@ -233,7 +233,9 @@ components:
     #         when the resource does not exist at the given URL.
     # 1.5.99: remove Autopilot investigations section from /incidents (label + secondary row
     #         + obs-troubleshooting-card dropped; incidents page is incidents-only now).
-    version: "1.5.99"
+    # 1.5.100: non-actionable remediation steps trigger Autopilot via ?ask= deep-link
+    #          (button: "Ask Autopilot" + fa-robot); stays on incident detail page with context.
+    version: "1.5.100"
     deps:
       - frontend
     tier: platform
