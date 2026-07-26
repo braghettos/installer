@@ -319,7 +319,9 @@ components:
     # OTel OOM loops → telemetry dead; live bench was PVC-expanded + ALTERed 2026-07-22).
     # 0.1.10: bump clickstack 3.0.0 → 3.0.2 (HyperDX 2.27.0 → 2.30.1). Unlocks
     # /api/v2/external Bearer auth for native Composition + RESTDefinition Alert management.
-    version: "0.1.10"
+    # 0.1.11: add krateo-clickstack-api ClusterIP Service (port 8000) — exposes HyperDX
+    # Express backend directly, bypassing the Next.js /api-stripping proxy at port 3000.
+    version: "0.1.11"
     tier: observability
     feature: portal
     # Operators first: the clickhouse.com + mongodbcommunity CRDs must be served and the
