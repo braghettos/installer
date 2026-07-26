@@ -235,7 +235,9 @@ components:
     #         + obs-troubleshooting-card dropped; incidents page is incidents-only now).
     # 1.5.100: non-actionable remediation steps trigger Autopilot via ?ask= deep-link
     #          (button: "Ask Autopilot" + fa-robot); stays on incident detail page with context.
-    version: "1.5.100"
+    # 1.5.101: alerts table: wrap Lucene where clause at AND/AND NOT boundaries to fix
+    #          table overflow (watching column was 200+ chars wide due to exclusion clauses).
+    version: "1.5.101"
     deps:
       - frontend
     tier: platform
