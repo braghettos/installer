@@ -15,7 +15,7 @@ components:
   - name: authn-crd
     kind: KrateoAuthnCrd
     chart: krateo-authn-crd
-    version: "0.22.19"
+    version: "0.22.22"
     tier: platform
     feature: portal
   - name: oasgen-provider-crd
@@ -48,7 +48,7 @@ components:
   - name: snowplow-crd
     kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
-    version: "1.0.69"
+    version: "1.0.87"
     tier: platform
     feature: portal
 
@@ -56,7 +56,7 @@ components:
   - name: authn
     kind: KrateoAuthn
     chart: krateo-authn
-    version: "0.22.19"
+    version: "0.22.22"
     deps:
       - authn-crd
     tier: platform
@@ -255,7 +255,7 @@ components:
     #          extra reverted from badge to plain text.
     # 1.5.104: Details card extraVariant:tag — "Up to date" (green) / "Update available → ver" (gold).
     #          Requires frontend ≥1.3.94 for Card extraVariant:tag support.
-    version: "1.5.104"
+    version: "1.5.105"
     deps:
       - frontend
     tier: platform
@@ -404,7 +404,7 @@ components:
     feature: coreAgents
   - name: kagent
     kind: Kagent
-    version: "0.1.7"
+    version: "0.1.9"
     deps:
       - kagent-crds
     tier: observability
@@ -436,7 +436,7 @@ components:
     kind: KrateoInstallerAgent
     # 0.2.306: A2A agent-card (description + skills) rewritten accurate to the installer's real domain
     # (Installer-CR get->apply, features/componentValues, self-reconcile/teardown). Chart in THIS repo.
-    version: "0.2.306"
+    version: "0.2.371"
     deps:
       - kagent
     tier: observability
@@ -460,7 +460,7 @@ components:
     chart: krateo-snowplow-agent
     # 1.0.78: A2A agent-card rewritten accurate — real RESTAction fields (endpointRef/dependsOn/
     # exportJwt) + real /call content types + diagnostics. (gemini-pro authoring specialist.)
-    version: "1.0.82"
+    version: "1.0.87"
     deps:
       - kagent
     tier: observability
@@ -477,7 +477,7 @@ components:
     requireApproval: []
     # 1.3.34: granular requireApproval (list) replaces the hitlApproval boolean; default [] (dry-run
     # validator, nothing gated) + single-pass authoring + reuse compositions-list RA (1.3.30 = gemini-pro).
-    version: "1.3.41"
+    version: "1.3.94"
     deps:
       - kagent
     tier: observability
@@ -489,7 +489,7 @@ components:
     # 3.0.31: A2A agent-card rewritten accurate — names the real ClickHouse OTel tables; asserts
     # read-only; split into troubleshoot + correlate skills. (Model stays flash; appVersion=
     # CHART_VERSION, no braghettos app image — third-party stack.)
-    version: "3.0.31"
+    version: "3.0.32"
     deps:
       - kagent
     tier: observability
@@ -500,7 +500,7 @@ components:
     chart: krateo-core-provider-agent
     # 0.53.13: A2A agent-card rewritten accurate — names CompositionDefinition/Composition/
     # KubernetesTarget + values.schema.json authoring; 2 skills. (gemini-pro authoring specialist.)
-    version: "0.53.13"
+    version: "0.53.14"
     deps:
       - kagent
     tier: observability
