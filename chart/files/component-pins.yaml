@@ -126,7 +126,9 @@ components:
     #   drops WidgetRenderer/Listy CR delegation (no initial GET → empty-on-open bug).
     # 1.3.98: Notifications List.Item layout fix — timestamp in actions prop (not Meta sibling),
     #   FA icon avatar, type Tag in title row, Skeleton on load, warnings-first sort.
-    version: "1.3.98"
+    # 1.3.99: Notifications title row: replace Space with flex div + whiteSpace:nowrap + ellipsis
+    #   on reason text — prevents mid-word line-break on long reasons (CannotObserveExternalResource).
+    version: "1.3.99"
     deps:
       - frontend-crd
       - authn
