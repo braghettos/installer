@@ -118,7 +118,9 @@ components:
     #   (align-items:center no longer shifted by default margin-bottom), Select width:100% +
     #   formWrapper min-width:0 (Select no longer overflows narrow form panels), Card extraVariant:tag
     #   (soft antd Tag pill for "Up to date"/"Update available" labels).
-    version: "1.3.94"
+    # 1.3.95: Notifications refactor — exception-only warning dot badge (no count), Drawer body
+    #   replaced with list-notifications Listy widget CR (portal chart). Card.type.d.ts TS fix.
+    version: "1.3.95"
     deps:
       - frontend-crd
       - authn
@@ -255,6 +257,8 @@ components:
     #          extra reverted from badge to plain text.
     # 1.5.104: Details card extraVariant:tag — "Up to date" (green) / "Update available → ver" (gold).
     #          Requires frontend ≥1.3.94 for Card extraVariant:tag support.
+    # 1.5.105: list-notifications Listy CR — SSE-driven header notification feed (portal-chart-
+    #          configurable itemTemplate). Requires frontend ≥1.3.95.
     version: "1.5.105"
     deps:
       - frontend
