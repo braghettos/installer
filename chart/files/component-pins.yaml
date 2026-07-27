@@ -40,7 +40,8 @@ components:
     #   Ships alongside frontend 1.3.89 (image 1.3.88). Lockstep with portal >= 1.5.92.
     # 1.3.90: Steps CRD gains keyExtras/identityContext/freshness at spec level (they were
     #   omitted from the krateoctl-generated CRD, so keyExtras was stripped from Steps CRs).
-    version: "1.3.90"
+    # 1.3.92: Menu CRD gains widgetData.items[].type: enum["divider"] — sidebar nav dividers.
+    version: "1.3.92"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -108,7 +109,9 @@ components:
     #   active step); widget-schema change → lockstep with frontend-crd 1.3.89.
     # 1.3.91: ships app image 1.3.91 — Markdown pre/code blocks styled via react-markdown
     #   inline styles (rgba bg + primary-color left border); visible in both dark+light themes.
-    version: "1.3.91"
+    # 1.3.92: ships app image 1.3.92 — sidebar nav reorder + antd Menu dividers (4 groups:
+    #   Operations / Observability / Builders / Administration). Lockstep with frontend-crd 1.3.92.
+    version: "1.3.92"
     deps:
       - frontend-crd
       - authn
@@ -237,7 +240,10 @@ components:
     #          (button: "Ask Autopilot" + fa-robot); stays on incident detail page with context.
     # 1.5.101: alerts table: wrap Lucene where clause at AND/AND NOT boundaries to fix
     #          table overflow (watching column was 200+ chars wide due to exclusion clauses).
-    version: "1.5.101"
+    # 1.5.102: sidebar nav reorder (dashboard→compositions→blueprints→marketplace→observability→
+    #          incidents→alerts→portal builder→blueprint builder→api builder→settings→clusters)
+    #          + antd Menu dividers between 4 groups (Operations/Observability/Builders/Admin).
+    version: "1.5.102"
     deps:
       - frontend
     tier: platform
