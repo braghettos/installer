@@ -124,7 +124,9 @@ components:
     #   preset (off-brand #389e0d). Row col padding override gains !important to beat antd CSS-in-JS.
     # 1.3.97: Notifications drawer renders events directly from useGetEvents (initial GET + SSE);
     #   drops WidgetRenderer/Listy CR delegation (no initial GET → empty-on-open bug).
-    version: "1.3.97"
+    # 1.3.98: Notifications List.Item layout fix — timestamp in actions prop (not Meta sibling),
+    #   FA icon avatar, type Tag in title row, Skeleton on load, warnings-first sort.
+    version: "1.3.98"
     deps:
       - frontend-crd
       - authn
