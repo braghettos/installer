@@ -128,7 +128,9 @@ components:
     #   FA icon avatar, type Tag in title row, Skeleton on load, warnings-first sort.
     # 1.3.99: Notifications title row: replace Space with flex div + whiteSpace:nowrap + ellipsis
     #   on reason text — prevents mid-word line-break on long reasons (CannotObserveExternalResource).
-    version: "1.3.99"
+    # 1.3.100: Notifications deduplication — group events by (type+reason+kind+name), show ×N count
+    #   badge; click navigates to /resources/{ns}/{group}/{version}/{plural}/{name} (resource-detail).
+    version: "1.3.100"
     deps:
       - frontend-crd
       - authn
