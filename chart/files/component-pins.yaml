@@ -111,7 +111,9 @@ components:
     #   inline styles (rgba bg + primary-color left border); visible in both dark+light themes.
     # 1.3.92: ships app image 1.3.92 — sidebar nav reorder + antd Menu dividers (4 groups:
     #   Operations / Observability / Builders / Administration). Lockstep with frontend-crd 1.3.92.
-    version: "1.3.92"
+    # 1.3.93: ships app image 1.3.93 — Breadcrumb leaf-segment vertical-align:bottom fix
+    #   (last crumb was misaligned vs siblings; shared fix, affects every page).
+    version: "1.3.93"
     deps:
       - frontend-crd
       - authn
@@ -243,7 +245,10 @@ components:
     # 1.5.102: sidebar nav reorder (dashboard→compositions→blueprints→marketplace→observability→
     #          incidents→alerts→portal builder→blueprint builder→api builder→settings→clusters)
     #          + antd Menu dividers between 4 groups (Operations/Observability/Builders/Admin).
-    version: "1.5.102"
+    # 1.5.103: blueprint-detail polish (#78): remove back link, buttons size:middle,
+    #          reorder secondary/primary, Metadata moved to left column, Details card
+    #          extra reverted from badge to plain text.
+    version: "1.5.103"
     deps:
       - frontend
     tier: platform
