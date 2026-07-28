@@ -159,7 +159,10 @@ components:
     # 1.3.110: notifications drawer perf — the GET /events-seeded list now paints instantly on
     #   open (memoized dedupe + render top 50 of N, memo'd rows); rendering the full ~200-item List
     #   per SSE tick had stalled first paint / frozen the tab. No CRD change.
-    version: "1.3.110"
+    # 1.3.111: issue #81 — Blueprints grid card action button 'small'->'middle' (§0.1); zero the
+    #   margin on secondary paragraphs so an inline subtitle centres with its Flex-row action buttons
+    #   (§0.3, blueprint-detail). §0.2/§0.4 were already fixed (3c24d44), verified live. No CRD change.
+    version: "1.3.111"
     deps:
       - frontend-crd
       - authn
