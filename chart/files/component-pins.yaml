@@ -42,7 +42,9 @@ components:
     #   omitted from the krateoctl-generated CRD, so keyExtras was stripped from Steps CRs).
     # 1.3.92: Menu CRD gains widgetData.items[].type: enum["divider"] — sidebar nav dividers.
     # 1.3.94: Card CRD gains extraVariant:tag + expanded extraStatus enum (green/gold/red/blue/violet).
-    version: "1.3.94"
+    # 1.3.104: Card CRD gains widgetData.anchorId (in-page scroll target for the incident summary
+    #   table-of-contents links, #69). Lockstep with frontend 1.3.104 + portal 1.5.109.
+    version: "1.3.104"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -137,7 +139,9 @@ components:
     #   so even a full ShellRoute/router rebuild can't reset it; data survives via react-query cache.
     # 1.3.103: query-bound Input.Search caps at max-width:380 (fedepini #79/#75 — search no longer
     #   wraps its toolbar row); card-tile .cardTop icon/title vertical centering (#75 §0.3).
-    version: "1.3.103"
+    # 1.3.104: Card.anchorId (DOM id scroll target) + Markdown in-page #anchor smooth-scroll links
+    #   (fedepini #69 summary table-of-contents). Widget-schema change → lockstep frontend-crd 1.3.104.
+    version: "1.3.104"
     deps:
       - frontend-crd
       - authn
@@ -286,7 +290,9 @@ components:
     # 1.5.108: fedepini layout fixes — compositions toolbar (chip-stack 2 rows left + search right,
     #          #79), dashboard header range-chips below title (#81), blueprint-detail title alone on
     #          top + subtitle/buttons beneath (#78 §4b). Needs frontend >= 1.3.103 (search-width cap).
-    version: "1.5.108"
+    # 1.5.109: incident summary = clickable table-of-contents (#69) — 3 panels get Card anchorIds,
+    #          summary bullets become #anchor Markdown links. Needs frontend + frontend-crd >= 1.3.104.
+    version: "1.5.109"
     deps:
       - frontend
     tier: platform
