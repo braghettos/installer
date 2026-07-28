@@ -133,7 +133,9 @@ components:
     # 1.3.101: Notifications drawer no longer flaps shut on busy clusters — open-state + Drawer lifted
     #   out of the header chrome (which remounts inside the server-driven Layout widget) to the stable
     #   ShellRoute level via NotificationsProvider; header keeps only the bell.
-    version: "1.3.101"
+    # 1.3.102: harden 1.3.101 — drawer open-state moved to a module-level store (useSyncExternalStore)
+    #   so even a full ShellRoute/router rebuild can't reset it; data survives via react-query cache.
+    version: "1.3.102"
     deps:
       - frontend-crd
       - authn
