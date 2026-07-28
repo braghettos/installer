@@ -145,7 +145,11 @@ components:
     #   a no-op in the ant-layout-content scroller, so the #69 ToC links set the hash but didn't scroll.
     # 1.3.106: Row.module.css restores the declared 16px column gutter — multi-column rows (dashboard
     #   stat cards, detail 2-panel rows) had columns butting together (0px); now 16px gap, edges still flush.
-    version: "1.3.106"
+    # 1.3.107: "Session expired" modal reflects ALL enabled auth strategies (was basic-only) via a
+    #   shared AuthMethods renderer — basic/ldap resume in place, social/OIDC redirect + return to the
+    #   pre-expiry route (consume-once K_sessionResumeNext, open-redirect-safe resolveNextPath util).
+    #   No widget-schema change → frontend-crd stays 1.3.104.
+    version: "1.3.107"
     deps:
       - frontend-crd
       - authn
