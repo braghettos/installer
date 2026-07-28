@@ -130,7 +130,10 @@ components:
     #   on reason text — prevents mid-word line-break on long reasons (CannotObserveExternalResource).
     # 1.3.100: Notifications deduplication — group events by (type+reason+kind+name), show ×N count
     #   badge; click navigates to /resources/{ns}/{group}/{version}/{plural}/{name} (resource-detail).
-    version: "1.3.100"
+    # 1.3.101: Notifications drawer no longer flaps shut on busy clusters — open-state + Drawer lifted
+    #   out of the header chrome (which remounts inside the server-driven Layout widget) to the stable
+    #   ShellRoute level via NotificationsProvider; header keeps only the bell.
+    version: "1.3.101"
     deps:
       - frontend-crd
       - authn
