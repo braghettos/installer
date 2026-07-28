@@ -276,7 +276,12 @@ components:
     #          configurable itemTemplate). Requires frontend ≥1.3.95.
     # 1.5.106: blueprint-detail-header-block Flex gains wrap:true — button row wraps to second
     #          line at narrow widths instead of overflowing off-screen.
-    version: "1.5.106"
+    # 1.5.107: reconciliation rail "degraded" (gold) state — a reconciled composition (Ready=True)
+    #          whose PROJECTED workloadHealthy is false shows gold "degraded" (rolling out / workload
+    #          unready), NOT red — so a normal rolling Deployment update no longer flashes the rail
+    #          red. RED reserved for Ready=False. Field-existence-aware (blueprints not projecting
+    #          workloadHealthy unchanged). Aligned across rail+legend+chips+obs-breakdown+table+detail.
+    version: "1.5.107"
     deps:
       - frontend
     tier: platform
