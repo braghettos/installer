@@ -156,7 +156,10 @@ components:
     # 1.3.109: issue #80 reiteration — hide antd-6 multi-select caret via .checkSelect CSS (§0.6),
     #   graceful responsive search (<=720 icon-only, §0.11), notifications drawer bell icon + header
     #   padding (§0.8). Theme icon held (circle-half-stroke, verified centered). No CRD change.
-    version: "1.3.109"
+    # 1.3.110: notifications drawer perf — the GET /events-seeded list now paints instantly on
+    #   open (memoized dedupe + render top 50 of N, memo'd rows); rendering the full ~200-item List
+    #   per SSE tick had stalled first paint / frozen the tab. No CRD change.
+    version: "1.3.110"
     deps:
       - frontend-crd
       - authn
