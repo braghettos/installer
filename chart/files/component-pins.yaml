@@ -162,7 +162,12 @@ components:
     # 1.3.111: issue #81 — Blueprints grid card action button 'small'->'middle' (§0.1); zero the
     #   margin on secondary paragraphs so an inline subtitle centres with its Flex-row action buttons
     #   (§0.3, blueprint-detail). §0.2/§0.4 were already fixed (3c24d44), verified live. No CRD change.
-    version: "1.3.111"
+    # 1.3.112: restores the ingress.hosts / livenessProbe / readinessProbe values.schema.json defaults
+    #   that #41 had stripped to dodge core-provider#46 (the old crdgen could not emit nested
+    #   object/array defaults). That emitter was replaced by the direct JSON-Schema -> OpenAPI-v3
+    #   transpiler in plumbing v1.11.0 and #46 is closed, so the defaults are safe again — verified by
+    #   transpiling the restored schema through crdgen. No CRD shape change beyond the defaults.
+    version: "1.3.112"
     deps:
       - frontend-crd
       - authn
