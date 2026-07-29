@@ -353,7 +353,12 @@ components:
     #          feed becomes a sortable Table (was a Listy) with a real rowNavigateTo '{url}' GitHub
     #          link. Pure widget-CR change, no CRD/schema change; safe with frontend >= the aee40c3
     #          Table verbatim-rowNavigateTo fix (already in 1.3.116+).
-    version: "1.5.111"
+    # 1.5.112: issue #83 — obs tab-title de-dup (§0.1); incident "Related alerts" footer section
+    #          (§0.2); alert-detail cleanup — drop back-link (§0.3), title+State title-line (§0.4),
+    #          phase/synced into the Info panel (§0.5), Rule→Info (§0.6), Investigate button moved
+    #          into the Info card header via the extraRefId slot (§0.7). Pure widget-CR change; the
+    #          §0.7 Card extraRefId slot requires frontend-crd + frontend >= 1.3.118 (already live).
+    version: "1.5.112"
     deps:
       - frontend
     tier: platform
