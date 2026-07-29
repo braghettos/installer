@@ -167,7 +167,11 @@ components:
     #   object/array defaults). That emitter was replaced by the direct JSON-Schema -> OpenAPI-v3
     #   transpiler in plumbing v1.11.0 and #46 is closed, so the defaults are safe again — verified by
     #   transpiling the restored schema through crdgen. No CRD shape change beyond the defaults.
-    version: "1.3.112"
+    # 1.3.113: fully-types the livenessProbe/readinessProbe schema (declares httpGet/tcpSocket/exec +
+    #   timing ints, ports x-kubernetes-int-or-string) so their defaults are structural; also carries
+    #   #80 reiteration-3 chrome fixes (pin dot, badge wrapper, drawer close/icon, tag/select height).
+    #   Requires core-provider >= 0.53.16 (faithful crdgen; bumped to 0.53.17 in Chart.yaml).
+    version: "1.3.113"
     deps:
       - frontend-crd
       - authn
