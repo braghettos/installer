@@ -195,7 +195,10 @@ components:
     #   using it would 400. No portal CR uses it yet (that's the #82/#83 chart-side work).
     # 1.3.118: reverts the #82 §0.1 PageSearch removal (it must land WITH the chart marketplace-search,
     #   else marketplace loses its only search box); keeps the Card extraRefId slot. Card-slot only.
-    version: "1.3.118"
+    # 1.3.119: RE-APPLIES the #82 §0.1 PageSearch removal — now landing ATOMICALLY with portal 1.5.113,
+    #   which ships the inline input.marketplace-search, so marketplace search is never lost between.
+    #   App-only (no widget-schema change → frontend-crd stays 1.3.118). MUST deploy WITH portal 1.5.113.
+    version: "1.3.119"
     deps:
       - frontend-crd
       - authn
@@ -358,7 +361,13 @@ components:
     #          phase/synced into the Info panel (§0.5), Rule→Info (§0.6), Investigate button moved
     #          into the Info card header via the extraRefId slot (§0.7). Pure widget-CR change; the
     #          §0.7 Card extraRefId slot requires frontend-crd + frontend >= 1.3.118 (already live).
-    version: "1.5.112"
+    # 1.5.113: issue #82 — marketplace inline catalog search (§0.1, new input.marketplace-search inline
+    #          with the facet chips), count moved next to the title as a muted Paragraph (§0.2 drop
+    #          "CATALOG" eyebrow + §0.3), and detail cleanup — back-link removed (§0.4), Install size
+    #          middle (§0.5), 2-column grid collapsed to one About panel (§0.6, Installed + source links
+    #          folded in), empty status Tag removed (§0.7). Pure widget-CR change. §0.1 lands ATOMICALLY
+    #          with frontend 1.3.119 (drops the /marketplace PageSearch) — deploy the two together.
+    version: "1.5.113"
     deps:
       - frontend
     tier: platform
