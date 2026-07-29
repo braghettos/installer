@@ -348,7 +348,12 @@ components:
     #          summary bullets become #anchor Markdown links. Needs frontend + frontend-crd >= 1.3.104.
     # 1.5.110: issue #80 §0.1 dashboard range chips to row start (justify space-between, button stays
     #          right) + §0.4 brand logo width 150 -> 180. Pairs with frontend 1.3.108.
-    version: "1.5.110"
+    # 1.5.111: issue #84 — builder Ask-Autopilot CTA becomes a right-aligned filled primary (middle
+    #          size) on all 3 builder pages (new justify:flex-end wrapper flexes); Portal Builder PR
+    #          feed becomes a sortable Table (was a Listy) with a real rowNavigateTo '{url}' GitHub
+    #          link. Pure widget-CR change, no CRD/schema change; safe with frontend >= the aee40c3
+    #          Table verbatim-rowNavigateTo fix (already in 1.3.116+).
+    version: "1.5.111"
     deps:
       - frontend
     tier: platform
