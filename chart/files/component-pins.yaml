@@ -174,7 +174,13 @@ components:
     # 1.3.114: corrects two antd-6 CSS fixes from 1.3.113 that didn't take — bell badge inner
     #   .ant-badge wrapper pinned to 36px (§0.7 alignment), and the tag<->select 24px match retargeted
     #   to the antd-6 .ant-select-sm root. No schema/CRD change (same chart as 1.3.113).
-    version: "1.3.114"
+    # 1.3.115: completes #80 reiteration-3 + #78 reiteration-4. (a) notification-item icon centering
+    #   lost a specificity tie-break to antd's (0,3,0) .ant-list-item-meta rule (the .list rule was
+    #   only (0,2,0)) — chain all four classes to (0,4,0) so align-items:center actually applies;
+    #   (b) #78-r4 detail-header <h2> caps floated high (level:N Title had no line-height, inherited
+    #   antd's ~1.35) — tighten hN to the display ramp's 1.1; (c) #78-r4 the "Chart version" Select
+    #   overflowed its Form.Item column — pin width:100%. Pure CSS/prop, no schema/CRD change.
+    version: "1.3.115"
     deps:
       - frontend-crd
       - authn
