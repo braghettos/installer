@@ -46,8 +46,8 @@ components:
     #   table-of-contents links, #69). Lockstep with frontend 1.3.104 + portal 1.5.109.
     # 1.3.117: Card CRD gains widgetData.extraRefId — a header-action widget slot (#83 §0.7) so a
     #   Card CR can host a real Button (e.g. Investigate with Autopilot) top-right of its header
-    #   without snowplow rejecting it. Lockstep with frontend 1.3.117; enables the #83 chart CR work.
-    version: "1.3.117"
+    #   without snowplow rejecting it. Lockstep with frontend 1.3.118; enables the #83 chart CR work.
+    version: "1.3.118"
     tier: platform
     feature: portal
   - name: snowplow-crd
@@ -193,7 +193,9 @@ components:
     #   the /marketplace entry from PageSearch (#82 §0.1; marketplace gets its own inline ?q= Input).
     #   NEW widget field → lockstep frontend-crd 1.3.117 (Card CRD gains extraRefId) or a chart Card CR
     #   using it would 400. No portal CR uses it yet (that's the #82/#83 chart-side work).
-    version: "1.3.117"
+    # 1.3.118: reverts the #82 §0.1 PageSearch removal (it must land WITH the chart marketplace-search,
+    #   else marketplace loses its only search box); keeps the Card extraRefId slot. Card-slot only.
+    version: "1.3.118"
     deps:
       - frontend-crd
       - authn
