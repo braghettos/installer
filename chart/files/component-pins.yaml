@@ -198,7 +198,11 @@ components:
     # 1.3.119: RE-APPLIES the #82 §0.1 PageSearch removal — now landing ATOMICALLY with portal 1.5.113,
     #   which ships the inline input.marketplace-search, so marketplace search is never lost between.
     #   App-only (no widget-schema change → frontend-crd stays 1.3.118). MUST deploy WITH portal 1.5.113.
-    version: "1.3.119"
+    # 1.3.120: issue #86 clear-8 (frontend half) — §0.1 projects-Select drops the leading pin prefix +
+    #   centres the "All projects" placeholder + shrinkable 170px flex-basis; §0.2 tenant Tag + Select
+    #   join the header shrink chain (no narrow-width collision with search); §0.6 freshness overlay
+    #   flex-centres its widget. App-only (no widget-schema change → frontend-crd stays 1.3.118).
+    version: "1.3.120"
     deps:
       - frontend-crd
       - authn
@@ -367,7 +371,13 @@ components:
     #          middle (§0.5), 2-column grid collapsed to one About panel (§0.6, Installed + source links
     #          folded in), empty status Tag removed (§0.7). Pure widget-CR change. §0.1 lands ATOMICALLY
     #          with frontend 1.3.119 (drops the /marketplace PageSearch) — deploy the two together.
-    version: "1.5.113"
+    # 1.5.114: issue #86 clear-8 (portal-chart half) — §0.3 marketplace count in parens + title-line
+    #          baseline; §0.4 chips-row + blueprints-filterbar centre-justify + gap large; §0.7 Similar
+    #          incidents + Related alerts promoted to section Cards (card.incident-similar,
+    #          card.incident-related-alerts) matching Evidence/Why/Remediation, orphan labels deleted;
+    #          §0.8 rem-step align centre; §0.9a alert-detail investigate btn type primary. Widget-CR
+    #          only (no frontend-crd bump — Card extra/titleVariant + Flex justify/gap already live).
+    version: "1.5.114"
     deps:
       - frontend
     tier: platform
