@@ -210,7 +210,11 @@ components:
     #   so the tenant tag STILL truncated on desktop (caught live). Adds `flex:1 1 auto` to the inner
     #   `.headerLeft .ant-flex` so the wrapper fills the widened zone → tenant tag renders full width.
     #   App-only (frontend-crd stays 1.3.118).
-    version: "1.3.122"
+    # 1.3.123: SAME code as 1.3.122 (image 1.3.122). chart 1.3.122 baked appVersion 1.3.121 (its CI
+    #   reads the app repo's latest tag, which lagged during a tagging race), so the CD rendered the
+    #   OLD image + logged "up to date". chart 1.3.123 (app latest = 1.3.122) bakes appVersion 1.3.122.
+    #   NB chart version is one ahead of the image version here — cosmetic skew, functionally correct.
+    version: "1.3.123"
     deps:
       - frontend-crd
       - authn
