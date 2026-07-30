@@ -202,7 +202,11 @@ components:
     #   centres the "All projects" placeholder + shrinkable 170px flex-basis; §0.2 tenant Tag + Select
     #   join the header shrink chain (no narrow-width collision with search); §0.6 freshness overlay
     #   flex-centres its widget. App-only (no widget-schema change → frontend-crd stays 1.3.118).
-    version: "1.3.120"
+    # 1.3.121: issue #86 design-pass Release A — §0.2 header .headerLeft flex-grow 0→1 (tenant tag no
+    #   longer truncates on desktop; headerRight has no grow so space-between stays a no-op) + §0.9b
+    #   Card .hasExtraAction pins the header-action widget against the FULL panel so the alert-detail
+    #   Investigate button centres against the whole Info card. App-only (frontend-crd stays 1.3.118).
+    version: "1.3.121"
     deps:
       - frontend-crd
       - authn
