@@ -229,7 +229,10 @@ components:
     #   {align-items:center}` (root default was flex-start, verified vOffset 10→0) + text-align:center
     #   on the real `.ant-select-placeholder`, and flex reverted 1 1→0 1 170px (tidy 170px, tag stays
     #   full). App-only (frontend-crd stays 1.3.118).
-    version: "1.3.127"
+    # 1.3.128: issue #86 header-flex robustness — bound tenant Tag (max-width:145) + Projects
+    #   Select (max-width:240) so the left cluster can't truncate/balloon again. Live-validated;
+    #   ends the Release A-D tag-vs-select tension. App-only (frontend-crd stays 1.3.118).
+    version: "1.3.128"
     deps:
       - frontend-crd
       - authn
