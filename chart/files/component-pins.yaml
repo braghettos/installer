@@ -25,7 +25,7 @@ components:
     # krateo-oasgen-provider-chart tag now publishes both charts at that tag. Bump the two
     # together. (Stuck at 0.9.7 from Jun 29 until the CRD chart's version tracking was
     # restored — it had been publishing 0.0.1/0.0.2, which the installer could not follow.)
-    version: "0.9.13"
+    version: "0.9.14"
     tier: platform
     feature: oasgenProvider
   - name: frontend-crd
@@ -392,7 +392,7 @@ components:
     kind: KrateoOasgenProvider
     chart: krateo-oasgen-provider
     # Keep in lockstep with oasgen-provider-crd above (one chart-repo tag publishes both).
-    version: "0.9.13"
+    version: "0.9.14"
     deps:
       - oasgen-provider-crd
     tier: platform
