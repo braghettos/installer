@@ -56,6 +56,20 @@ bootstrap:
 # kagent is likewise installed as two compositions — `kagent-crds` then `kagent` (see the
 # components list); the sample-agent disabling lives in the kagent wrapper chart's defaults.
 
+# Bootstrap engine (krateo-core-provider subchart) values. Engine OTLP export is OFF by default
+# (otel.enabled=false in the subchart) and EVERY OTEL_* env is gated on that flag, so this endpoint
+# is inert and byte-identical until export is turned on. It is committed here as the ONE correct
+# target so no per-operator deploy value can drift (#229): the OTel collector DAEMONSET that the
+# installer itself deploys is the only one with an OTLP :4318 listener — the gateway
+# (`...-deployment-...`) is a k8s_cluster/k8sobjects scraper and refuses :4318. To turn on engine
+# telemetry, set `krateo-core-provider.otel.enabled=true` at deploy time and DO NOT also pass
+# `otel.endpoint` — inherit this default so it stays correct across redeploys. (Endpoint namespace
+# is namespaces.krateo's default `krateo-system`; the subchart reads endpoint literally — a
+# non-default krateo namespace needs an explicit endpoint override.)
+krateo-core-provider:
+  otel:
+    endpoint: http://otel-collector-daemonset-opentelemetry-collector.krateo-system.svc:4318
+
 # Namespaces the umbrella manages. The observability stack (ClickStack, collectors,
 # MCP, agents) now runs entirely in `krateo` — there is no separate clickhouse
 # namespace anymore (the install.sh-era clickhouse-system split is gone).
