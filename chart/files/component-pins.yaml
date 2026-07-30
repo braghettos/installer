@@ -670,7 +670,11 @@ components:
     # subject, so "build a Cluster Health page" goes to krateo-frontend-agent (authoring), not the
     # clickstack telemetry agent. (0.1.43: DOMAIN OWNERSHIP hard-rule — delegate domain authoring to
     # the owning specialist: portal page -> frontend-agent, RESTAction -> snowplow, blueprint -> helm.)
-    version: "0.1.48"
+    # 0.1.49: PR#33 — moves the portal-rail protocol (grounding/house-rules/verb-catalogue/portal-builder
+    #   routing) INTO the orchestrator systemMessage via a new `portal-protocol` prompts key (gated
+    #   prompts.portalProtocol, default true). MUST deploy BEFORE frontend #87 (which stops the frontend
+    #   sending that ~2400-token/turn preamble); reversed = a window where neither side carries the rules.
+    version: "0.1.49"
     deps:
       - kagent
     tier: observability
