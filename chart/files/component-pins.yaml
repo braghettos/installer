@@ -206,7 +206,11 @@ components:
     #   longer truncates on desktop; headerRight has no grow so space-between stays a no-op) + §0.9b
     #   Card .hasExtraAction pins the header-action widget against the FULL panel so the alert-detail
     #   Investigate button centres against the whole Info card. App-only (frontend-crd stays 1.3.118).
-    version: "1.3.121"
+    # 1.3.122: §0.2 completion — 1.3.121 grew .headerLeft but the inner Flex wrapper stayed min-content,
+    #   so the tenant tag STILL truncated on desktop (caught live). Adds `flex:1 1 auto` to the inner
+    #   `.headerLeft .ant-flex` so the wrapper fills the widened zone → tenant tag renders full width.
+    #   App-only (frontend-crd stays 1.3.118).
+    version: "1.3.122"
     deps:
       - frontend-crd
       - authn
