@@ -224,7 +224,12 @@ components:
     #   header Tag+Select 24px→36px to match the search trigger, §0.2 select flex 0 1→1 1 170px (floor
     #   not cap), §0.5 global .ant-form-item-control{min-width:0} (chart-version select overflow),
     #   §0.10 rail title → 16px UI-font tier. App-only (frontend-crd stays 1.3.118). Pairs w/ portal 1.5.115.
-    version: "1.3.126"
+    # 1.3.127: issue #86 §0.1 correction — 1.3.126's select-label rule hit a non-existent antd6 class
+    #   (no-op) and its `1 1 170px` ballooned the select to ~520px. Now `.checkSelect.ant-select
+    #   {align-items:center}` (root default was flex-start, verified vOffset 10→0) + text-align:center
+    #   on the real `.ant-select-placeholder`, and flex reverted 1 1→0 1 170px (tidy 170px, tag stays
+    #   full). App-only (frontend-crd stays 1.3.118).
+    version: "1.3.127"
     deps:
       - frontend-crd
       - authn
