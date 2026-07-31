@@ -425,7 +425,9 @@ components:
     #          DETERMINISTIC widths: search-wrap LEFT (span 6 ≈ 25%), category-group RIGHT (span 18 ≈
     #          75%, chips wrap inside), alignment:middle. Achieves the search-left/filters-right sketch
     #          a plain Flex could not. Widget-CR only (Row/Col + inputs-in-flex — no frontend-crd bump).
-    version: "1.5.117"
+    # 1.5.118: issue #86 (fedepini) — swap facet sides: filters block LEFT (span 18), search bar
+    #          RIGHT (span 6). Pure Row item reorder. Widget-CR only.
+    version: "1.5.118"
     deps:
       - frontend
     tier: platform
