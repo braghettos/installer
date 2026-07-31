@@ -418,7 +418,13 @@ components:
     # 1.5.115: issue #86 §0.4 Release C — REVERT chips-row + blueprints-filterbar justify center →
     #          space-between (fedepini: center floated the search box mid-row); keep gap:large.
     #          Widget-CR only. Pairs with frontend 1.3.126.
-    version: "1.5.115"
+    # 1.5.116: issue #86 (fedepini) — Marketplace facet restructure: catalog search lifted OUT of the
+    #          middle category-chips row into a NEW outer space-between/align-center flex
+    #          (marketplace-filters-row: search LEFT, the 3-line filters block RIGHT); the old
+    #          single-item marketplace-chips-row Flex deleted, category-chips referenced directly.
+    #          Search now centres against the full filter block, not just the middle line. Widget-CR
+    #          only (existing Flex enum values inputs/flexes — no frontend-crd bump).
+    version: "1.5.116"
     deps:
       - frontend
     tier: platform
