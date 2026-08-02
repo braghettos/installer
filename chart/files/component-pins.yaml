@@ -21,7 +21,7 @@ components:
   - name: oasgen-provider-crd
     kind: KrateoOasgenProviderCrd
     chart: krateo-oasgen-provider-crd
-    version: "0.9.7"
+    version: "0.9.19"
     tier: platform
     feature: oasgenProvider
   - name: frontend-crd
@@ -47,13 +47,13 @@ components:
     # 1.3.117: Card CRD gains widgetData.extraRefId — a header-action widget slot (#83 §0.7) so a
     #   Card CR can host a real Button (e.g. Investigate with Autopilot) top-right of its header
     #   without snowplow rejecting it. Lockstep with frontend 1.3.118; enables the #83 chart CR work.
-    version: "1.3.118"
+    version: "1.3.130"
     tier: platform
     feature: portal
   - name: snowplow-crd
     kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
-    version: "1.0.87"
+    version: "1.0.89"
     tier: platform
     feature: portal
 
@@ -447,7 +447,7 @@ components:
   - name: oasgen-provider
     kind: KrateoOasgenProvider
     chart: krateo-oasgen-provider
-    version: "0.9.8"
+    version: "0.9.19"
     deps:
       - oasgen-provider-crd
     tier: platform
@@ -608,7 +608,7 @@ components:
     kind: KrateoInstallerAgent
     # 0.2.306: A2A agent-card (description + skills) rewritten accurate to the installer's real domain
     # (Installer-CR get->apply, features/componentValues, self-reconcile/teardown). Chart in THIS repo.
-    version: "0.2.371"
+    version: "0.2.418"
     deps:
       - kagent
     tier: observability
@@ -632,7 +632,7 @@ components:
     chart: krateo-snowplow-agent
     # 1.0.78: A2A agent-card rewritten accurate — real RESTAction fields (endpointRef/dependsOn/
     # exportJwt) + real /call content types + diagnostics. (gemini-pro authoring specialist.)
-    version: "1.0.87"
+    version: "1.0.89"
     deps:
       - kagent
     tier: observability
@@ -649,7 +649,7 @@ components:
     requireApproval: []
     # 1.3.34: granular requireApproval (list) replaces the hitlApproval boolean; default [] (dry-run
     # validator, nothing gated) + single-pass authoring + reuse compositions-list RA (1.3.30 = gemini-pro).
-    version: "1.3.94"
+    version: "1.3.130"
     deps:
       - kagent
     tier: observability
@@ -672,7 +672,7 @@ components:
     chart: krateo-core-provider-agent
     # 0.53.13: A2A agent-card rewritten accurate — names CompositionDefinition/Composition/
     # KubernetesTarget + values.schema.json authoring; 2 skills. (gemini-pro authoring specialist.)
-    version: "0.53.14"
+    version: "0.53.19"
     deps:
       - kagent
     tier: observability
