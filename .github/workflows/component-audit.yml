@@ -1,0 +1,52 @@
+name: Component fresh-install audit
+
+# On every installer release tag (and on demand), audit each component's SOURCE repo for
+# unmerged work — open PRs and recent branches ahead of default with no PR — so a release/fresh
+# install can't silently ship a component that has a merged-worthy change still sitting in a PR
+# or branch. Report-only by default (Step Summary + ::warning:: annotations); never blocks the tag.
+on:
+  push:
+    tags:
+      # any semver release tag — the installer is not locked to a 0.2.x line and each component
+      # carries its own independent version (resolved from component-pins.yaml at run time).
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      ahead_days:
+        description: Only report ahead-branches with a commit newer than N days
+        default: '60'
+      max_branch_compares:
+        description: Max branches to compare per repo (cost bound)
+        default: '80'
+      fail_on_findings:
+        description: Fail the job when any repo has unmerged work
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install --quiet pyyaml
+
+      - name: Audit component source repos
+        env:
+          # GITHUB_TOKEN is scoped to THIS repo only and can't read sibling repos' PRs/branches;
+          # a PAT (repo:read across the org) is required. Falls back to GITHUB_TOKEN, which will
+          # only see this repo — set the PAT secret for a full audit.
+          GH_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          AHEAD_DAYS: ${{ github.event.inputs.ahead_days || '60' }}
+          MAX_BRANCH_COMPARES: ${{ github.event.inputs.max_branch_compares || '80' }}
+        run: |
+          python3 .github/scripts/component_audit.py \
+            ${{ github.event.inputs.fail_on_findings == 'true' && '--fail-on-findings' || '' }}
