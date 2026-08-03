@@ -93,6 +93,19 @@
       "additionalProperties": true,
       "description": "Helm global values (injected by the composition runtime)."
     },
+    "repoSearch": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Repo-search MCP server (RemoteMCPServer krateo-repo-mcp-server, deployed by the krateo-autopilot chart): lets the agent grep and read the Krateo repositories at the versions this cluster runs and cite repo/path:line. The grounding path.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mcpServer": {
+          "type": "string"
+        }
+      }
+    },
     "fetch": {
       "type": "object",
       "additionalProperties": false,

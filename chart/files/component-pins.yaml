@@ -16,12 +16,18 @@ components:
     kind: KrateoAuthnCrd
     chart: krateo-authn-crd
     version: "0.22.22"
+    source:
+      repo: krateo-authn-chart
+      path: crds-subchart/
     tier: platform
     feature: portal
   - name: oasgen-provider-crd
     kind: KrateoOasgenProviderCrd
     chart: krateo-oasgen-provider-crd
     version: "0.9.7"
+    source:
+      repo: krateo-oasgen-provider-chart
+      path: crds-subchart/
     tier: platform
     feature: oasgenProvider
   - name: frontend-crd
@@ -45,12 +51,18 @@ components:
     # 1.3.104: Card CRD gains widgetData.anchorId (in-page scroll target for the incident summary
     #   table-of-contents links, #69). Lockstep with frontend 1.3.104 + portal 1.5.109.
     version: "1.3.104"
+    source:
+      repo: krateo-frontend-chart
+      path: crds-subchart/
     tier: platform
     feature: portal
   - name: snowplow-crd
     kind: KrateoSnowplowCrd
     chart: krateo-snowplow-crd
     version: "1.0.87"
+    source:
+      repo: krateo-snowplow-chart
+      path: crds-subchart/
     tier: platform
     feature: portal
 
@@ -61,6 +73,9 @@ components:
     version: "0.22.22"
     deps:
       - authn-crd
+    source:
+      repo: krateo-authn-chart
+      path: chart/
     tier: platform
     feature: portal
     expose: true
@@ -75,6 +90,9 @@ components:
     deps:
       - snowplow-crd
       - authn
+    source:
+      repo: krateo-snowplow-chart
+      path: chart/
     tier: platform
     feature: portal
     expose: true
@@ -154,6 +172,9 @@ components:
       - frontend-crd
       - authn
       - snowplow
+    source:
+      repo: krateo-frontend-chart
+      path: chart/
     tier: platform
     feature: portal
     expose: true
@@ -303,6 +324,9 @@ components:
     version: "1.5.109"
     deps:
       - frontend
+    source:
+      repo: krateo-portal-chart
+      path: chart/
     tier: platform
     feature: portal
   # The helm-render dry-run service behind blueprint-preview + upgrade-impact (POST /render,
@@ -315,6 +339,9 @@ components:
     # 0.1.7: multi-arch image (linux/amd64 + linux/arm64). 0.1.6 was amd64-only, so it
     # ImagePullBackOff'd on arm64 clusters (Apple-silicon kind/dev); functionally identical.
     version: "0.1.7"
+    source:
+      repo: krateo-helm-render-service
+      path: /
     tier: platform
     feature: portal
   - name: oasgen-provider
@@ -323,6 +350,9 @@ components:
     version: "0.9.8"
     deps:
       - oasgen-provider-crd
+    source:
+      repo: krateo-oasgen-provider-chart
+      path: chart/
     tier: platform
     feature: oasgenProvider
   # The KOG git-write provider: RepoContent/GitRef/PullRequest as github.krateo.io kinds —
@@ -335,6 +365,9 @@ components:
     version: "0.1.10"
     deps:
       - oasgen-provider
+    source:
+      repo: krateo-github-provider-kog
+      path: /
     tier: platform
     feature: portal
   # API-Builder registry: braghettos/krateo-oas is itself a Helm chart whose templates glob the
@@ -350,6 +383,9 @@ components:
     version: "0.1.0"
     deps:
       - oasgen-provider
+    source:
+      repo: krateo-oas
+      path: /
     tier: platform
     feature: oasgenProvider
 
@@ -368,11 +404,17 @@ components:
   - name: clickhouse-operator
     kind: ClickhouseOperator
     version: "0.1.0"
+    source:
+      repo: krateo-clickstack-operators-chart
+      path: charts/clickhouse-operator/
     tier: observability
     feature: portal
   - name: mongodb-operator
     kind: MongodbOperator
     version: "0.1.0"
+    source:
+      repo: krateo-clickstack-operators-chart
+      path: charts/mongodb-operator/
     tier: observability
     feature: portal
   - name: krateo-observability
@@ -385,6 +427,9 @@ components:
     # 0.1.11: add krateo-clickstack-api ClusterIP Service (port 8000) — exposes HyperDX
     # Express backend directly, bypassing the Next.js /api-stripping proxy at port 3000.
     version: "0.1.11"
+    source:
+      repo: krateo-clickstack-chart
+      path: charts/krateo-observability/
     tier: observability
     feature: portal
     # Operators first: the clickhouse.com + mongodbcommunity CRDs must be served and the
@@ -403,6 +448,9 @@ components:
     version: "0.3.3"
     deps:
       - krateo-observability
+    source:
+      repo: krateo-clickstack-chart
+      path: charts/otel-collector-deployment/
     tier: observability
     feature: portal
   - name: otel-collector-daemonset
@@ -411,6 +459,9 @@ components:
     version: "0.1.5"
     deps:
       - otel-collector-deployment
+    source:
+      repo: krateo-clickstack-chart
+      path: charts/otel-collector-daemonset/
     tier: observability
     feature: portal
   - name: krateo-sse-proxy
@@ -418,6 +469,9 @@ components:
     version: "0.1.6"
     deps:
       - krateo-observability
+    source:
+      repo: krateo-clickstack-chart
+      path: charts/krateo-sse-proxy/
     tier: observability
     feature: portal
     expose: true
@@ -437,6 +491,9 @@ components:
     version: "0.1.7"
     deps:
       - krateo-observability
+    source:
+      repo: krateo-clickhouse-mcp-server-chart
+      path: charts/clickhouse-mcp-server/
     tier: observability
     feature: specialistAgents
   # kagent agentic platform as two compositions (wrapping unforked upstream charts):
@@ -445,6 +502,9 @@ components:
   - name: kagent-crds
     kind: KagentCrds
     version: "0.1.3"
+    source:
+      repo: krateo-kagent-chart
+      path: charts/kagent-crds/
     tier: observability
     feature: coreAgents
   - name: kagent
@@ -452,6 +512,9 @@ components:
     version: "0.1.9"
     deps:
       - kagent-crds
+    source:
+      repo: krateo-kagent-chart
+      path: charts/kagent/
     tier: observability
     feature: coreAgents
     # Expose the kagent UI through the installer's exposure layer (exposure.type), leaving the
@@ -475,6 +538,9 @@ components:
     version: "0.1.1"
     deps:
       - kagent
+    source:
+      repo: krateo-installer-charts
+      path: charts/fetch-mcp-server/
     tier: observability
     feature: coreAgents
   - name: krateo-installer-agent
@@ -484,6 +550,9 @@ components:
     version: "0.2.371"
     deps:
       - kagent
+    source:
+      repo: krateo-installer
+      path: kagent/chart/
     tier: observability
     feature: coreAgents
     vertexAI: true
@@ -497,6 +566,9 @@ components:
     version: "0.22.22"
     deps:
       - kagent
+    source:
+      repo: krateo-authn-chart
+      path: kagent/chart/
     tier: observability
     feature: specialistAgents
     vertexAI: true
@@ -508,6 +580,9 @@ components:
     version: "1.0.87"
     deps:
       - kagent
+    source:
+      repo: krateo-snowplow-chart
+      path: kagent/chart/
     tier: observability
     feature: specialistAgents
     vertexAI: true
@@ -525,6 +600,9 @@ components:
     version: "1.3.94"
     deps:
       - kagent
+    source:
+      repo: krateo-frontend-chart
+      path: kagent/chart/
     tier: observability
     feature: specialistAgents
     vertexAI: true
@@ -537,6 +615,9 @@ components:
     version: "3.0.32"
     deps:
       - kagent
+    source:
+      repo: krateo-clickstack-chart
+      path: kagent/chart/
     tier: observability
     feature: specialistAgents
     vertexAI: true
@@ -548,6 +629,9 @@ components:
     version: "0.53.14"
     deps:
       - kagent
+    source:
+      repo: krateo-core-provider-chart
+      path: kagent/chart/
     tier: observability
     feature: specialistAgents
     vertexAI: true
@@ -560,12 +644,32 @@ components:
     # subject, so "build a Cluster Health page" goes to krateo-frontend-agent (authoring), not the
     # clickstack telemetry agent. (0.1.43: DOMAIN OWNERSHIP hard-rule — delegate domain authoring to
     # the owning specialist: portal page -> frontend-agent, RESTAction -> snowplow, blueprint -> helm.)
-    version: "0.1.48"
+    version: "0.1.49"
     deps:
       - kagent
+    source:
+      repo: krateo-autopilot
+      path: chart/
     tier: observability
     feature: coreAgents
     vertexAI: true
     # The autopilot owns the shared gemini-flash/gemini-pro ModelConfigs the whole fleet
     # references; with localModel.enabled it renders them as Ollama (the others just point here).
     modelOwner: true
+
+# used by the krateo-repo-mcp-server to get the installed core-provider version.
+platform:
+  - name: core-provider
+    version: "0.53.14"
+    tier: platform
+    source:
+      repo: krateo-core-provider-chart
+      path: chart/
+  # The umbrella itself. `version` is stamped by the ConfigMap template from .Chart.Version, so it
+  # always reports the installer chart that is actually deployed — do not hardcode it here.
+  - name: installer
+    version: CHART_VERSION
+    tier: platform
+    source:
+      repo: krateo-installer
+      path: chart/
