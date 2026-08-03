@@ -44,8 +44,15 @@ annotations:
 # ConfigMap and is applied by the post-install hook, which first waits for the compositiondefinitions
 # CRD to exist — "lookup the CRD, once present proceed with the bootstrap". One-shot, no prereq.
 dependencies:
+  # 0.53.16 ships core-provider 2.10.1 — the FIRST line with the faithful crdgen (plumbing v1.11.0's
+  # direct JSON-Schema -> structural-OpenAPI-v3 transpiler). 0.53.14 shipped 2.9.1, which predates it and
+  # generates lossy composition CRDs; 2.10.0 is the first release containing the bump, verified with
+  # `git merge-base --is-ancestor`. See krateo-installer#224. Also picks up the per-version CDC
+  # ClusterRole services grant (#148) and composition-dynamic-controller 1.3.14.
+  # 0.53.17: latest core-provider chart tag (still app 2.10.1 / faithful crdgen). Required to unwedge
+  # the frontend CompositionDefinition, whose 1.3.112 schema-defaults broke 2.9.1's marker-based crdgen.
   - name: krateo-core-provider
-    version: "0.53.14"
+    version: "0.53.17"
     repository: oci://ghcr.io/braghettos/krateo
     condition: bootstrap.coreProvider.enabled
   # engine CRDs (CompositionDefinition, KubernetesTarget) — helm-owned subchart, bootstrap-only

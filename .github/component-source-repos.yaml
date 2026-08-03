@@ -1,0 +1,65 @@
+# Maps each installer component chart (keys = the `chart:` names in chart/files/component-pins.yaml,
+# plus the krateo-core-provider* bootstrap deps in chart/Chart.yaml) to the braghettos repo that
+# BUILDS/RELEASES that chart. Consumed by .github/workflows/component-audit.yml to check each source
+# repo for open PRs + un-PR'd branches ahead of default on every installer tag.
+#
+# Why a hand-maintained map (not the OCI `org.opencontainers.image.source` annotation): the annotation
+# is unreliable — some charts point at renamed/nonexistent repos (authn->braghettos/authn) and wrappers
+# point upstream (kagent->kagent-dev/kagent, clickhouse-operator->ClickHouse/...). Keep this in sync when
+# a component is added/renamed; the workflow warns on any pinned chart missing from `repos`.
+repos:
+  # platform stack — app + its crds-subchart + its federated agent all ship from the one *-chart repo
+  krateo-authn: krateo-authn-chart
+  krateo-authn-crd: krateo-authn-chart
+  krateo-authn-agent: krateo-authn-chart
+  krateo-snowplow: krateo-snowplow-chart
+  krateo-snowplow-crd: krateo-snowplow-chart
+  krateo-snowplow-agent: krateo-snowplow-chart
+  krateo-frontend: krateo-frontend-chart
+  krateo-frontend-crd: krateo-frontend-chart
+  krateo-frontend-agent: krateo-frontend-chart
+  portal: krateo-portal-chart
+  krateo-helm-render-service: krateo-helm-render-service
+  krateo-oasgen-provider: krateo-oasgen-provider-chart
+  krateo-oasgen-provider-crd: krateo-oasgen-provider-chart
+  krateo-github-provider-kog: github-provider-kog-chart
+  krateo-oas: krateo-oas
+  # observability — clickstack chart bundles observability + otel-collectors + sse-proxy + its agent
+  clickhouse-operator: krateo-clickstack-operators-chart
+  mongodb-operator: krateo-clickstack-operators-chart
+  krateo-observability: krateo-clickstack-chart
+  otel-collector-deployment: krateo-clickstack-chart
+  otel-collector-daemonset: krateo-clickstack-chart
+  krateo-sse-proxy: krateo-clickstack-chart
+  krateo-clickstack-agent: krateo-clickstack-chart
+  clickhouse-mcp-server: krateo-clickhouse-mcp-server-chart
+  # agents / kagent platform
+  kagent: krateo-kagent-chart
+  kagent-crds: krateo-kagent-chart
+  fetch-mcp-server: krateo-installer-charts
+  krateo-installer-agent: krateo-installer
+  krateo-core-provider-agent: krateo-core-provider-chart
+  krateo-autopilot: krateo-autopilot
+  # engine (bootstrap subchart deps in Chart.yaml)
+  krateo-core-provider: krateo-core-provider-chart
+  krateo-core-provider-crd: krateo-core-provider-chart
+
+# Engine + app-code repos that FEED the charts above but aren't a pinned chart themselves — audited
+# too, since a merged (or open) change here won't reach the installer until its chart is bumped, so a
+# fresh install could ship stale component behaviour even when every chart repo looks clean.
+extra_repos:
+  # composition engine + its libraries
+  - krateo-core-provider
+  - krateo-composition-dynamic-controller
+  - krateo-chart-inspector
+  - plumbing
+  # platform-stack application code (the *-chart repos above package these)
+  - krateo-authn
+  - krateo-snowplow
+  - krateo-frontend
+  - krateo-oasgen-provider
+  - krateo-github-provider-kog
+  # observability application code
+  - krateo-sse-proxy
+  - krateo-otel-collector
+  - krateo-clickstack

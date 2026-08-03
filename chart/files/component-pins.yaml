@@ -86,7 +86,7 @@ components:
   - name: snowplow
     kind: KrateoSnowplow
     chart: krateo-snowplow
-    version: "1.0.87"
+    version: "1.0.89"
     deps:
       - snowplow-crd
       - authn
@@ -167,7 +167,95 @@ components:
     #   shared AuthMethods renderer — basic/ldap resume in place, social/OIDC redirect + return to the
     #   pre-expiry route (consume-once K_sessionResumeNext, open-redirect-safe resolveNextPath util).
     #   No widget-schema change → frontend-crd stays 1.3.104.
-    version: "1.3.107"
+    # 1.3.108: issue #80 chrome — Row full-width fix (drop width:100% over-constraint; #80 §0.2),
+    #   remove 'Console' eyebrow (§0.3), taller nav items (§0.5), suppress project-select caret (§0.6),
+    #   36×36 header icons (§0.7), bigger notifications drawer title + reason-on-own-line+tooltip
+    #   (§0.8/§0.9), theme icon → circle-half-stroke (§0.10), responsive search (§0.11). No CRD change.
+    # 1.3.109: issue #80 reiteration — hide antd-6 multi-select caret via .checkSelect CSS (§0.6),
+    #   graceful responsive search (<=720 icon-only, §0.11), notifications drawer bell icon + header
+    #   padding (§0.8). Theme icon held (circle-half-stroke, verified centered). No CRD change.
+    # 1.3.110: notifications drawer perf — the GET /events-seeded list now paints instantly on
+    #   open (memoized dedupe + render top 50 of N, memo'd rows); rendering the full ~200-item List
+    #   per SSE tick had stalled first paint / frozen the tab. No CRD change.
+    # 1.3.111: issue #81 — Blueprints grid card action button 'small'->'middle' (§0.1); zero the
+    #   margin on secondary paragraphs so an inline subtitle centres with its Flex-row action buttons
+    #   (§0.3, blueprint-detail). §0.2/§0.4 were already fixed (3c24d44), verified live. No CRD change.
+    # 1.3.112: restores the ingress.hosts / livenessProbe / readinessProbe values.schema.json defaults
+    #   that #41 had stripped to dodge core-provider#46 (the old crdgen could not emit nested
+    #   object/array defaults). That emitter was replaced by the direct JSON-Schema -> OpenAPI-v3
+    #   transpiler in plumbing v1.11.0 and #46 is closed, so the defaults are safe again — verified by
+    #   transpiling the restored schema through crdgen. No CRD shape change beyond the defaults.
+    # 1.3.113: fully-types the livenessProbe/readinessProbe schema (declares httpGet/tcpSocket/exec +
+    #   timing ints, ports x-kubernetes-int-or-string) so their defaults are structural; also carries
+    #   #80 reiteration-3 chrome fixes (pin dot, badge wrapper, drawer close/icon, tag/select height).
+    #   Requires core-provider >= 0.53.16 (faithful crdgen; bumped to 0.53.17 in Chart.yaml).
+    # 1.3.114: corrects two antd-6 CSS fixes from 1.3.113 that didn't take — bell badge inner
+    #   .ant-badge wrapper pinned to 36px (§0.7 alignment), and the tag<->select 24px match retargeted
+    #   to the antd-6 .ant-select-sm root. No schema/CRD change (same chart as 1.3.113).
+    # 1.3.115: completes #80 reiteration-3 + #78 reiteration-4. (a) notification-item icon centering
+    #   lost a specificity tie-break to antd's (0,3,0) .ant-list-item-meta rule (the .list rule was
+    #   only (0,2,0)) — chain all four classes to (0,4,0) so align-items:center actually applies;
+    #   (b) #78-r4 detail-header <h2> caps floated high (level:N Title had no line-height, inherited
+    #   antd's ~1.35) — tighten hN to the display ramp's 1.1; (c) #78-r4 the "Chart version" Select
+    #   overflowed its Form.Item column — pin width:100%. Pure CSS/prop, no schema/CRD change.
+    # 1.3.116: #80-r3 remaining item — the header search trigger crushed to a 2–22px sliver across
+    #   the 720–1180 band (it's the only shrinkable child of .headerRight; the old flex:0 1 auto +
+    #   min-width:0 let it collapse, and the @media(720){width:36px} was defeated by that min-width:0).
+    #   Floor every state: ≤1180 flex:0 1 220px + min-width:180px (real field); ≤960 (was 720)
+    #   incompressible 36px icon (flex:0 0 36px + min/max/width:36). Pure CSS, no schema/CRD change.
+    # 1.3.117: Card gains an extraRefId header-action widget slot (#83 §0.7) — renders a nested widget
+    #   (e.g. a Button) top-right of the card header, distinct from the plain-text `extra`. Also drops
+    #   the /marketplace entry from PageSearch (#82 §0.1; marketplace gets its own inline ?q= Input).
+    #   NEW widget field → lockstep frontend-crd 1.3.117 (Card CRD gains extraRefId) or a chart Card CR
+    #   using it would 400. No portal CR uses it yet (that's the #82/#83 chart-side work).
+    # 1.3.118: reverts the #82 §0.1 PageSearch removal (it must land WITH the chart marketplace-search,
+    #   else marketplace loses its only search box); keeps the Card extraRefId slot. Card-slot only.
+    # 1.3.119: RE-APPLIES the #82 §0.1 PageSearch removal — now landing ATOMICALLY with portal 1.5.113,
+    #   which ships the inline input.marketplace-search, so marketplace search is never lost between.
+    #   App-only (no widget-schema change → frontend-crd stays 1.3.118). MUST deploy WITH portal 1.5.113.
+    # 1.3.120: issue #86 clear-8 (frontend half) — §0.1 projects-Select drops the leading pin prefix +
+    #   centres the "All projects" placeholder + shrinkable 170px flex-basis; §0.2 tenant Tag + Select
+    #   join the header shrink chain (no narrow-width collision with search); §0.6 freshness overlay
+    #   flex-centres its widget. App-only (no widget-schema change → frontend-crd stays 1.3.118).
+    # 1.3.121: issue #86 design-pass Release A — §0.2 header .headerLeft flex-grow 0→1 (tenant tag no
+    #   longer truncates on desktop; headerRight has no grow so space-between stays a no-op) + §0.9b
+    #   Card .hasExtraAction pins the header-action widget against the FULL panel so the alert-detail
+    #   Investigate button centres against the whole Info card. App-only (frontend-crd stays 1.3.118).
+    # 1.3.122: §0.2 completion — 1.3.121 grew .headerLeft but the inner Flex wrapper stayed min-content,
+    #   so the tenant tag STILL truncated on desktop (caught live). Adds `flex:1 1 auto` to the inner
+    #   `.headerLeft .ant-flex` so the wrapper fills the widened zone → tenant tag renders full width.
+    #   App-only (frontend-crd stays 1.3.118).
+    # 1.3.123: SAME code as 1.3.122 (image 1.3.122). chart 1.3.122 baked appVersion 1.3.121 (its CI
+    #   reads the app repo's latest tag, which lagged during a tagging race), so the CD rendered the
+    #   OLD image + logged "up to date". chart 1.3.123 (app latest = 1.3.122) bakes appVersion 1.3.122.
+    #   NB chart version is one ahead of the image version here — cosmetic skew, functionally correct.
+    # 1.3.125: issue #86 design-pass Release B — §0.10 shared DrawerHeader primitive (one title
+    #   treatment + emphasis tier across all drawers), shared drawerCloseProps (X on the end), and a
+    #   --header-h token linking the main header + Autopilot rail header. Also makes `eslint .` green
+    #   (pre-existing errors fixed) + lands the §0.10 no-restricted-imports Drawer ban. chart 1.3.125
+    #   bakes appVersion 1.3.125 (aligned — supersedes the unused 1.3.124). frontend-crd stays 1.3.118.
+    # 1.3.126: issue #86 Release C — fedepini DevTools regressions: §0.1 select label centre (antd6
+    #   .ant-select-selection-content line-height:normal, the old placeholder rule was a v5 no-op),
+    #   header Tag+Select 24px→36px to match the search trigger, §0.2 select flex 0 1→1 1 170px (floor
+    #   not cap), §0.5 global .ant-form-item-control{min-width:0} (chart-version select overflow),
+    #   §0.10 rail title → 16px UI-font tier. App-only (frontend-crd stays 1.3.118). Pairs w/ portal 1.5.115.
+    # 1.3.127: issue #86 §0.1 correction — 1.3.126's select-label rule hit a non-existent antd6 class
+    #   (no-op) and its `1 1 170px` ballooned the select to ~520px. Now `.checkSelect.ant-select
+    #   {align-items:center}` (root default was flex-start, verified vOffset 10→0) + text-align:center
+    #   on the real `.ant-select-placeholder`, and flex reverted 1 1→0 1 170px (tidy 170px, tag stays
+    #   full). App-only (frontend-crd stays 1.3.118).
+    # 1.3.128: issue #86 header-flex robustness — bound tenant Tag (max-width:145) + Projects
+    #   Select (max-width:240) so the left cluster can't truncate/balloon again. Live-validated;
+    #   ends the Release A-D tag-vs-select tension. App-only (frontend-crd stays 1.3.118).
+    # 1.3.129: PR #87 — Autopilot rail stops prepending ~2,400 tokens of grounding/house-rules
+    #   to every turn (now lives in the orchestrator system prompt via autopilot 0.1.49 /
+    #   portal-protocol ConfigMap key) + fixes remount delta-leak (lastEnvelope → conversation
+    #   store). Pairs with autopilot 0.1.49. App-only (frontend-crd stays 1.3.118).
+    # 1.3.130: PR #113 (chart-only, appVersion stays 1.3.129 → image UNCHANGED) — drops the
+    #   dead AUTOPILOT_PORTAL_PROMPT / AUTOPILOT_PORTAL_HOUSE_RULES config keys from config.json
+    #   (frontend 1.3.129/#87 no longer reads them). Also reconciles a pre-existing probe
+    #   values.schema.json serialization drift. No image roll — only the rendered ConfigMap changes.
+    version: "1.3.130"
     deps:
       - frontend-crd
       - authn
@@ -321,7 +409,43 @@ components:
     #          top + subtitle/buttons beneath (#78 §4b). Needs frontend >= 1.3.103 (search-width cap).
     # 1.5.109: incident summary = clickable table-of-contents (#69) — 3 panels get Card anchorIds,
     #          summary bullets become #anchor Markdown links. Needs frontend + frontend-crd >= 1.3.104.
-    version: "1.5.109"
+    # 1.5.110: issue #80 §0.1 dashboard range chips to row start (justify space-between, button stays
+    #          right) + §0.4 brand logo width 150 -> 180. Pairs with frontend 1.3.108.
+    # 1.5.111: issue #84 — builder Ask-Autopilot CTA becomes a right-aligned filled primary (middle
+    #          size) on all 3 builder pages (new justify:flex-end wrapper flexes); Portal Builder PR
+    #          feed becomes a sortable Table (was a Listy) with a real rowNavigateTo '{url}' GitHub
+    #          link. Pure widget-CR change, no CRD/schema change; safe with frontend >= the aee40c3
+    #          Table verbatim-rowNavigateTo fix (already in 1.3.116+).
+    # 1.5.112: issue #83 — obs tab-title de-dup (§0.1); incident "Related alerts" footer section
+    #          (§0.2); alert-detail cleanup — drop back-link (§0.3), title+State title-line (§0.4),
+    #          phase/synced into the Info panel (§0.5), Rule→Info (§0.6), Investigate button moved
+    #          into the Info card header via the extraRefId slot (§0.7). Pure widget-CR change; the
+    #          §0.7 Card extraRefId slot requires frontend-crd + frontend >= 1.3.118 (already live).
+    # 1.5.113: issue #82 — marketplace inline catalog search (§0.1, new input.marketplace-search inline
+    #          with the facet chips), count moved next to the title as a muted Paragraph (§0.2 drop
+    #          "CATALOG" eyebrow + §0.3), and detail cleanup — back-link removed (§0.4), Install size
+    #          middle (§0.5), 2-column grid collapsed to one About panel (§0.6, Installed + source links
+    #          folded in), empty status Tag removed (§0.7). Pure widget-CR change. §0.1 lands ATOMICALLY
+    #          with frontend 1.3.119 (drops the /marketplace PageSearch) — deploy the two together.
+    # 1.5.114: issue #86 clear-8 (portal-chart half) — §0.3 marketplace count in parens + title-line
+    #          baseline; §0.4 chips-row + blueprints-filterbar centre-justify + gap large; §0.7 Similar
+    #          incidents + Related alerts promoted to section Cards (card.incident-similar,
+    #          card.incident-related-alerts) matching Evidence/Why/Remediation, orphan labels deleted;
+    #          §0.8 rem-step align centre; §0.9a alert-detail investigate btn type primary. Widget-CR
+    #          only (no frontend-crd bump — Card extra/titleVariant + Flex justify/gap already live).
+    # 1.5.115: issue #86 §0.4 Release C — REVERT chips-row + blueprints-filterbar justify center →
+    #          space-between (fedepini: center floated the search box mid-row); keep gap:large.
+    #          Widget-CR only. Pairs with frontend 1.3.126.
+    # 1.5.116: issue #86 (fedepini) — Marketplace facet restructure: catalog search lifted OUT of the
+    #          middle category-chips row into a NEW outer flex. Search ended up on its own full-width
+    #          line (Flex can't bound it — flex-shrink collapses a bounded search under the wide chips).
+    # 1.5.117: issue #86 (fedepini) — make the facet band a ROW not a Flex, so antd Col spans give
+    #          DETERMINISTIC widths: search-wrap LEFT (span 6 ≈ 25%), category-group RIGHT (span 18 ≈
+    #          75%, chips wrap inside), alignment:middle. Achieves the search-left/filters-right sketch
+    #          a plain Flex could not. Widget-CR only (Row/Col + inputs-in-flex — no frontend-crd bump).
+    # 1.5.118: issue #86 (fedepini) — swap facet sides: filters block LEFT (span 18), search bar
+    #          RIGHT (span 6). Pure Row item reorder. Widget-CR only.
+    version: "1.5.118"
     deps:
       - frontend
     source:
