@@ -58,8 +58,23 @@ spec:
             - helm_upgrade
             - helm_repo_add
             - helm_repo_update
+{{- if .Values.repoSearch.enabled }}
+      - type: McpServer
+        mcpServer:
+          name: {{ .Values.repoSearch.mcpServer }}
+          kind: RemoteMCPServer
+          apiGroup: kagent.dev
+          toolNames:
+            - get_deployed_versions
+            - list_krateo_repos
+            - list_krateo_blueprints
+            - list_repo_files
+            - search_repo
+            - read_repo_file
+{{- end }}
 {{- if .Values.fetch.enabled }}
-      # Tokenless doc grounding: GET the version-pinned raw docs/llms.txt URL (public, no auth/token).
+      # NARROWED escape hatch: GET a public URL outside the Krateo corpus (upstream project docs, a
+      # release note, an issue). Krateo source/charts/docs are read with the repo tools above.
       - type: McpServer
         mcpServer:
           name: {{ .Values.fetch.mcpServer }}

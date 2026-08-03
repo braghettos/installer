@@ -38,8 +38,12 @@ rbac:
   # installer-driver Role to THAT, or every k8s_patch_resource on the Installer CR is denied.
   serviceAccountName: krateo-installer-agent
 
-# Tokenless fetch MCP (kagent MCPServer fetch-mcp-server): GETs the version-pinned public raw
-# docs/llms.txt URL (no token). The chart stamps the deployed tag into the URL in the prompt footer.
+# Repo-search MCP (RemoteMCPServer krateo-repo-mcp-server
+repoSearch:
+  enabled: true
+  mcpServer: krateo-repo-mcp-server
+
+# Tokenless fetch MCP (kagent MCPServer, fetch-mcp-server)
 fetch:
   enabled: true
   mcpServer: fetch-mcp-server

@@ -76,7 +76,7 @@
         "port": {
           "type": "integer",
           "title": "Exposure port",
-          "description": "Optional. Overrides the single port browser-facing (expose:true, top-level Service) components are exposed on — sets both their Service port and the frontend config.json peer URLs (http://<lb-ip>:<port>). Unset => each component keeps its per-component exposePort default. Nested-Service (kagent) and own-LB (hyperdx) components are set via componentValues.",
+          "description": "Optional. Overrides the single port browser-facing (expose:true, top-level Service) components are exposed on \u2014 sets both their Service port and the frontend config.json peer URLs (http://<lb-ip>:<port>). Unset => each component keeps its per-component exposePort default. Nested-Service (kagent) and own-LB (hyperdx) components are set via componentValues.",
           "minimum": 1,
           "maximum": 65535
         }
@@ -151,6 +151,21 @@
             "type": "string",
             "description": "OCI registry base overriding ociRepo for this component's chart URL."
           },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "GROUNDING metadata (not used by the install): the GitHub fork this component's chart is cut from, published in the krateo-component-pins ConfigMap so krateo-repo-mcp-server can grep/read the component at the version pinned here. Distinct from `repo`, which is the OCI registry base.",
+            "properties": {
+              "repo": {
+                "type": "string",
+                "description": "Bare repository name in the braghettos org, e.g. krateo-authn-chart. The pinned `version` is expected to be a git tag on it."
+              },
+              "path": {
+                "type": "string",
+                "description": "The chart's subdirectory inside that repository, e.g. chart/, crds-subchart/, kagent/chart/, charts/kagent/."
+              }
+            }
+          },
           "chart": {
             "type": "string",
             "description": "Chart artifact name overriding the component name in the OCI URL (e.g. krateo-snowplow). The component name stays the CompositionDefinition/Composition identity; only the chart path changes."
@@ -198,11 +213,11 @@
             "items": {
               "type": "string"
             },
-            "description": "GRANULAR kagent HITL override (compositions.yaml): the exact list of this agent's tool names that pause for human approval. When present it is threaded onto the agent's spec verbatim and the coarse global .hitlApproval boolean is NOT applied to this agent. Use [] for an agent whose only mutating-shaped tool is a NON-mutating validator (e.g. frontend-agent's k8s_apply_manifest server dry-run) so its authoring loop is not gated — the real write gate stays downstream (publishPage blast-radius). Omit the key entirely for agents that should inherit the coarse global gate on their own mutating tools."
+            "description": "GRANULAR kagent HITL override (compositions.yaml): the exact list of this agent's tool names that pause for human approval. When present it is threaded onto the agent's spec verbatim and the coarse global .hitlApproval boolean is NOT applied to this agent. Use [] for an agent whose only mutating-shaped tool is a NON-mutating validator (e.g. frontend-agent's k8s_apply_manifest server dry-run) so its authoring loop is not gated \u2014 the real write gate stays downstream (publishPage blast-radius). Omit the key entirely for agents that should inherit the coarse global gate on their own mutating tools."
           },
           "registerOnly": {
             "type": "boolean",
-            "description": "Catalog blueprint: Pass A registers this component's CompositionDefinition (making the blueprint available in the portal) but Pass B never emits a Composition for it — the operator/end-user instantiates it on demand. Use for tenant workload blueprints (e.g. openstack) that ship in the catalog rather than being auto-installed. Typically paired with tier: catalog."
+            "description": "Catalog blueprint: Pass A registers this component's CompositionDefinition (making the blueprint available in the portal) but Pass B never emits a Composition for it \u2014 the operator/end-user instantiates it on demand. Use for tenant workload blueprints (e.g. openstack) that ship in the catalog rather than being auto-installed. Typically paired with tier: catalog."
           }
         },
         "required": [
@@ -668,6 +683,19 @@
               "type": "object",
               "additionalProperties": true
             },
+            "repoSearch": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Repo-search MCP server (RemoteMCPServer krateo-repo-mcp-server, deployed by the krateo-autopilot chart): lets the agent grep and read the Krateo repositories at the versions this cluster runs and cite repo/path:line. The grounding path.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
             "fetch": {
               "type": "object",
               "additionalProperties": false,
@@ -997,6 +1025,19 @@
               "type": "object",
               "additionalProperties": true
             },
+            "repoSearch": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Repo-search MCP server (RemoteMCPServer krateo-repo-mcp-server, deployed by the krateo-autopilot chart): lets the agent grep and read the Krateo repositories at the versions this cluster runs and cite repo/path:line. The grounding path.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
             "fetch": {
               "type": "object",
               "additionalProperties": false,
@@ -1095,6 +1136,19 @@
             "github": {
               "type": "object",
               "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "repoSearch": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Repo-search MCP server (RemoteMCPServer krateo-repo-mcp-server, deployed by the krateo-autopilot chart): lets the agent grep and read the Krateo repositories at the versions this cluster runs and cite repo/path:line. The grounding path.",
               "properties": {
                 "enabled": {
                   "type": "boolean"
@@ -1491,7 +1545,7 @@
             "previewSandbox": {
               "type": "object",
               "title": "Preview sandbox",
-              "description": "Wave-4 live-preview sandbox provisioning (krateo-preview namespace + author RBAC + ResourceQuota + TTL janitor). Passed through to the frontend chart; PREVIEW_SANDBOX_NAMESPACE is auto-forced from previewSandbox.namespace when enabled. The default {enabled:false} keeps the key in the schema-defaulted componentValues so a live-values override (enabled:true) durably merges through the self-bootstrap patch — matching how the config-object keys propagate. The frontend chart supplies namespace/ttl/quota defaults.",
+              "description": "Wave-4 live-preview sandbox provisioning (krateo-preview namespace + author RBAC + ResourceQuota + TTL janitor). Passed through to the frontend chart; PREVIEW_SANDBOX_NAMESPACE is auto-forced from previewSandbox.namespace when enabled. The default {enabled:false} keeps the key in the schema-defaulted componentValues so a live-values override (enabled:true) durably merges through the self-bootstrap patch \u2014 matching how the config-object keys propagate. The frontend chart supplies namespace/ttl/quota defaults.",
               "default": {
                 "enabled": false
               },
@@ -1608,6 +1662,19 @@
             "github": {
               "type": "object",
               "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
+            },
+            "repoSearch": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Repo-search MCP server (RemoteMCPServer krateo-repo-mcp-server, deployed by the krateo-autopilot chart): lets the agent grep and read the Krateo repositories at the versions this cluster runs and cite repo/path:line. The grounding path.",
               "properties": {
                 "enabled": {
                   "type": "boolean"
@@ -1989,6 +2056,19 @@
               "type": "object",
               "additionalProperties": true,
               "description": "Helm global values (injected by the composition runtime)."
+            },
+            "repoSearch": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Repo-search MCP server (RemoteMCPServer krateo-repo-mcp-server, deployed by the krateo-autopilot chart): lets the agent grep and read the Krateo repositories at the versions this cluster runs and cite repo/path:line. The grounding path.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
             },
             "fetch": {
               "type": "object",
@@ -4620,6 +4700,19 @@
             "global": {
               "type": "object",
               "additionalProperties": true
+            },
+            "repoSearch": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Repo-search MCP server (RemoteMCPServer krateo-repo-mcp-server, deployed by the krateo-autopilot chart): lets the agent grep and read the Krateo repositories at the versions this cluster runs and cite repo/path:line. The grounding path.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mcpServer": {
+                  "type": "string"
+                }
+              }
             },
             "fetch": {
               "type": "object",
