@@ -40,8 +40,7 @@ permissions:
   packages: write
 
 env:
-  OCI_REPO: oci://ghcr.io/braghettos/krateo
-
+  OCI_REPO: oci://ghcr.io/krateo-platformops/charts
 jobs:
   package-and-push:
     runs-on: ubuntu-latest

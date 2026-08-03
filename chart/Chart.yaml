@@ -51,15 +51,11 @@ dependencies:
   # ClusterRole services grant (#148) and composition-dynamic-controller 1.3.14.
   # 0.53.17: latest core-provider chart tag (still app 2.10.1 / faithful crdgen). Required to unwedge
   # the frontend CompositionDefinition, whose 1.3.112 schema-defaults broke 2.9.1's marker-based crdgen.
-  - name: krateo-core-provider
-    version: "0.53.17"
-    repository: oci://ghcr.io/braghettos/krateo
-    condition: bootstrap.coreProvider.enabled
+  - name: core-provider    version: "0.53.17"
+    repository: oci://ghcr.io/krateo-platformops/charts    condition: bootstrap.coreProvider.enabled
   # engine CRDs (CompositionDefinition, KubernetesTarget) — helm-owned subchart, bootstrap-only
-  - name: krateo-core-provider-crd
-    version: "0.36.15"
-    repository: oci://ghcr.io/braghettos/krateo
-    condition: bootstrap.coreProvider.enabled
+  - name: core-provider-crds    version: "0.36.15"
+    repository: oci://ghcr.io/krateo-platformops/charts    condition: bootstrap.coreProvider.enabled
   # The ClickHouse + MongoDB observability operators are NO LONGER bootstrap subcharts. They
   # install as `observability`-gated compositions (clickhouse-operator, mongodb-operator in
   # values.yaml components, wrapped from braghettos/krateo-clickstack-operators-chart), so

@@ -1,10 +1,10 @@
 # Maps each installer component chart (keys = the `chart:` names in chart/files/component-pins.yaml,
-# plus the krateo-core-provider* bootstrap deps in chart/Chart.yaml) to the braghettos repo that
+# plus the krateo-core-provider* bootstrap deps in chart/Chart.yaml) to the krateo-platformops repo that
 # BUILDS/RELEASES that chart. Consumed by .github/workflows/component-audit.yml to check each source
 # repo for open PRs + un-PR'd branches ahead of default on every installer tag.
 #
 # Why a hand-maintained map (not the OCI `org.opencontainers.image.source` annotation): the annotation
-# is unreliable — some charts point at renamed/nonexistent repos (authn->braghettos/authn) and wrappers
+# is unreliable — some charts point at renamed/nonexistent repos (authn->krateo-platformops/authn) and wrappers
 # point upstream (kagent->kagent-dev/kagent, clickhouse-operator->ClickHouse/...). Keep this in sync when
 # a component is added/renamed; the workflow warns on any pinned chart missing from `repos`.
 repos:

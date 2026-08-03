@@ -1,15 +1,14 @@
 # ---------------------------------------------------------------------------
 # Krateo PlatformOps installer — umbrella orchestrator values
 # ---------------------------------------------------------------------------
-ociRepo: oci://ghcr.io/braghettos/krateo
-
+ociRepo: oci://ghcr.io/krateo-platformops/charts
 # Registry credentials for pulling component charts from a PRIVATE/authenticated OCI
 # registry. core-provider pulls each component chart IN-CLUSTER (and the umbrella's
 # self-reconcile pulls this installer chart), so private repos need a passwordRef to a
 # Secret living in namespaces.krateo. (The bootstrap `helm install` itself authenticates
 # with your local `helm registry login`; this is only for the in-cluster pulls.)
 # When enabled, every component CompositionDefinition + the installer one get
-# spec.chart.credentials. One ghcr.io credential covers all braghettos/* component repos.
+# spec.chart.credentials. Needed for the PRIVATE krateo-agentiko/* agent charts (repo-override pins); krateo-platformops/* is public.
 registryAuth:
   enabled: false
   username: ""
